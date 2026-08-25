@@ -22,6 +22,11 @@ use App\Http\Controllers\SugerenciaController;
 |
 */
 
+// Healthcheck público para Railway (no requiere auth)
+Route::get('/health', function () {
+    return response()->json(['status' => 'ok']);
+});
+
 // Rutas de autenticación con Sanctum
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);

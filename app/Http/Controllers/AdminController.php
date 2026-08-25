@@ -175,14 +175,16 @@ class AdminController extends Controller
 
     public function createUser(Request $request)
     { //VALIDACIONES PARA EL REGISTRO DE USUARIOS
+        // Solo el Aprendiz tiene ficha y programa obligatorios.
+        $esAprendiz = strcasecmp(Role::find($request->fk_id_rol)?->rol_name ?? '', 'Aprendiz') === 0; //VERIFICA SI EL ROL ES APRENDIZ
         $request->validate([
             'user_identification' => 'required|string|max:20|unique:usuarios', //VALIDA QUE EL USUARIO EXISTA
             'user_name' => 'required', //VALIDA QUE EL NOMBRE EXISTA
             'user_lastname' => 'required', //VALIDA QUE EL APELLIDO EXISTA
             'user_email' => 'required|email|unique:usuarios', //VALIDA QUE EL CORREO EXISTA
             'user_password' => 'required', //VALIDA QUE LA CONTRASEÑA EXISTA
-            'user_coursenumber' => 'required',
-            'user_program' => 'required',
+            'user_coursenumber' => $esAprendiz ? 'required' : 'nullable', //FICHA SOLO OBLIGATORIA PARA APRENDIZ
+            'user_program' => $esAprendiz ? 'required' : 'nullable', //PROGRAMA SOLO OBLIGATORIO PARA APRENDIZ
             'fk_id_rol' => 'required|exists:roles,id_rol',
             'image' => 'nullable|image|max:2048',
         ]);
@@ -198,8 +200,8 @@ class AdminController extends Controller
             'user_lastname' => $request->user_lastname,
             'user_email' => $request->user_email,
             'user_password' => Hash::make($request->user_password),
-            'user_coursenumber' => $request->user_coursenumber,
-            'user_program' => $request->user_program,
+            'user_coursenumber' => $esAprendiz ? $request->user_coursenumber : null, //NULL PARA ADMIN/INSTRUCTOR
+            'user_program' => $esAprendiz ? $request->user_program : null, //NULL PARA ADMIN/INSTRUCTOR
             'fk_id_rol' => $request->fk_id_rol,
             'profile_photo_path' => $profile_photo_path,
         ]);
@@ -217,6 +219,8 @@ class AdminController extends Controller
     public function updateUser(Request $request, $id) //FUNCION PARA ACTUALIZAR USUARIO
     {
         $user = User::findOrFail($id); //BUSCA EL USUARIO POR ID
+        // Solo el Aprendiz tiene ficha y programa obligatorios.
+        $esAprendiz = strcasecmp(Role::find($request->fk_id_rol)?->rol_name ?? '', 'Aprendiz') === 0; //VERIFICA SI EL ROL ES APRENDIZ
         
         $request->validate([
             'user_identification' => 'required|string|max:20|unique:usuarios,user_identification,' . $id . ',id_usuario',
@@ -224,8 +228,8 @@ class AdminController extends Controller
             'user_lastname' => 'required',
             'user_email' => 'required|email|unique:usuarios,user_email,' . $id . ',id_usuario',
             'user_password' => 'nullable|min:6',
-            'user_coursenumber' => 'required',
-            'user_program' => 'required',
+            'user_coursenumber' => $esAprendiz ? 'required' : 'nullable', //FICHA SOLO OBLIGATORIA PARA APRENDIZ
+            'user_program' => $esAprendiz ? 'required' : 'nullable', //PROGRAMA SOLO OBLIGATORIO PARA APRENDIZ
             'fk_id_rol' => 'required|exists:roles,id_rol',
             'image' => 'nullable|image|max:2048',
         ]);
@@ -239,8 +243,8 @@ class AdminController extends Controller
         $user->user_name = $request->user_name; //ACTUALIZA EL NOMBRE DEL USUARIO
         $user->user_lastname = $request->user_lastname; //ACTUALIZA EL APELLIDO DEL USUARIO
         $user->user_email = $request->user_email; //ACTUALIZA EL CORREO DEL USUARIO
-        $user->user_coursenumber = $request->user_coursenumber; //ACTUALIZA EL NUMERO DE CURSO DEL USUARIO
-        $user->user_program = $request->user_program; //ACTUALIZA EL PROGRAMA DEL USUARIO
+        $user->user_coursenumber = $request->filled('user_coursenumber') ? $request->user_coursenumber : null; //FICHA (NULL PARA ADMIN/INSTRUCTOR)
+        $user->user_program = $request->filled('user_program') ? $request->user_program : null; //PROGRAMA (NULL PARA ADMIN/INSTRUCTOR)
         $user->fk_id_rol = $request->fk_id_rol; //ACTUALIZA EL ROL DEL USUARIO
 
         if ($request->filled('user_password')) { //VALIDA QUE LA CONTRASEÑA EXISTA
@@ -269,6 +273,9 @@ class AdminController extends Controller
     public function updateMyProfile(Request $request) //FUNCION PARA ACTUALIZAR MI PERFIL
     {
         $user = $request->user(); //OBTIENE EL USUARIO ACTUAL
+        $user->loadMissing('role'); //ASEGURA LA RELACION CON EL ROL
+        // Solo el Aprendiz tiene ficha y programa; admin e instructor los dejan en null.
+        $esAprendiz = strcasecmp($user->role->rol_name ?? '', 'Aprendiz') === 0; //VERIFICA SI ES APRENDIZ
         
         $request->validate([ //VALIDA QUE LA INFORMACION SEA CORRECTA
             'user_identification' => 'required|string|max:20|unique:usuarios,user_identification,' . $user->id_usuario . ',id_usuario', //VALIDA QUE LA IDENTIFICACION NO SE REPITA
@@ -276,8 +283,8 @@ class AdminController extends Controller
             'user_lastname' => 'required', //VALIDA QUE EL APELLIDO EXISTA
             'user_email' => 'required|email|unique:usuarios,user_email,' . $user->id_usuario . ',id_usuario', //VALIDA QUE EL CORREO EXISTA
             'user_password' => 'nullable|min:6', //VALIDA QUE LA CONTRASEÑA EXISTA
-            'user_coursenumber' => 'required', //VALIDA QUE EL NUMERO DE CURSO EXISTA
-            'user_program' => 'required', //VALIDA QUE EL PROGRAMA EXISTA
+            'user_coursenumber' => $esAprendiz ? 'required' : 'nullable', //FICHA SOLO OBLIGATORIA PARA APRENDIZ
+            'user_program' => $esAprendiz ? 'required' : 'nullable', //PROGRAMA SOLO OBLIGATORIO PARA APRENDIZ
             'image' => 'nullable|image|max:2048', //VALIDA QUE LA IMAGEN EXISTA
         ]);
 
@@ -290,8 +297,8 @@ class AdminController extends Controller
         $user->user_name = $request->user_name; //ACTUALIZA EL NOMBRE DEL USUARIO
         $user->user_lastname = $request->user_lastname; //ACTUALIZA EL APELLIDO DEL USUARIO
         $user->user_email = $request->user_email; //ACTUALIZA EL CORREO DEL USUARIO
-        $user->user_coursenumber = $request->user_coursenumber; //ACTUALIZA EL NUMERO DE CURSO DEL USUARIO
-        $user->user_program = $request->user_program; //ACTUALIZA EL PROGRAMA DEL USUARIO
+        $user->user_coursenumber = $request->filled('user_coursenumber') ? $request->user_coursenumber : null; //FICHA (NULL PARA ADMIN/INSTRUCTOR)
+        $user->user_program = $request->filled('user_program') ? $request->user_program : null; //PROGRAMA (NULL PARA ADMIN/INSTRUCTOR)
 
         if ($request->filled('user_password')) { //VALIDA QUE LA CONTRASEÑA EXISTA
             $user->user_password = Hash::make($request->user_password); //ACTUALIZA LA CONTRASEÑA DEL USUARIO

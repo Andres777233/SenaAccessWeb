@@ -26,9 +26,7 @@ const Instructor = () => {
         user_name: '',
         user_lastname: '',
         user_email: '',
-        user_password: '',
-        user_coursenumber: '',
-        user_program: ''
+        user_password: ''
     });
 
     useEffect(() => {
@@ -58,8 +56,6 @@ const Instructor = () => {
                     user_lastname: userMeResponse.data.user_lastname,
                     user_email: userMeResponse.data.user_email,
                     user_password: '',
-                    user_coursenumber: userMeResponse.data.user_coursenumber,
-                    user_program: userMeResponse.data.user_program,
                     profile_photo_path: userMeResponse.data.profile_photo_path || null
                 });
             } catch (error) {
@@ -212,16 +208,6 @@ const Instructor = () => {
                                         <input type="password" name="user_password" placeholder="Mínimo 6 caracteres..." className={`form-control ${profileErrors.user_password ? 'is-invalid' : ''}`} value={formData.user_password} onChange={handleChange} />
                                         {profileFieldError('user_password')}
                                     </div>
-                                    <div className="col-12 mb-3">
-                                        <label className="form-label opacity-75 small">Ficha</label>
-                                        <input type="number" name="user_coursenumber" className={`form-control ${profileErrors.user_coursenumber ? 'is-invalid' : ''}`} value={formData.user_coursenumber} onChange={handleChange} required />
-                                        {profileFieldError('user_coursenumber')}
-                                    </div>
-                                    <div className="col-12 mb-3">
-                                        <label className="form-label opacity-75 small">Programa</label>
-                                        <input type="text" name="user_program" className={`form-control ${profileErrors.user_program ? 'is-invalid' : ''}`} value={formData.user_program} onChange={handleChange} required />
-                                        {profileFieldError('user_program')}
-                                    </div>
                                 </div>
                                 <div className="d-flex gap-2 mt-4">
                                     <button type="submit" className="btn btn-success action-btn flex-grow-1 py-2">
@@ -358,12 +344,6 @@ const Instructor = () => {
                                 <label className="form-label opacity-50 small mb-1">Correo Institucional</label>
                                 <div className="p-3 bg-dark bg-opacity-25 rounded border border-success border-opacity-10">
                                     {currentUser?.user_email}
-                                </div>
-                            </div>
-                            <div className="col-md-6">
-                                <label className="form-label opacity-50 small mb-1">Ficha</label>
-                                <div className="p-3 bg-dark bg-opacity-25 rounded border border-success border-opacity-10">
-                                    {currentUser?.user_coursenumber}
                                 </div>
                             </div>
                             <div className="col-md-6">

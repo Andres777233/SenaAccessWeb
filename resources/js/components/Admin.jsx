@@ -361,6 +361,9 @@ const Admin = () => {
         formErrors[name] ? <div className="text-danger small mt-1"><span className="material-symbols-outlined small me-1">error</span>{formErrors[name][0]}</div> : null
     );
 
+    // La ficha y el programa solo aplican al rol Aprendiz; admin e instructor no los tienen.
+    const esRolAprendiz = roles.find(r => r.id_rol === formData.fk_id_rol)?.rol_name === 'Aprendiz';
+
     const renderView = () => {
         switch (view) {
             case 'dashboard':
@@ -402,16 +405,20 @@ const Admin = () => {
                                                 <input type="password" name="user_password" placeholder="Nueva contraseña..." className={`form-control ${formErrors.user_password ? 'is-invalid' : ''}`} value={formData.user_password} onChange={handleChange} />
                                                 {fieldError('user_password')}
                                             </div>
-                                            <div className="col-12 mb-3">
-                                                <label className="form-label opacity-75 small">Ficha</label>
-                                                <input type="number" name="user_coursenumber" className={`form-control ${formErrors.user_coursenumber ? 'is-invalid' : ''}`} value={formData.user_coursenumber} onChange={handleChange} required />
-                                                {fieldError('user_coursenumber')}
-                                            </div>
-                                            <div className="col-12 mb-3">
-                                                <label className="form-label opacity-75 small">Programa</label>
-                                                <input type="text" name="user_program" className={`form-control ${formErrors.user_program ? 'is-invalid' : ''}`} value={formData.user_program} onChange={handleChange} required />
-                                                {fieldError('user_program')}
-                                            </div>
+                                            {esRolAprendiz && (
+                                                <>
+                                                    <div className="col-12 mb-3">
+                                                        <label className="form-label opacity-75 small">Ficha</label>
+                                                        <input type="number" name="user_coursenumber" className={`form-control ${formErrors.user_coursenumber ? 'is-invalid' : ''}`} value={formData.user_coursenumber} onChange={handleChange} required />
+                                                        {fieldError('user_coursenumber')}
+                                                    </div>
+                                                    <div className="col-12 mb-3">
+                                                        <label className="form-label opacity-75 small">Programa</label>
+                                                        <input type="text" name="user_program" className={`form-control ${formErrors.user_program ? 'is-invalid' : ''}`} value={formData.user_program} onChange={handleChange} required />
+                                                        {fieldError('user_program')}
+                                                    </div>
+                                                </>
+                                            )}
                                             <div className="col-12 mb-3">
                                                 <label className="form-label opacity-75 small">Rol Asignado</label>
                                                 <select name="fk_id_rol" className={`form-select ${formErrors.fk_id_rol ? 'is-invalid' : ''}`} value={formData.fk_id_rol} onChange={handleChange} required>
@@ -491,7 +498,7 @@ const Admin = () => {
                                                     </div>
                                                     <div className="user-info-item">
                                                         <span className="material-symbols-outlined">groups</span>
-                                                        <span className="text-truncate">Ficha: {user.user_coursenumber}</span>
+                                                        <span className="text-truncate">Ficha: {user.user_coursenumber || '—'}</span>
                                                     </div>
                                                 </div>
 
@@ -898,12 +905,6 @@ const Admin = () => {
                                 <label className="form-label opacity-50 small mb-1">Correo Institucional</label>
                                 <div className="p-3 bg-dark bg-opacity-25 rounded border border-success border-opacity-10">
                                     {currentUser?.user_email}
-                                </div>
-                            </div>
-                            <div className="col-md-6">
-                                <label className="form-label opacity-50 small mb-1">Ficha</label>
-                                <div className="p-3 bg-dark bg-opacity-25 rounded border border-success border-opacity-10">
-                                    {currentUser?.user_coursenumber}
                                 </div>
                             </div>
                             <div className="col-md-6">

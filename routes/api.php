@@ -7,7 +7,6 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\EquipmentController;
 use App\Http\Controllers\NovedadController;
 use App\Http\Controllers\NotificacionController;
-use App\Http\Controllers\AprendizInstructorController;
 use App\Http\Controllers\PasskeyController;
 use App\Http\Controllers\SugerenciaController;
 
@@ -91,13 +90,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::middleware('admin')->group(function () {
             Route::get('/equipment', [EquipmentController::class, 'index']);
             Route::delete('/equipment/{id}', [EquipmentController::class, 'deleteEquipment']);
-        });
-
-        // Asignación explícita aprendiz -> instructor (solo admin)
-        Route::middleware('admin')->group(function () {
-            Route::get('/aprendiz-instructores', [AprendizInstructorController::class, 'index']);
-            Route::post('/aprendiz-instructores', [AprendizInstructorController::class, 'store']);
-            Route::delete('/aprendiz-instructores/{id}', [AprendizInstructorController::class, 'destroy']);
         });
     });
 

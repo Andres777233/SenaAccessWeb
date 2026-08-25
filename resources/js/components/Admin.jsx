@@ -10,8 +10,6 @@ import Sugerencias from './Sugerencias';
 import { showAlert, showConfirm } from './CustomAlert';
 import downloadComprobante from '../utils/comprobante';
 
-const JORNADAS = ['Mañana', 'Tarde', 'Noche'];
-
 const Admin = () => {
     // HOOK: useNavigate se emplea para redirigir al Login si el usuario no tiene una sesión activa o el token expira.
     const navigate = useNavigate();
@@ -38,11 +36,6 @@ const Admin = () => {
     const [equipoRolFilter, setEquipoRolFilter] = useState(''); // Filtro por rol en historial de equipos
     const [equipoSort, setEquipoSort] = useState({ key: 'ingreso', dir: 'desc' }); // Orden de la tabla de equipos
     const [directorioTab, setDirectorioTab] = useState('instructores'); // 'instructores' | 'aprendices'
-    const [filtroInstructor, setFiltroInstructor] = useState(''); // Filtro por instructor del directorio de aprendices
-    const [asignaciones, setAsignaciones] = useState([]); // Asignaciones aprendiz -> instructor
-    const [asignacionesLoading, setAsignacionesLoading] = useState(true);
-    const [asignarAprendiz, setAsignarAprendiz] = useState(null); // Aprendiz en modal de asignación
-    const [asignacionData, setAsignacionData] = useState({ fk_id_instructor: '', jornada: '' });
     const [formData, setFormData] = useState({
         user_identification: '',
         user_name: '',
@@ -102,18 +95,6 @@ const Admin = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [view]);
 
-    const fetchAsignaciones = async () => {
-        try {
-            setAsignacionesLoading(true);
-            const response = await axios.get('/api/admin/aprendiz-instructores');
-            setAsignaciones(response.data);
-        } catch (error) {
-            console.error("Error al cargar asignaciones:", error);
-        } finally {
-            setAsignacionesLoading(false);
-        }
-    }
-
     const fetchEquipment = async () => {
         try {
             const response = await axios.get('/api/admin/equipment');
@@ -169,17 +150,15 @@ const Admin = () => {
                     return;
                 }
 
-                const [usersResponse, rolesResponse, userMeResponse, asignacionesResponse, equipmentResponse] = await Promise.all([
+                const [usersResponse, rolesResponse, userMeResponse, equipmentResponse] = await Promise.all([
                     axios.get('/api/admin/users'),
                     axios.get('/api/admin/roles'),
                     axios.get('/api/user'),
-                    axios.get('/api/admin/aprendiz-instructores'),
                     axios.get('/api/admin/equipment')
                 ]);
                 setUsers(usersResponse.data);
                 setRoles(rolesResponse.data);
                 setCurrentUser(userMeResponse.data);
-                setAsignaciones(asignacionesResponse.data);
                 setEquipmentList(equipmentResponse.data);
                 await fetchIngresos(1);
             } catch (error) {
@@ -221,12 +200,8 @@ const Admin = () => {
     // Filtro de instructores del directorio (sin ambientes)
     const filteredInstructors = instructors;
 
-    // Filtro de aprendices del directorio por instructor asignado
-    const filteredAprendices = users.filter(user => {
-        if (user.role?.rol_name !== 'Aprendiz') return false;
-        if (!filtroInstructor) return true;
-        return asignaciones.some(a => a.fk_id_aprendiz === user.id_usuario && a.fk_id_instructor === Number(filtroInstructor));
-    });
+    // Filtro de aprendices del directorio
+    const filteredAprendices = users.filter(user => user.role?.rol_name === 'Aprendiz');
 
     // Filtro de equipos por nombre, apellido, email, tipo de equipo, marca, modelo, color y serial
     const filteredEquipment = equipmentList.filter(item => {
@@ -365,54 +340,6 @@ const Admin = () => {
             showAlert('Error al exportar: ' + (error.response?.data?.message || 'Error desconocido'), 'error');
         }
     };
-
-    // ---- Funciones del directorio (aprendices e instructores) ----
-    const handleAsignarOpen = (aprendiz) => {
-        const prev = asignaciones.find(a => a.fk_id_aprendiz === aprendiz.id_usuario);
-        setAsignarAprendiz(aprendiz);
-        setAsignacionData({
-            fk_id_instructor: prev?.fk_id_instructor || '',
-            jornada: prev?.jornada || ''
-        });
-    };
-
-    const handleAsignacionChange = (e) => {
-        setAsignacionData({
-            ...asignacionData,
-            [e.target.name]: e.target.value
-        });
-    };
-
-    const handleAsignarSubmit = async (e) => {
-        e.preventDefault();
-        if (!asignarAprendiz) return;
-        try {
-            await axios.post('/api/admin/aprendiz-instructores', {
-                ...asignacionData,
-                fk_id_aprendiz: asignarAprendiz.id_usuario
-            });
-            showAlert('Asignación guardada con éxito');
-            setAsignarAprendiz(null);
-            await fetchAsignaciones();
-        } catch (error) {
-            showAlert('Error al guardar asignación: ' + (error.response?.data?.message || 'Error desconocido'), 'error');
-        }
-    };
-
-    const handleAsignacionDelete = async (id) => {
-        const confirmed = await showConfirm('¿Quieres quitar la asignación de este aprendiz?');
-        if (confirmed) {
-            try {
-                await axios.delete(`/api/admin/aprendiz-instructores/${id}`);
-                showAlert('Asignación eliminada');
-                await fetchAsignaciones();
-            } catch (error) {
-                showAlert('Error al eliminar asignación', 'error');
-            }
-        }
-    };
-
-    const aprendizAsignado = (aprendizId) => asignaciones.find(a => a.fk_id_aprendiz === aprendizId);
 
     // Funcion para eliminar un usuario
     const handleDelete = async (id) => {
@@ -905,29 +832,9 @@ const Admin = () => {
                                 </>
                             ) : (
                                 <>
-                                    <div className="row g-2 mb-4 align-items-end">
-                                        <div className="col-12 col-md-4">
-                                            <label className="form-label opacity-75 small mb-1">Qué instructor tuvo</label>
-                                            <select className="form-select" value={filtroInstructor} onChange={(e) => setFiltroInstructor(e.target.value)}>
-                                                <option value="">Todos</option>
-                                                {instructors.map(instructor => (
-                                                    <option key={instructor.id_usuario} value={instructor.id_usuario}>
-                                                        {instructor.user_name} {instructor.user_lastname}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                        <div className="col-12 col-md-4">
-                                            <button className="btn btn-outline-secondary action-btn w-100" onClick={() => setFiltroInstructor('')}>
-                                                <span className="material-symbols-outlined small">restart_alt</span> Limpiar filtros
-                                            </button>
-                                        </div>
-                                    </div>
-
                                     {filteredAprendices.length > 0 ? (
                                         <div className="row g-3">
                                              {filteredAprendices.map(aprendiz => {
-                                                 const asignacion = aprendizAsignado(aprendiz.id_usuario);
                                                  return (
                                                      <div className="col-md-6 col-lg-4" key={aprendiz.id_usuario}>
                                                          <div className="glass-box-nested p-4 h-100">
@@ -944,27 +851,10 @@ const Admin = () => {
                                                                     <span className="small opacity-50">{aprendiz.user_email}</span>
                                                                 </div>
                                                             </div>
-                                                            <div className="user-info-item mb-2"><span className="material-symbols-outlined">id_card</span>{aprendiz.user_identification || 'S/N'}</div>
-                                                            <div className="user-info-item mb-2"><span className="material-symbols-outlined">groups</span>Ficha: {aprendiz.user_coursenumber}</div>
-                                                            <div className="user-info-item mb-3"><span className="material-symbols-outlined">menu_book</span>{aprendiz.user_program}</div>
-                                                            {asignacion ? (
-                                                                <div className="d-flex align-items-center justify-content-between gap-2 mb-3">
-                                                                    <div className="d-flex flex-column">
-                                                                        <span className="small opacity-50">Instructor asignado</span>
-                                                                        <span className="fw-bold">{asignacion.instructor?.user_name} {asignacion.instructor?.user_lastname}</span>
-                                                                        {asignacion.jornada && <span className="small opacity-50">{asignacion.jornada}</span>}
-                                                                    </div>
-                                                                    <button className="btn btn-danger btn-sm action-btn" title="Quitar asignación" onClick={() => handleAsignacionDelete(asignacion.id_asignacion)}>
-                                                                        <span className="material-symbols-outlined">link_off</span>
-                                                                    </button>
-                                                                </div>
-                                                            ) : (
-                                                                <p className="small opacity-50 mb-3">Sin instructor asignado.</p>
-                                                            )}
-                                                            <button className="btn btn-success action-btn w-100" onClick={() => handleAsignarOpen(aprendiz)}>
-                                                                <span className="material-symbols-outlined small">person_add</span> {asignacion ? 'Cambiar instructor' : 'Asignar instructor'}
-                                                            </button>
-                                                        </div>
+                                                             <div className="user-info-item mb-2"><span className="material-symbols-outlined">id_card</span>{aprendiz.user_identification || 'S/N'}</div>
+                                                             <div className="user-info-item mb-2"><span className="material-symbols-outlined">groups</span>Ficha: {aprendiz.user_coursenumber}</div>
+                                                             <div className="user-info-item mb-3"><span className="material-symbols-outlined">menu_book</span>{aprendiz.user_program}</div>
+                                                         </div>
                                                     </div>
                                                 );
                                             })}
@@ -1088,46 +978,6 @@ const Admin = () => {
             <main className="container-fluid px-3 px-md-5 py-2 flex-grow-1">
                 {renderView()}
             </main>
-
-            {asignarAprendiz && (
-                <div className="custom-alert-overlay" style={{ position: 'fixed', inset: 0, zIndex: 99990, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(8px)', background: 'rgba(0, 0, 0, 0.45)', animation: 'fadeIn 0.25s ease-out' }}>
-                    <div className="glass-box modal-glass-box p-4 p-md-5 mx-3" style={{ maxWidth: '480px', width: '100%', animation: 'scaleInBounce 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards' }}>
-                        <div className="section-header mb-4">
-                            <h3 className="mb-0">Asignar instructor a {asignarAprendiz.user_name} {asignarAprendiz.user_lastname}</h3>
-                        </div>
-                        <form onSubmit={handleAsignarSubmit}>
-                            <div className="col-12 mb-3">
-                                <label className="form-label opacity-75 small">Instructor</label>
-                                <select name="fk_id_instructor" className="form-select" value={asignacionData.fk_id_instructor} onChange={handleAsignacionChange} required>
-                                    <option value="">Seleccione un instructor...</option>
-                                    {instructors.map(instructor => (
-                                        <option key={instructor.id_usuario} value={instructor.id_usuario}>
-                                            {instructor.user_name} {instructor.user_lastname}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div className="col-12 mb-3">
-                                <label className="form-label opacity-75 small">Jornada (opcional)</label>
-                                <select name="jornada" className="form-select" value={asignacionData.jornada} onChange={handleAsignacionChange}>
-                                    <option value="">Sin jornada</option>
-                                    {JORNADAS.map(j => (
-                                        <option key={j} value={j}>{j}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div className="d-flex gap-2 mt-4">
-                                <button type="submit" className="btn btn-success action-btn flex-grow-1 py-2">
-                                    <span className="material-symbols-outlined">save</span> Guardar asignación
-                                </button>
-                                <button type="button" className="btn btn-outline-secondary action-btn px-4" onClick={() => setAsignarAprendiz(null)}>
-                                    Cancelar
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
 
             <Footer />
         </div>

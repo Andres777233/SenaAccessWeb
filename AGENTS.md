@@ -6,7 +6,7 @@ Backend Laravel 10 + MySQL + SPA React 19 (Vite, Bootstrap 5.3 CDN) de SennAcces
 - Servidor: `php artisan serve --host 0.0.0.0 --port 8000` (o `bash iniciar-servidor.sh`). OJO: artisan serve sirve estáticos de `public/` ANTES que el router; los paneles legacy viven en `public/static-html-backup/` para que `/admin`, `/instructor`, `/aprendiz` caigan en el SPA React.
 - BD: MariaDB servicio `mariadb`, base `senaaccess` (root sin password, en `.env`). Migrar: `php artisan migrate`. Seed: `php artisan db:seed --force`.
 - Entorno: PHP 8.5.4 (+pdo_mysql, mbstring, curl, xml, gd, zip), Composer en `~/.local/bin/composer`, Node v24. Build SPA: `npm run build`.
-- Credenciales prueba: `admin@sena.edu.co`, `instructor@sena.edu.co`, `aprendiz@sena.edu.co` con `12345678`; cuentas reales (`alejandro`, `raul`, `gustavo`, `katherin`, `sebastian`, `camilo`, `andres.vargas`, `laura.medina` @sena.edu.co) con `123456`.
+- Credenciales (idénticas local y Railway, ver `DatabaseSeeder.php`): `admin@sena.edu.co` con `12345678`; instructores: `juan.pablo@sena.edu.co` (`12345678`), `alejandro/gustavo/raul@sena.edu.co` (`123456`); aprendices: `andres.vargas/laura.medina@sena.edu.co` (`12345678`), `katherin/sebastian/camilo@sena.edu.co` (`123456`). NO existen `instructor@` ni `aprendiz@sena.edu.co`.
 
 ## Convenciones
 - PKs propias (`id_ambiente`, `id_novedad`, ...) y prefijos de columna (`user_*`, `novedad_*`, `equipo_*`, `ambiente_*`, `sugerencia_*`).
@@ -40,3 +40,5 @@ Al terminar cada tarea/sesión, agrega al FINAL de `## Historial` una entrada fe
 - 2026-08-15 — Dashboards servidos por el SPA React (rutas estáticas removidas; ProtectedRoute token+rol).
 - 2026-08-15 — Ambientes (tabla+fkc novedades, CRUD admin, select en novedades), invitados QR de 1 uso (60 min) con validación que registra Entrada, dashboard stats KPIs, historial de accesos con filtros/CSV/paginación, devolución de equipos, notificaciones in-app con campanita, errores por campo.
 - 2026-08-12 — Novedades accesibles a cualquier rol autenticado; ingresos Entrada (login)/Salida (logout) en America/Bogota; equipos accesibles admin+instructor con accesorios JSON; credenciales de prueba definidas.
+- 2026-08-24 — FIX login 500 en Railway: la BD "MySQL" original estaba rota (variables placeholder, password root perdida, nunca conectada al web). Creé BD "MySQL-DK1Y" vía `railway add`, inyecté al servicio SenaAccessWeb DATABASE_URL+APP_KEY+APP_ENV+APP_DEBUG=false+APP_URL+LOG_CHANNEL=stderr, migré+sembré con `railway ssh` al contenedor web (29 tablas); login verificado 200. BD vieja y volumen huérfano eliminados. Seeder idempotente, redeploys seguros.
+- 2026-08-25 — Quité la asignación aprendiz↔instructor: eliminé las rutas `/admin/aprendiz-instructores` de routes/api.php, el controlador y el modelo, y toda la UI en Admin.jsx (estado, handlers, modal de asignar instructor, filtro). Se deja la migración/tabla. Build SPA verificado (`npm run build` OK).

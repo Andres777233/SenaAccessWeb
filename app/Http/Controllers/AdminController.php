@@ -186,7 +186,7 @@ class AdminController extends Controller
             'user_coursenumber' => $esAprendiz ? 'required' : 'nullable', //FICHA SOLO OBLIGATORIA PARA APRENDIZ
             'user_program' => $esAprendiz ? 'required' : 'nullable', //PROGRAMA SOLO OBLIGATORIO PARA APRENDIZ
             'fk_id_rol' => 'required|exists:roles,id_rol',
-            'image' => 'nullable|image|max:2048',
+            'image' => 'nullable|image|max:5120',
         ]);
 
         $profile_photo_path = null; //VALIDA QUE LA IMAGEN NO SE REPITAN
@@ -231,7 +231,7 @@ class AdminController extends Controller
             'user_coursenumber' => $esAprendiz ? 'required' : 'nullable', //FICHA SOLO OBLIGATORIA PARA APRENDIZ
             'user_program' => $esAprendiz ? 'required' : 'nullable', //PROGRAMA SOLO OBLIGATORIO PARA APRENDIZ
             'fk_id_rol' => 'required|exists:roles,id_rol',
-            'image' => 'nullable|image|max:2048',
+            'image' => 'nullable|image|max:5120',
         ]);
         //ACTUALIZA LA IMAGEN DEL USUARIO
         if ($request->hasFile('image')) { //VALIDA QUE LA IMAGEN EXISTA
@@ -285,7 +285,7 @@ class AdminController extends Controller
             'user_password' => 'nullable|min:6', //VALIDA QUE LA CONTRASEÑA EXISTA
             'user_coursenumber' => $esAprendiz ? 'required' : 'nullable', //FICHA SOLO OBLIGATORIA PARA APRENDIZ
             'user_program' => $esAprendiz ? 'required' : 'nullable', //PROGRAMA SOLO OBLIGATORIO PARA APRENDIZ
-            'image' => 'nullable|image|max:2048', //VALIDA QUE LA IMAGEN EXISTA
+            'image' => 'nullable|image|max:5120', //VALIDA QUE LA IMAGEN EXISTA
         ]);
 
         if ($request->hasFile('image')) { //VALIDA QUE LA IMAGEN EXISTA

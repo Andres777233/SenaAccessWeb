@@ -81,6 +81,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/ingresos', [AdminController::class, 'getIngresos']);
             Route::get('/ingresos/export', [AdminController::class, 'exportIngresos']);
             Route::get('/stats', [AdminController::class, 'stats']);
+            Route::get('/presentes', [AdminController::class, 'presentes']);
         });
 
         // Rutas para gestionar equipos: SOLO el admin registra y marca devoluciones;

@@ -59,6 +59,34 @@ class AdminController extends Controller
         return response()->json($ingresos);
     }
 
+    // Quiénes están DENTRO ahora: usuarios cuyo último registro en ingresos es una
+    // Entrada (sin Salida posterior). Se usa el id más alto por usuario como proxy
+    // del último movimiento, ya que los registros se insertan en orden.
+    public function presentes(Request $request)
+    {
+        $idsUltimos = Ingreso::query()
+            ->selectRaw('MAX(id_ingreso) as ultimo')
+            ->groupBy('fk_id_user')
+            ->pluck('ultimo');
+
+        $presentes = Ingreso::with('user.role')
+            ->whereIn('id_ingreso', $idsUltimos)
+            ->where('ingreso_type', 'Entrada')
+            ->orderBy('ingreso_datetime', 'desc')
+            ->get()
+            ->map(function ($ing) {
+                return [
+                    'id_usuario' => $ing->fk_id_user,
+                    'user_name' => $ing->user->user_name ?? '',
+                    'user_lastname' => $ing->user->user_lastname ?? '',
+                    'rol' => $ing->user->role->rol_name ?? null,
+                    'entrada_hora' => $ing->ingreso_datetime,
+                ];
+            });
+
+        return response()->json($presentes);
+    }
+
     public function exportIngresos(Request $request)
     {
         $query = Ingreso::with('user');

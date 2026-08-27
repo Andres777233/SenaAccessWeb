@@ -87,10 +87,10 @@ const Register = () => {
                         <div className="row g-4">
                             <div className="col-12 user-box mb-0">
                                 <select name="user_documento_tipo" value={formData.user_documento_tipo} onChange={handleChange} className={errors.user_documento_tipo ? 'border-danger' : ''}>
-                                    <option value="CC">CC — Cédula de Ciudadanía</option>
-                                    <option value="CE">CE — Cédula de Extranjería</option>
-                                    <option value="TI">TI — Tarjeta de Identidad</option>
-                                    <option value="PAS">PAS — Pasaporte</option>
+                                    <option value="CC">CC: Cédula de Ciudadanía</option>
+                                    <option value="CE">CE: Cédula de Extranjería</option>
+                                    <option value="TI">TI: Tarjeta de Identidad</option>
+                                    <option value="PAS">PAS: Pasaporte</option>
                                 </select>
                                 <label>Tipo de Documento</label>
                                 {errors.user_documento_tipo && <div className="text-danger mt-1 small d-flex align-items-center gap-1"><span className="material-symbols-outlined small" style={{ fontSize: '14px' }}>error</span> {errors.user_documento_tipo[0]}</div>}
@@ -127,7 +127,7 @@ const Register = () => {
                         <div className="row g-4">
                             <div className="col-12 user-box mb-0">
                                 <input type="email" name="user_email" required placeholder=" " value={formData.user_email} onChange={handleChange} />
-                                <label>Correo Electrónico Institucional</label>
+                                <label>Correo Electrónico</label>
                                 {errors.user_email && <div className="text-danger mt-1 small d-flex align-items-center gap-1"><span className="material-symbols-outlined small" style={{ fontSize: '14px' }}>error</span> {errors.user_email[0]}</div>}
                             </div>
                             <div className="col-12 user-box mb-0">

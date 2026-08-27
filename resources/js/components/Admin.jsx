@@ -394,10 +394,10 @@ const handleCancelEdit = () => {
                                             <div className="col-12 mb-3">
                                                 <label className="form-label opacity-75 small">Tipo de Documento</label>
                                                 <select name="user_documento_tipo" className={`form-select ${formErrors.user_documento_tipo ? 'is-invalid' : ''}`} value={formData.user_documento_tipo} onChange={handleChange} required>
-                                                    <option value="CC">CC — Cédula de Ciudadanía</option>
-                                                    <option value="CE">CE — Cédula de Extranjería</option>
-                                                    <option value="TI">TI — Tarjeta de Identidad</option>
-                                                    <option value="PAS">PAS — Pasaporte</option>
+                                                    <option value="CC">CC: Cédula de Ciudadanía</option>
+                                                    <option value="CE">CE: Cédula de Extranjería</option>
+                                                    <option value="TI">TI: Tarjeta de Identidad</option>
+                                                    <option value="PAS">PAS: Pasaporte</option>
                                                 </select>
                                                 {fieldError('user_documento_tipo')}
                                             </div>

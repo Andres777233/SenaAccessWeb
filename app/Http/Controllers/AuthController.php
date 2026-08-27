@@ -184,6 +184,7 @@ class AuthController extends Controller
         $request->validate([
             'user_identification' => 'required|string|max:20',
             'user_name' => 'required|string|max:100',
+            'user_lastname' => 'nullable|string|max:100',
         ]);
 
         // Buscar si ya existe el invitado por su identificación
@@ -197,7 +198,7 @@ class AuthController extends Controller
             $user = User::create([
                 'user_identification' => $request->user_identification,
                 'user_name' => $request->user_name,
-                'user_lastname' => '(Invitado)',
+                'user_lastname' => $request->user_lastname ?: '(Invitado)',
                 'user_email' => 'guest_' . $request->user_identification . '@system.com',
                 'user_password' => Hash::make(\Illuminate\Support\Str::random(16)),
                 'user_coursenumber' => 0,

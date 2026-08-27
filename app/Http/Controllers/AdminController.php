@@ -181,10 +181,21 @@ class AdminController extends Controller
             'user_identification' => 'required|string|max:20|unique:usuarios', //VALIDA QUE EL USUARIO EXISTA
             'user_name' => 'required', //VALIDA QUE EL NOMBRE EXISTA
             'user_lastname' => 'required', //VALIDA QUE EL APELLIDO EXISTA
-            'user_email' => 'required|email|unique:usuarios', //VALIDA QUE EL CORREO EXISTA
+            'user_email' => [
+                'required', 'email', 'unique:usuarios',
+                function ($attribute, $value, $fail) {
+                    $dominios = ['@gmail.com', '@hotmail.com', '@soy.sena.edu.co'];
+                    foreach ($dominios as $d) {
+                        if (str_ends_with(strtolower($value), $d)) return;
+                    }
+                    $fail('El correo debe ser @gmail.com, @hotmail.com o @soy.sena.edu.co.');
+                },
+            ],
             'user_password' => 'required', //VALIDA QUE LA CONTRASEÑA EXISTA
             'user_coursenumber' => $esAprendiz ? 'required' : 'nullable', //FICHA SOLO OBLIGATORIA PARA APRENDIZ
             'user_program' => $esAprendiz ? 'required' : 'nullable', //PROGRAMA SOLO OBLIGATORIO PARA APRENDIZ
+            'user_documento_tipo' => 'required|in:CC,CE,TI,PAS',
+            'user_telefono' => 'nullable|string|max:20',
             'fk_id_rol' => 'required|exists:roles,id_rol',
             'image' => 'nullable|image|max:5120',
         ]);
@@ -202,6 +213,8 @@ class AdminController extends Controller
             'user_password' => Hash::make($request->user_password),
             'user_coursenumber' => $esAprendiz ? $request->user_coursenumber : null, //NULL PARA ADMIN/INSTRUCTOR
             'user_program' => $esAprendiz ? $request->user_program : null, //NULL PARA ADMIN/INSTRUCTOR
+            'user_documento_tipo' => $request->user_documento_tipo,
+            'user_telefono' => $request->user_telefono,
             'fk_id_rol' => $request->fk_id_rol,
             'profile_photo_path' => $profile_photo_path,
         ]);
@@ -226,10 +239,21 @@ class AdminController extends Controller
             'user_identification' => 'required|string|max:20|unique:usuarios,user_identification,' . $id . ',id_usuario',
             'user_name' => 'required',
             'user_lastname' => 'required',
-            'user_email' => 'required|email|unique:usuarios,user_email,' . $id . ',id_usuario',
+            'user_email' => [
+                'required', 'email', 'unique:usuarios,user_email,' . $id . ',id_usuario',
+                function ($attribute, $value, $fail) {
+                    $dominios = ['@gmail.com', '@hotmail.com', '@soy.sena.edu.co'];
+                    foreach ($dominios as $d) {
+                        if (str_ends_with(strtolower($value), $d)) return;
+                    }
+                    $fail('El correo debe ser @gmail.com, @hotmail.com o @soy.sena.edu.co.');
+                },
+            ],
             'user_password' => 'nullable|min:6',
             'user_coursenumber' => $esAprendiz ? 'required' : 'nullable', //FICHA SOLO OBLIGATORIA PARA APRENDIZ
             'user_program' => $esAprendiz ? 'required' : 'nullable', //PROGRAMA SOLO OBLIGATORIO PARA APRENDIZ
+            'user_documento_tipo' => 'required|in:CC,CE,TI,PAS',
+            'user_telefono' => 'nullable|string|max:20',
             'fk_id_rol' => 'required|exists:roles,id_rol',
             'image' => 'nullable|image|max:5120',
         ]);
@@ -245,6 +269,8 @@ class AdminController extends Controller
         $user->user_email = $request->user_email; //ACTUALIZA EL CORREO DEL USUARIO
         $user->user_coursenumber = $request->filled('user_coursenumber') ? $request->user_coursenumber : null; //FICHA (NULL PARA ADMIN/INSTRUCTOR)
         $user->user_program = $request->filled('user_program') ? $request->user_program : null; //PROGRAMA (NULL PARA ADMIN/INSTRUCTOR)
+        $user->user_documento_tipo = $request->user_documento_tipo ?? $user->user_documento_tipo; //TIPO DE DOCUMENTO
+        $user->user_telefono = $request->filled('user_telefono') ? $request->user_telefono : null; //TELEFONO
         $user->fk_id_rol = $request->fk_id_rol; //ACTUALIZA EL ROL DEL USUARIO
 
         if ($request->filled('user_password')) { //VALIDA QUE LA CONTRASEÑA EXISTA

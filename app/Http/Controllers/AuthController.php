@@ -31,15 +31,28 @@ class AuthController extends Controller
 
     public function register(Request $request)
     {
-        //VALIDADOR: DATOS NECESARIOS PARA EL REGISTRO 
+        //VALIDADOR: DATOS NECESARIOS PARA EL REGISTRO
+        // El correo solo se acepta si termina en @gmail.com, @hotmail.com o
+        // @soy.sena.edu.co (evita correos falsos de otros dominios).
         $validator = Validator::make($request->all(), [
             'user_identification' => 'required|string|max:20|unique:usuarios',
             'user_name' => 'required|string|max:50',
             'user_lastname' => 'required|string|max:50',
-            'user_email' => 'required|string|email|max:100|unique:usuarios',
+            'user_email' => [
+                'required', 'string', 'email', 'max:100', 'unique:usuarios',
+                function ($attribute, $value, $fail) {
+                    $dominios = ['@gmail.com', '@hotmail.com', '@soy.sena.edu.co'];
+                    foreach ($dominios as $d) {
+                        if (str_ends_with(strtolower($value), $d)) return;
+                    }
+                    $fail('El correo debe ser @gmail.com, @hotmail.com o @soy.sena.edu.co.');
+                },
+            ],
             'user_password' => 'required|string|min:8|confirmed',
             'user_coursenumber' => 'required|integer',
             'user_program' => 'required|string|max:100',
+            'user_documento_tipo' => 'required|in:CC,CE,TI,PAS',
+            'user_telefono' => 'nullable|string|max:20',
         ]);
         //SI LOS DATOS ESTAN INCOMPLETOS NO CONTINUA EL PROCESO 
         if ($validator->fails()) {
@@ -57,6 +70,8 @@ class AuthController extends Controller
             'user_password' => Hash::make($request->user_password),
             'user_coursenumber' => $request->user_coursenumber,
             'user_program' => $request->user_program,
+            'user_documento_tipo' => $request->user_documento_tipo,
+            'user_telefono' => $request->user_telefono,
             'fk_id_rol' => $role->id_rol,
         ]);
 

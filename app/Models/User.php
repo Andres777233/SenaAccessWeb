@@ -28,6 +28,8 @@ class User extends Authenticatable
         'user_password',
         'user_coursenumber',
         'user_program',
+        'user_documento_tipo',
+        'user_telefono',
         'fk_id_rol',
         'profile_photo_path',
         'guest_qr_token',

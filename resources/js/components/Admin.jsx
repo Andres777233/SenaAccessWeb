@@ -44,6 +44,8 @@ const Admin = () => {
         user_password: '',
         user_coursenumber: '',
         user_program: '',
+        user_documento_tipo: 'CC',
+        user_telefono: '',
         fk_id_rol: ''
     });
     const [formErrors, setFormErrors] = useState({}); // Errores de validación por campo
@@ -248,28 +250,32 @@ const Admin = () => {
             user_name: user.user_name || '',
             user_lastname: user.user_lastname || '',
             user_email: user.user_email || '',
-            user_password: '',
-            user_coursenumber: user.user_coursenumber || '',
-            user_program: user.user_program || '',
-            fk_id_rol: user.fk_id_rol || '',
-            profile_photo_path: user.profile_photo_path || null
-        });
-    };
-    // Funcion para cancelar la edicion de un usuario
-    const handleCancelEdit = () => {
-        setEditingUser(null);
-        setFormErrors({});
-        setFormData({
-            user_identification: '',
-            user_name: '',
-            user_lastname: '',
-            user_email: '',
-            user_password: '',
-            user_coursenumber: '',
-            user_program: '',
-            fk_id_rol: ''
-        });
-    };
+        user_password: '',
+        user_coursenumber: user.user_coursenumber || '',
+        user_program: user.user_program || '',
+        user_documento_tipo: user.user_documento_tipo || 'CC',
+        user_telefono: user.user_telefono || '',
+        fk_id_rol: user.fk_id_rol || '',
+        profile_photo_path: user.profile_photo_path || null
+    });
+};
+// Funcion para cancelar la edicion de un usuario
+const handleCancelEdit = () => {
+    setEditingUser(null);
+    setFormErrors({});
+    setFormData({
+        user_identification: '',
+        user_name: '',
+        user_lastname: '',
+        user_email: '',
+        user_password: '',
+        user_coursenumber: '',
+        user_program: '',
+        user_documento_tipo: 'CC',
+        user_telefono: '',
+        fk_id_rol: ''
+    });
+};
     // Funcion para cambiar un dato del formulario
     const handleChange = (e) => {
         setFormData({
@@ -384,6 +390,21 @@ const Admin = () => {
                                                 <label className="form-label opacity-75 small">N° Documento</label>
                                                 <input type="text" name="user_identification" className={`form-control ${formErrors.user_identification ? 'is-invalid' : ''}`} value={formData.user_identification} onChange={handleChange} required />
                                                 {fieldError('user_identification')}
+                                            </div>
+                                            <div className="col-12 mb-3">
+                                                <label className="form-label opacity-75 small">Tipo de Documento</label>
+                                                <select name="user_documento_tipo" className={`form-select ${formErrors.user_documento_tipo ? 'is-invalid' : ''}`} value={formData.user_documento_tipo} onChange={handleChange} required>
+                                                    <option value="CC">CC — Cédula de Ciudadanía</option>
+                                                    <option value="CE">CE — Cédula de Extranjería</option>
+                                                    <option value="TI">TI — Tarjeta de Identidad</option>
+                                                    <option value="PAS">PAS — Pasaporte</option>
+                                                </select>
+                                                {fieldError('user_documento_tipo')}
+                                            </div>
+                                            <div className="col-12 mb-3">
+                                                <label className="form-label opacity-75 small">Teléfono de contacto (opcional)</label>
+                                                <input type="tel" name="user_telefono" className={`form-control ${formErrors.user_telefono ? 'is-invalid' : ''}`} value={formData.user_telefono} onChange={handleChange} />
+                                                {fieldError('user_telefono')}
                                             </div>
                                             <div className="col-12 mb-3">
                                                 <label className="form-label opacity-75 small">Nombre</label>

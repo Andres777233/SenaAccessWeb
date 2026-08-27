@@ -17,7 +17,9 @@ const Register = () => {
         user_password: '',
         user_password_confirmation: '',
         user_coursenumber: '',
-        user_program: ''
+        user_program: '',
+        user_documento_tipo: 'CC',
+        user_telefono: ''
     });
     // Estado para almacenar errores de validación devueltos por la API, esto para mostrar mensajes de error específicos debajo de cada campo del formulario
     const [errors, setErrors] = useState({});
@@ -84,9 +86,24 @@ const Register = () => {
                         </div>
                         <div className="row g-4">
                             <div className="col-12 user-box mb-0">
+                                <select name="user_documento_tipo" value={formData.user_documento_tipo} onChange={handleChange} className={errors.user_documento_tipo ? 'border-danger' : ''}>
+                                    <option value="CC">CC — Cédula de Ciudadanía</option>
+                                    <option value="CE">CE — Cédula de Extranjería</option>
+                                    <option value="TI">TI — Tarjeta de Identidad</option>
+                                    <option value="PAS">PAS — Pasaporte</option>
+                                </select>
+                                <label>Tipo de Documento</label>
+                                {errors.user_documento_tipo && <div className="text-danger mt-1 small d-flex align-items-center gap-1"><span className="material-symbols-outlined small" style={{ fontSize: '14px' }}>error</span> {errors.user_documento_tipo[0]}</div>}
+                            </div>
+                            <div className="col-12 user-box mb-0">
                                 <input type="text" name="user_identification" required placeholder=" " value={formData.user_identification} onChange={handleChange} className={errors.user_identification ? 'border-danger' : ''} />
                                 <label>Número de Identificación</label>
                                 {errors.user_identification && <div className="text-danger mt-1 small d-flex align-items-center gap-1"><span className="material-symbols-outlined small" style={{ fontSize: '14px' }}>error</span> {errors.user_identification[0]}</div>}
+                            </div>
+                            <div className="col-12 user-box mb-0">
+                                <input type="tel" name="user_telefono" placeholder=" " value={formData.user_telefono} onChange={handleChange} className={errors.user_telefono ? 'border-danger' : ''} />
+                                <label>Teléfono de contacto (opcional)</label>
+                                {errors.user_telefono && <div className="text-danger mt-1 small d-flex align-items-center gap-1"><span className="material-symbols-outlined small" style={{ fontSize: '14px' }}>error</span> {errors.user_telefono[0]}</div>}
                             </div>
                             <div className="col-12 user-box mb-0">
                                 <input type="text" name="user_name" required placeholder=" " value={formData.user_name} onChange={handleChange} />

@@ -6,6 +6,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AmbienteController;
 use App\Http\Controllers\EquipmentController;
+use App\Http\Controllers\ExcusaController;
 use App\Http\Controllers\JornadaController;
 use App\Http\Controllers\NovedadController;
 use App\Http\Controllers\NotificacionController;
@@ -137,6 +138,16 @@ Route::middleware('auth:sanctum')->group(function () {
     // Jornada / QR dinámico (instructor proyecta, aprendiz valida).
     Route::get('/jornada/qr/{ambiente}', [JornadaController::class, 'qr']);
     Route::get('/jornada/qr-actual', [JornadaController::class, 'qrActual']);
+
+    // Excusas con PIN: instructor crea (elige aprendiz+ambiente+motivo → genera PIN), admin valida en salida.
+    Route::post('/instructor/excusas', [ExcusaController::class, 'store']);
+    Route::get('/instructor/excusas', [ExcusaController::class, 'misComoInstructor']);
+    Route::delete('/instructor/excusas/{id}', [ExcusaController::class, 'anular']);
+    Route::get('/mis-excusas', [ExcusaController::class, 'misExcusas']);
+    Route::post('/excusas/validar', [ExcusaController::class, 'validar']);
+    Route::middleware('admin')->group(function () {
+        Route::get('/admin/excusas', [ExcusaController::class, 'indexAdmin']);
+    });
 
     // Rutas específicas del Instructor
     Route::middleware('auth:sanctum')->group(function () {

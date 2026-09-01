@@ -32,9 +32,6 @@ class User extends Authenticatable
         'user_telefono',
         'fk_id_rol',
         'profile_photo_path',
-        'guest_qr_token',
-        'guest_qr_expires_at',
-        'guest_qr_used',
     ];
 
     /**
@@ -54,8 +51,6 @@ class User extends Authenticatable
      */
     protected $casts = [
         'user_password' => 'hashed',
-        'guest_qr_used' => 'boolean',
-        'guest_qr_expires_at' => 'datetime',
     ];
 
     public function getAuthPassword()

@@ -4,7 +4,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AmbienteController;
 use App\Http\Controllers\EquipmentController;
+use App\Http\Controllers\JornadaController;
 use App\Http\Controllers\NovedadController;
 use App\Http\Controllers\NotificacionController;
 use App\Http\Controllers\PasskeyController;
@@ -29,7 +31,6 @@ Route::get('/health', function () {
 // Rutas de autenticación con Sanctum
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
-Route::post('/register-guest', [AuthController::class, 'registerGuest']);
 Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
 Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
@@ -94,9 +95,6 @@ Route::middleware('auth:sanctum')->group(function () {
         });
     });
 
-    // Validación del QR de invitado en recepción (admin/instructor)
-    Route::post('/validate-guest-qr', [AuthController::class, 'validateGuestQr']);
-
     // Rutas de novedades para cualquier rol autenticado (lectura). El aprendiz
     // también consulta GET /novedades desde su dashboard.
     Route::get('/my-novedades', [NovedadController::class, 'getMyNovedades']); //OBTIENE LAS NOVEDADES DEL USUARIO
@@ -117,6 +115,28 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/admin/sugerencias/{id}/responder', [SugerenciaController::class, 'respond']);
         Route::delete('/admin/sugerencias/{id}', [SugerenciaController::class, 'destroy']);
     });
+
+    // Ambientes (admin crea, instructor gestiona sus ambientes/aprendices).
+    Route::get('/ambientes', [AmbienteController::class, 'index']);
+    Route::get('/mis-ambientes', [AmbienteController::class, 'misAmbientes']);
+    Route::get('/mis-ambientes/{id}/aprendices', [AmbienteController::class, 'misAprendices']);
+    Route::post('/mis-ambientes/{id}/aprendices', [AmbienteController::class, 'misAddAprendiz']);
+    Route::delete('/mis-ambientes/{id}/aprendices/{userId}', [AmbienteController::class, 'misRemoveAprendiz']);
+
+    // Gestión de ambientes (solo admin).
+    Route::middleware('admin')->group(function () {
+        Route::post('/admin/ambientes', [AmbienteController::class, 'store']);
+        Route::put('/admin/ambientes/{id}', [AmbienteController::class, 'update']);
+        Route::delete('/admin/ambientes/{id}', [AmbienteController::class, 'destroy']);
+        Route::post('/admin/ambientes/{id}/instructores', [AmbienteController::class, 'syncInstructores']);
+        Route::get('/admin/ambientes/{id}/aprendices', [AmbienteController::class, 'getAprendices']);
+        Route::post('/admin/ambientes/{id}/aprendices', [AmbienteController::class, 'addAprendiz']);
+        Route::delete('/admin/ambientes/{id}/aprendices/{userId}', [AmbienteController::class, 'removeAprendiz']);
+    });
+
+    // Jornada / QR dinámico (instructor proyecta, aprendiz valida).
+    Route::get('/jornada/qr/{ambiente}', [JornadaController::class, 'qr']);
+    Route::get('/jornada/qr-actual', [JornadaController::class, 'qrActual']);
 
     // Rutas específicas del Instructor
     Route::middleware('auth:sanctum')->group(function () {

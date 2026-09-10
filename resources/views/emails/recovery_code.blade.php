@@ -56,10 +56,9 @@
     </style>
 </head>
 <body>
-    <?php $logoData = base64_encode((string) file_get_contents(public_path('email/SenaAccessLogo.jpeg'))); ?>
     <div class="container">
         <div class="header">
-            <img src="data:image/jpeg;base64,{{ $logoData }}" alt="SENA Acces">
+            <img src="{{ url('email/SenaAccessLogo.jpeg') }}" alt="SENA Acces" width="260">
         </div>
         <div class="content">
             <h2>Recuperación de Contraseña</h2>

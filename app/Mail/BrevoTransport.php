@@ -17,6 +17,11 @@ class BrevoTransport extends AbstractTransport
         parent::__construct();
     }
 
+    public function __toString(): string
+    {
+        return 'brevo';
+    }
+
     protected function doSend(SentMessage $message): void
     {
         $email = MessageConverter::toEmail($message->getOriginalMessage());

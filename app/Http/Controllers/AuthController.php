@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Role;
+use App\Models\TokenRecovery;
+use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
@@ -13,6 +15,11 @@ use \Laravel\Sanctum\PersonalAccessToken;
 use App\Models\Ingreso;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use App\Mail\RecoveryCodeMail;
 
 class AuthController extends Controller
 {
@@ -27,6 +34,22 @@ class AuthController extends Controller
             'ingreso_type' => $tipo,
             'fk_id_user' => $idUsuario,
         ]);
+    }
+
+    /**
+     * Código de recuperación legible de 8 caracteres sin caracteres ambiguos
+     * (evita O/0, I/1, l). Se envía en texto plano por correo, pero en la base
+     * de datos solo se guarda su hash bcrypt para que un robo de la tabla no
+     * comprometa las cuentas.
+     */
+    private function generarCodigo(): string
+    {
+        $alfabeto = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+        $codigo = '';
+        for ($i = 0; $i < 8; $i++) {
+            $codigo .= $alfabeto[random_int(0, strlen($alfabeto) - 1)];
+        }
+        return $codigo;
     }
 
     public function register(Request $request)
@@ -75,9 +98,13 @@ class AuthController extends Controller
             'fk_id_rol' => $role->id_rol,
         ]);
 
+        // Dispara el evento Registered -> SendEmailVerificationNotification:
+        // al usuario se le envía el enlace de verificación de correo.
+        event(new Registered($user));
+
         return response()->json(['message' => 'Usuario registrado exitosamente', 'user' => $user], 201);
     }
-    //LOGICA LOGIN  
+
     public function login(Request $request)
     {
         // Normaliza el correo y la contraseña (quita espacios accidentales y normaliza mayúsculas)
@@ -102,12 +129,17 @@ class AuthController extends Controller
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
+        // email_verified_at indica en la respuesta si el correo fue verificado;
+        // la app puede mostrarlo (pill "correo verificado") o sugerir verificarlo.
+        $user->refresh();
+
         return response()->json([
             'message' => 'Login exitoso',
             'user' => $user,
             'role' => $user->role->rol_name,
             'access_token' => $token,
             'token_type' => 'Bearer',
+            'email_verified_at' => $user->email_verified_at,
         ]);
     }
 
@@ -185,27 +217,32 @@ class AuthController extends Controller
             'email' => 'required|email',
         ]);
 
-        $user = User::where('user_email', $request->email)->first();
+        $user = User::where('user_email', strtolower(trim($request->email)))->first();
 
         if (!$user) {
             return response()->json(['message' => 'Si el correo existe, se ha enviado un enlace.'], 200);
         }
 
-        // Generar código de recuperación de 8 caracteres
-        $token = strtoupper(\Illuminate\Support\Str::random(8));
+        // Invalida tokens anteriores pendientes para que solo valga el último código.
+        DB::table('token_recovery')
+            ->where('fk_id_usuario', $user->id_usuario)
+            ->where('token_used', false)
+            ->update(['token_used' => true]);
 
-        // Guardar en la tabla token_recovery
-        \Illuminate\Support\Facades\DB::table('token_recovery')->insert([
-            'token_code' => $token,
+        // Generar código de recuperación de 8 caracteres legible (sin 0/O/1/I/l)
+        $token = $this->generarCodigo();
+
+        // Guardar en la tabla token_recovery SOLO su hash bcrypt: si alguien roba
+        // la base de datos no puede usar los códigos para cambiar contraseñas.
+        TokenRecovery::create([
+            'token_code' => Hash::make($token),
             'token_exp' => Carbon::now('America/Bogota')->addMinutes(15),
             'token_used' => false,
             'fk_id_usuario' => $user->id_usuario,
-            'created_at' => Carbon::now('America/Bogota'),
-            'updated_at' => Carbon::now('America/Bogota'),
         ]);
 
-        // Enviar correo electrónico con el código de recuperación
-        \Illuminate\Support\Facades\Mail::to($user->user_email)->send(new \App\Mail\RecoveryCodeMail($token));
+        // Enviar correo electrónico con el código de recuperación (texto plano solo en el email)
+        Mail::to($user->user_email)->send(new RecoveryCodeMail($token));
 
         return response()->json(['message' => 'Se ha enviado el código a tu correo.'], 200);
     }
@@ -213,15 +250,17 @@ class AuthController extends Controller
     public function resetPassword(Request $request) //FUNCION PARA RESETEAR LA CONTRASEÑA
     {
         $request->validate([
-            'code' => 'required|string|max:10', //VALIDA QUE EL CODIGO EXISTA
+            'code' => 'required|string', //VALIDA QUE EL CODIGO EXISTA
             'password' => 'required|string|min:8|confirmed', //VALIDA QUE LA CONTRASEÑA EXISTA
         ]);
 
-        $tokenRecord = \Illuminate\Support\Facades\DB::table('token_recovery') //BUSCA EL TOKEN EN LA TABLA TOKEN_RECOVERY
-            ->where('token_code', $request->code)
-            ->where('token_used', false) //VALIDA QUE EL TOKEN NO SE HAYA USADO
+        // El código guardado es un hash bcrypt: se compara con Hash::check.
+        $tokenRecord = TokenRecovery::where('token_used', false) //VALIDA QUE EL TOKEN NO SE HAYA USADO
             ->where('token_exp', '>=', Carbon::now('America/Bogota')) //VALIDA QUE EL TOKEN NO HAYA EXPIRADO
-            ->first(); //OBTIENE EL TOKEN
+            ->get()
+            ->first(function ($t) use ($request) {
+                return Hash::check($request->code, $t->token_code);
+            });
 
         if (!$tokenRecord) {
             return response()->json(['message' => 'El código es inválido o ha expirado.'], 400);
@@ -235,16 +274,56 @@ class AuthController extends Controller
         $user->user_password = Hash::make($request->password); //ACTUALIZA LA CONTRASEÑA DEL USUARIO
         $user->save(); //GUARDA LOS CAMBIOS EN LA BASE DE DATOS
 
-
-        //PARA ACTUALIZAR EL ESTADO DEL TOKEN A USADO
-        \Illuminate\Support\Facades\DB::table('token_recovery') //ACTUALIZA EL ESTADO DEL TOKEN A USADO
-            ->where('id_token', $tokenRecord->id_token) //OBTIENE EL TOKEN
+        // Invalida todos los tokens pendientes del usuario (el último ya se usó):
+        // evita reutilizar un mismo correo para generar varios códigos válidos.
+        DB::table('token_recovery')
+            ->where('fk_id_usuario', $user->id_usuario)
             ->update([
-                'token_used' => true, //ACTUALIZA EL ESTADO DEL TOKEN A USADO
-                'updated_at' => Carbon::now('America/Bogota'), //CARBON PARA LA FECHA Y HORA ACTUAL
+                'token_used' => true,
+                'updated_at' => Carbon::now('America/Bogota'),
             ]);
-            
-        // RETORNA LA CONTRASEÑA ACTUALIZADA
+
         return response()->json(['message' => 'Contraseña actualizada correctamente.'], 200);
+    }
+
+    /**
+     * Confirma la verificación del correo mediante enlace firmado temporal
+     * (expira en 60 min). El hash es sha1 del correo y la firma la añade la ruta 'signed'.
+     */
+    public function verifyEmail(Request $request, $id, $hash)
+    {
+        $user = User::findOrFail($id);
+
+        if (!hash_equals((string) $hash, sha1($user->getEmailForVerification()))) {
+            return response()->json(['message' => 'Enlace de verificación inválido.'], 403);
+        }
+
+        if ($user->hasVerifiedEmail()) {
+            return response()->json(['message' => 'El correo ya estaba verificado.'], 200);
+        }
+
+        $user->markEmailAsVerified();
+
+        return response()->json(['message' => 'Correo verificado correctamente.'], 200);
+    }
+
+    /**
+     * Reenvía el enlace de verificación al usuario autenticado.
+     */
+    public function resendVerification(Request $request)
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json(['message' => 'No autenticado.'], 401);
+        }
+
+        if ($user->hasVerifiedEmail()) {
+            return response()->json(['message' => 'El correo ya estaba verificado.'], 200);
+        }
+
+        $user->sendEmailVerificationNotification();
+
+        return response()->json(['message' => 'Se reenvió el enlace de verificación a tu correo.'], 200);
     }
 }

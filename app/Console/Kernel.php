@@ -12,7 +12,8 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        // $schedule->command('inspire')->hourly();
+        // Limpia cada hora los tokens de recuperación expirados o ya usados.
+        $schedule->command('tokens:clean')->hourly();
     }
 
     /**

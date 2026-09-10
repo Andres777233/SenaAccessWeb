@@ -31,10 +31,23 @@ Route::get('/health', function () {
 
 // Rutas de autenticación con Sanctum
 Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login', [AuthController::class, 'login']);
-Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
-Route::post('/reset-password', [AuthController::class, 'resetPassword']);
+// Throttle en login (5,1): máx 5 intentos/minuto por IP para frenar fuerza bruta.
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
+// Throttle en recuperar (3,1): máx 3 solicitudes/minuto, evita spam de correos.
+Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:3,1');
+// Throttle en reset (10,1): permite probar el código sin abrir fuerza bruta.
+Route::post('/reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:10,1');
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
+
+// Verificación de correo: enlace firmado temporal (GET, firmado con 'signed');
+// el hash del correo y la firma viajan en la URL del email enviado.
+Route::get('/email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])
+    ->middleware('signed')
+    ->name('verification.verify');
+// Reenvío del enlace de verificación (requiere sesión).
+Route::post('/email/verification-notification', [AuthController::class, 'resendVerification'])
+    ->middleware('auth:sanctum')
+    ->middleware('throttle:3,1');
 
 // Salida en tiempo real: el frontend la dispara al cerrar la última pestaña/app
 // (fetch keepalive en pagehide) y puede revertirla si el cierre era un refresh.

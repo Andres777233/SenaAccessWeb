@@ -3,10 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Models\Notificacion;
+use App\Services\NotificacionService;
 use Illuminate\Http\Request;
 
 class NotificacionController extends Controller
 {
+    public function __construct(private NotificacionService $notificacionService)
+    {
+    }
+
     public function index(Request $request)
     {
         $notificaciones = Notificacion::where('fk_id_usuario', $request->user()->id_usuario)

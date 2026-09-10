@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Support\Facades\URL;
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     use HasApiTokens, HasFactory, Notifiable;
 
@@ -26,6 +27,7 @@ class User extends Authenticatable
         'user_lastname',
         'user_email',
         'user_password',
+        'email_verified_at',
         'user_coursenumber',
         'user_program',
         'user_documento_tipo',
@@ -51,11 +53,38 @@ class User extends Authenticatable
      */
     protected $casts = [
         'user_password' => 'hashed',
+        'email_verified_at' => 'datetime',
     ];
 
     public function getAuthPassword()
     {
         return $this->user_password;
+    }
+
+    public function getEmailForVerification()
+    {
+        return $this->user_email;
+    }
+
+    public function hasVerifiedEmail()
+    {
+        return !is_null($this->email_verified_at);
+    }
+
+    public function markEmailAsVerified()
+    {
+        $this->forceFill(['email_verified_at' => $this->freshTimestamp()])->save();
+        return $this;
+    }
+
+    public function sendEmailVerificationNotification()
+    {
+        $url = URL::temporarySignedRoute(
+            'verification.verify',
+            now()->addMinutes(60),
+            ['id' => $this->getKey(), 'hash' => sha1($this->getEmailForVerification())]
+        );
+        $this->notify(new \App\Notifications\VerifyEmailSena($url));
     }
 
     public function role()
@@ -111,6 +140,3 @@ class User extends Authenticatable
         return $path;
     }
 }
-
-
-

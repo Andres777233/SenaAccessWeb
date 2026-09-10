@@ -28,10 +28,11 @@ class BrevoTransport extends AbstractTransport
 
         $to = [];
         foreach ($email->getTo() as $address) {
-            $to[] = [
-                'email' => $address->getAddress(),
-                'name' => $address->getName() ?: '',
-            ];
+            $recipient = ['email' => $address->getAddress()];
+            if ($address->getName() !== '') {
+                $recipient['name'] = $address->getName();
+            }
+            $to[] = $recipient;
         }
 
         $payload = [

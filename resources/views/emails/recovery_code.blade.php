@@ -22,15 +22,17 @@
             text-align: center;
         }
         .header {
-            background-color: #00875A;
-            padding: 20px;
+            background-color: #ffffff;
+            padding: 24px 20px 12px;
             border-radius: 8px 8px 0 0;
-            color: #ffffff;
+            border-bottom: 4px solid #00875A;
             margin: -20px -20px 20px -20px;
         }
-        .header h1 {
-            margin: 0;
-            font-size: 24px;
+        .header img {
+            max-width: 260px;
+            height: auto;
+            display: block;
+            margin: 0 auto;
         }
         .content {
             padding: 20px;
@@ -54,9 +56,10 @@
     </style>
 </head>
 <body>
+    <?php $logoData = base64_encode((string) file_get_contents(public_path('email/SenaAccessLogo.jpeg'))); ?>
     <div class="container">
         <div class="header">
-            <h1>SENA Acces</h1>
+            <img src="data:image/jpeg;base64,{{ $logoData }}" alt="SENA Acces">
         </div>
         <div class="content">
             <h2>Recuperación de Contraseña</h2>

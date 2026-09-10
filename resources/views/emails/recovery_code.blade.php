@@ -22,17 +22,15 @@
             text-align: center;
         }
         .header {
-            background-color: #ffffff;
-            padding: 24px 20px 12px;
+            background-color: #00875A;
+            padding: 20px;
             border-radius: 8px 8px 0 0;
-            border-bottom: 4px solid #00875A;
+            color: #ffffff;
             margin: -20px -20px 20px -20px;
         }
-        .header img {
-            max-width: 260px;
-            height: auto;
-            display: block;
-            margin: 0 auto;
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
         }
         .content {
             padding: 20px;
@@ -58,7 +56,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <img src="{{ url('email/SenaAccessLogo.jpeg') }}" alt="SENA Acces" width="260">
+            <h1>SENA Acces</h1>
         </div>
         <div class="content">
             <h2>Recuperación de Contraseña</h2>

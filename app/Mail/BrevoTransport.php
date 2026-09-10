@@ -47,6 +47,13 @@ class BrevoTransport extends AbstractTransport
         ];
 
         $client = new Client(['timeout' => 15]);
+        \Illuminate\Support\Facades\Log::info('BREVO_DEBUG', [
+            'normalClass' => get_class($message->getOriginalMessage()),
+            'htmlLen' => mb_strlen((string) $email->getHtmlBody()),
+            'textLen' => mb_strlen((string) $email->getTextBody()),
+            'hasHtml' => $email->getHtmlBody() !== null,
+            'hasText' => $email->getTextBody() !== null,
+        ]);
         $client->post('https://api.brevo.com/v3/smtp/email', [
             'headers' => [
                 'api-key' => $this->apiKey,

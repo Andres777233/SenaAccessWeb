@@ -79,12 +79,18 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function sendEmailVerificationNotification()
     {
-        $url = URL::temporarySignedRoute(
-            'verification.verify',
-            now()->addMinutes(60),
-            ['id' => $this->getKey(), 'hash' => sha1($this->getEmailForVerification())]
-        );
-        $this->notify(new \App\Notifications\VerifyEmailSena($url));
+        try {
+            $url = URL::temporarySignedRoute(
+                'verification.verify',
+                now()->addMinutes(60),
+                ['id' => $this->getKey(), 'hash' => sha1($this->getEmailForVerification())]
+            );
+            $this->notify(new \App\Notifications\VerifyEmailSena($url));
+        } catch (\Throwable $e) {
+            // Si el transporte de correo falla, el registro no debe colgarse ni devolver error:
+            // la cuenta se crea igual y el correo puede reenviarse desde la app más tarde.
+            \Illuminate\Support\Facades\Log::error("No se pudo enviar el correo de verificacion: " . $e->getMessage());
+        }
     }
 
     public function role()

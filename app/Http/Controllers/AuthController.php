@@ -241,8 +241,14 @@ class AuthController extends Controller
             'fk_id_usuario' => $user->id_usuario,
         ]);
 
-        // Enviar correo electrónico con el código de recuperación (texto plano solo en el email)
-        Mail::to($user->user_email)->send(new RecoveryCodeMail($token));
+        // Enviar correo electrónico con el código de recuperación (texto plano solo en el email).
+        // El envío nunca debe colgar ni romper la petición: si falla (clave de correo inválida,
+        // dominio no verificado, etc.) se registra el error y se responde igual al usuario.
+        try {
+            Mail::to($user->user_email)->send(new RecoveryCodeMail($token));
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error("Error enviando codigo de recuperacion a {$user->user_email}: " . $e->getMessage());
+        }
 
         return response()->json(['message' => 'Se ha enviado el código a tu correo.'], 200);
     }
@@ -322,7 +328,12 @@ class AuthController extends Controller
             return response()->json(['message' => 'El correo ya estaba verificado.'], 200);
         }
 
-        $user->sendEmailVerificationNotification();
+        // El reenvío tampoco puede fallar la petición: se intenta y se registra el error.
+        try {
+            $user->sendEmailVerificationNotification();
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error("Error reenviando verificacion a {$user->user_email}: " . $e->getMessage());
+        }
 
         return response()->json(['message' => 'Se reenvió el enlace de verificación a tu correo.'], 200);
     }

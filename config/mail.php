@@ -98,6 +98,15 @@ return [
         'resend' => [
             'transport' => 'resend',
         ],
+
+        'brevo' => [
+            'transport' => 'brevo',
+            'key' => env('BREVO_API_KEY'),
+            'from' => [
+                'address' => env('MAIL_FROM_ADDRESS', 'hello@example.com'),
+                'name' => env('MAIL_FROM_NAME', 'SenaAccess'),
+            ],
+        ],
     ],
 
     /*

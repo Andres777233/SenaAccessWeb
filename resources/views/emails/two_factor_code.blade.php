@@ -46,6 +46,25 @@
             letter-spacing: 4px;
             color: #00875A;
         }
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 16px;
+            margin: 10px 0;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #ffffff;
+            text-decoration: none;
+            text-align: center;
+            box-sizing: border-box;
+        }
+        .btn-approve {
+            background-color: #00875A;
+        }
+        .btn-deny {
+            background-color: #BE0000;
+        }
         .footer {
             margin-top: 30px;
             font-size: 12px;
@@ -61,13 +80,17 @@
         <div class="content">
             <h2>Verificación en dos pasos</h2>
             <p>Hola,</p>
-            <p>Se detectó un intento de inicio de sesión en tu cuenta. Para continuar, escribe el siguiente código de verificación:</p>
+            <p><strong>Se detectó un intento de inicio de sesión en tu cuenta SENA Acces desde otro dispositivo.</strong> ¿Fuiste tú?</p>
 
+            <a href="{{ $aprobarUrl }}" class="btn btn-approve">SÍ, soy yo — aprobar acceso</a>
+            <a href="{{ $denegarUrl }}" class="btn btn-deny">NO, no fui yo — bloquear</a>
+
+            <p>Si prefieres, escribe este código en la aplicación en lugar de usar los botones:</p>
             <div class="code-box">
                 {{ $code }}
             </div>
 
-            <p>Este código expira en 10 minutos. Si no fuiste tú quien intentó iniciar sesión, rechaza el acceso: no compartas este código con nadie.</p>
+            <p>Este enlace y código expiran en 10 minutos. No compartas este correo con nadie.</p>
         </div>
         <div class="footer">
             &copy; {{ date('Y') }} SENA Acces. Todos los derechos reservados.

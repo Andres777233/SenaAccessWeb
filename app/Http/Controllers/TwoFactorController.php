@@ -40,9 +40,14 @@ class TwoFactorController extends Controller
             'user_agent' => Str::limit($request->userAgent() ?? 'desconocido', 255),
         ]);
 
-        // Fallback: código de 6 dígitos al correo. El envío no puede colgar el login.
+        // Fallback: código de 6 dígitos al correo + botones "¿Eres tú?" tipo Google.
+        // El envío no puede colgar el login.
         try {
-            Mail::to($user->user_email)->send(new TwoFactorCodeMail($codigo));
+            $base = rtrim(config('app.url'), '/');
+            $firma = fn (string $dec) => hash_hmac('sha256', $reto->challenge_id . '|' . $dec, config('app.key'));
+            $aprobarUrl = $base . '/api/2fa/decidir?challenge_id=' . $reto->challenge_id . '&dec=aprobar&sig=' . $firma('aprobar');
+            $denegarUrl = $base . '/api/2fa/decidir?challenge_id=' . $reto->challenge_id . '&dec=denegar&sig=' . $firma('denegar');
+            Mail::to($user->user_email)->send(new TwoFactorCodeMail($codigo, $aprobarUrl, $denegarUrl));
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error("Error enviando codigo 2FA a {$user->user_email}: " . $e->getMessage());
         }
@@ -246,6 +251,64 @@ class TwoFactorController extends Controller
         }
 
         return response()->json(['message' => 'Acceso aprobado.'], 200);
+    }
+
+    /**
+     * Botones "¿Eres tú?" del correo 2FA (tipo Google). Público pero firmado
+     * con APP_KEY: sin la firma correcta el enlace es inválido (403). Resuelve
+     * el reto a aprobado/rechazado y muestra una página de confirmación.
+     */
+    public function decidir(Request $request)
+    {
+        $validated = $request->validate([
+            'challenge_id' => 'required|string',
+            'dec' => 'required|in:aprobar,denegar',
+            'sig' => 'required|string',
+        ]);
+
+        $firma = hash_hmac('sha256', $validated['challenge_id'] . '|' . $validated['dec'], config('app.key'));
+        if (!hash_equals($firma, $validated['sig'])) {
+            abort(403, 'Enlace inválido o caducado.');
+        }
+
+        $reto = TwoFactorChallenge::where('challenge_id', $validated['challenge_id'])->first();
+
+        $resultado = $validated['dec'] === 'aprobar' ? 'aprobado' : 'rechazado';
+
+        if (!$reto || $reto->estado !== 'pendiente') {
+            $mensaje = 'Este intento de acceso ya fue respondido o no existe.';
+            return $this->paginaDecision($mensaje, '#666666');
+        }
+
+        if ($reto->expires_at->isPast()) {
+            $reto->update(['estado' => 'expirado', 'resolved_at' => Carbon::now()]);
+            $mensaje = 'Este intento de acceso ya expiró. Pide a la persona que vuelva a intentarlo.';
+            return $this->paginaDecision($mensaje, '#b55400');
+        }
+
+        $reto->update(['estado' => $resultado, 'resolved_at' => Carbon::now()]);
+
+        if ($validated['dec'] === 'aprobar') {
+            $mensaje = '¡Acceso aprobado! Ya puedes volver al dispositivo y continuar.';
+            return $this->paginaDecision($mensaje, '#00875A');
+        }
+
+        $mensaje = 'Acceso denegado. La persona que intentó entrar ya fue bloqueada.';
+        return $this->paginaDecision($mensaje, '#BE0000');
+    }
+
+    private function paginaDecision(string $mensaje, string $color): \Illuminate\Http\Response
+    {
+        return response(
+            '<!DOCTYPE html><html><head><meta charset="utf-8"><title>SENA Acces</title></head>'
+            . '<body style="margin:0;font-family:Inter,Arial,sans-serif;background:#f4f4f4;display:flex;align-items:center;justify-content:center;min-height:100vh;">'
+            . '<div style="background:#fff;border-radius:12px;box-shadow:0 6px 16px rgba(0,0,0,.12);max-width:440px;padding:40px;text-align:center;">'
+            . '<div style="color:#00875A;font-size:26px;font-weight:700;margin-bottom:18px;">SENA Acces</div>'
+            . '<div style="font-size:15px;line-height:1.5;color:#333;">' . htmlspecialchars($mensaje) . '</div>'
+            . '</div></body></html>',
+            200,
+            ['Content-Type' => 'text/html; charset=utf-8']
+        );
     }
 
     /**

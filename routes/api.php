@@ -58,6 +58,8 @@ Route::post('/email/verification-notification', [AuthController::class, 'resendV
 //   tarjeta "¿Eres tú?" en un dispositivo ya confiable).
 Route::post('/2fa/validar-codigo', [TwoFactorController::class, 'validarCodigo'])->middleware('throttle:login');
 Route::get('/2fa/estado/{challengeId}', [TwoFactorController::class, 'estado']);
+// Botones "¿Eres tú?" del correo (tipo Google): público pero con enlace firmado.
+Route::get('/2fa/decidir', [TwoFactorController::class, 'decidir']);
 
 // Salida en tiempo real: el frontend la dispara al cerrar la última pestaña/app
 // (fetch keepalive en pagehide) y puede revertirla si el cierre era un refresh.

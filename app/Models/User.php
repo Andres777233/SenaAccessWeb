@@ -28,6 +28,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'user_email',
         'user_password',
         'email_verified_at',
+        'two_factor_enabled',
         'user_coursenumber',
         'user_program',
         'user_documento_tipo',
@@ -54,6 +55,7 @@ class User extends Authenticatable implements MustVerifyEmail
     protected $casts = [
         'user_password' => 'hashed',
         'email_verified_at' => 'datetime',
+        'two_factor_enabled' => 'boolean',
     ];
 
     public function getAuthPassword()

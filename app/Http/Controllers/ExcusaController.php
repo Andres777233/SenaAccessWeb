@@ -29,7 +29,7 @@ class ExcusaController extends Controller
             ->update(['estado' => 'expirada']);
     }
 
-    // Instructor crea excusa con PIN (vigencia 60 min). Admin también puede.
+    // Instructor crea excusa con PIN (vigencia 15 min). Admin también puede.
     public function store(Request $request)
     {
         $user = $request->user();
@@ -66,7 +66,7 @@ class ExcusaController extends Controller
             'motivo' => $data['motivo'],
             'pin' => $pin,
             'estado' => 'pendiente',
-            'expira_en' => Carbon::now()->addMinutes(60),
+            'expira_en' => Carbon::now()->addMinutes(15),
         ]);
 
         $excusa->load(['aprendiz:id_usuario,user_name,user_lastname,user_identification,user_email', 'ambiente:id_ambiente,ambiente_nombre,ambiente_ubicacion', 'instructor:id_usuario,user_name,user_lastname']);

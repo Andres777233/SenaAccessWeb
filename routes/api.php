@@ -12,6 +12,7 @@ use App\Http\Controllers\NovedadController;
 use App\Http\Controllers\NotificacionController;
 use App\Http\Controllers\PasskeyController;
 use App\Http\Controllers\SugerenciaController;
+use App\Http\Controllers\TwoFactorController;
 
 /*
 |--------------------------------------------------------------------------
@@ -48,6 +49,15 @@ Route::get('/email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])
 Route::post('/email/verification-notification', [AuthController::class, 'resendVerification'])
     ->middleware('auth:sanctum')
     ->middleware('throttle:verification');
+
+// Verificación en dos pasos (2FA):
+// - validar-codigo y estado/{id} son PÚBLICOS: el dispositivo en pleno intento de
+//   login aún no tiene token; el challenge_id es un UUID con entropía suficiente
+//   para usarlo como secreto de ese único intento.
+// - config/activar/desactivar/pendientes/aprobar requieren sesión (perfil y la
+//   tarjeta "¿Eres tú?" en un dispositivo ya confiable).
+Route::post('/2fa/validar-codigo', [TwoFactorController::class, 'validarCodigo'])->middleware('throttle:login');
+Route::get('/2fa/estado/{challengeId}', [TwoFactorController::class, 'estado']);
 
 // Salida en tiempo real: el frontend la dispara al cerrar la última pestaña/app
 // (fetch keepalive en pagehide) y puede revertirla si el cierre era un refresh.
@@ -119,6 +129,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/notifications/unread-count', [NotificacionController::class, 'unreadCount']);
     Route::put('/notifications/{id}/read', [NotificacionController::class, 'markRead']);
     Route::put('/notifications/read-all', [NotificacionController::class, 'markAllRead']);
+
+    // Configuración y aprobación de la verificación en dos pasos.
+    Route::get('/2fa/estado-config', [TwoFactorController::class, 'estadoConfig']);
+    Route::post('/2fa/activar', [TwoFactorController::class, 'activar']);
+    Route::post('/2fa/desactivar', [TwoFactorController::class, 'desactivar']);
+    Route::get('/2fa/pendientes', [TwoFactorController::class, 'pendientes']);
+    Route::post('/2fa/aprobar', [TwoFactorController::class, 'aprobar']);
 
     // Buzón de sugerencias: cualquier rol envía y consulta las propias;
     // el admin gestiona la bandeja completa (index rol-aware) y responde/elimina.

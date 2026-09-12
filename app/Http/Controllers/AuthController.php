@@ -26,7 +26,7 @@ class AuthController extends Controller
     /**
      * Registra un movimiento (Entrada/Salida) del usuario en la tabla ingresos.
      */
-    private function registrarMovimiento(int $idUsuario, string $tipo): Ingreso
+    public function registrarMovimiento(int $idUsuario, string $tipo): Ingreso
     {
         return Ingreso::create([
             'ingreso_datetime' => Carbon::now('America/Bogota'),
@@ -122,6 +122,13 @@ class AuthController extends Controller
 
         if (!$user || !Hash::check($credentials['user_password'], $user->user_password)) {
             return response()->json(['message' => 'Credenciales incorrectas'], 401);
+        }
+
+        // Verificación en dos pasos: si está activa, NO se entrega token todavía.
+        // El login crea un reto y el usuario debe aprobarlo desde otro dispositivo
+        // (tarjeta "¿Eres tú?") o escribir el código enviado a su correo (fallback).
+        if ($user->two_factor_enabled) {
+            return app(TwoFactorController::class)->iniciarReto($user, $request);
         }
 
         // Crear registro de ingreso

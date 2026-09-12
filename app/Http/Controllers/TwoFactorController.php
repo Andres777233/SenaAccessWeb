@@ -34,8 +34,8 @@ class TwoFactorController extends Controller
             'fk_id_usuario' => $user->id_usuario,
             'estado' => 'pendiente',
             'code_hash' => Hash::make($codigo),
-            'code_expires_at' => Carbon::now('America/Bogota')->addMinutes(self::CODIGO_MINUTOS),
-            'expires_at' => Carbon::now('America/Bogota')->addMinutes(self::RETO_MINUTOS),
+            'code_expires_at' => Carbon::now()->addMinutes(self::CODIGO_MINUTOS),
+            'expires_at' => Carbon::now()->addMinutes(self::RETO_MINUTOS),
             'ip' => $request->ip(),
             'user_agent' => Str::limit($request->userAgent() ?? 'desconocido', 255),
         ]);
@@ -111,7 +111,7 @@ class TwoFactorController extends Controller
         // Invalida los retos pendientes: ya no deben aprobarse/validarse.
         TwoFactorChallenge::where('fk_id_usuario', $user->id_usuario)
             ->where('estado', 'pendiente')
-            ->update(['estado' => 'rechazado', 'resolved_at' => Carbon::now('America/Bogota')]);
+            ->update(['estado' => 'rechazado', 'resolved_at' => Carbon::now()]);
 
         return response()->json(['message' => 'Verificación en dos pasos desactivada.', 'two_factor_enabled' => false], 200);
     }
@@ -134,7 +134,7 @@ class TwoFactorController extends Controller
         }
 
         if ($reto->expires_at->isPast()) {
-            $reto->update(['estado' => 'expirado', 'resolved_at' => Carbon::now('America/Bogota')]);
+            $reto->update(['estado' => 'expirado', 'resolved_at' => Carbon::now()]);
             return response()->json(['message' => 'El intento de acceso expiró. Vuelve a intentarlo.'], 400);
         }
 
@@ -163,7 +163,7 @@ class TwoFactorController extends Controller
         }
 
         if ($reto->estado === 'pendiente' && $reto->expires_at->isPast()) {
-            $reto->update(['estado' => 'expirado', 'resolved_at' => Carbon::now('America/Bogota')]);
+            $reto->update(['estado' => 'expirado', 'resolved_at' => Carbon::now()]);
         }
 
         if ($reto->estado === 'pendiente') {
@@ -190,7 +190,7 @@ class TwoFactorController extends Controller
     {
         $reto = TwoFactorChallenge::where('fk_id_usuario', $request->user()->id_usuario)
             ->where('estado', 'pendiente')
-            ->where('expires_at', '>', Carbon::now('America/Bogota'))
+            ->where('expires_at', '>', Carbon::now())
             ->orderByDesc('id')
             ->first();
 
@@ -232,13 +232,13 @@ class TwoFactorController extends Controller
         }
 
         if ($reto->expires_at->isPast()) {
-            $reto->update(['estado' => 'expirado', 'resolved_at' => Carbon::now('America/Bogota')]);
+            $reto->update(['estado' => 'expirado', 'resolved_at' => Carbon::now()]);
             return response()->json(['message' => 'El intento de acceso ya expiró.'], 400);
         }
 
         $reto->update([
             'estado' => $validated['decision'] === 'aprobar' ? 'aprobado' : 'rechazado',
-            'resolved_at' => Carbon::now('America/Bogota'),
+            'resolved_at' => Carbon::now(),
         ]);
 
         if ($validated['decision'] === 'denegar') {
@@ -255,7 +255,7 @@ class TwoFactorController extends Controller
     {
         $reto->update([
             'estado' => 'aprobado',
-            'resolved_at' => Carbon::now('America/Bogota'),
+            'resolved_at' => Carbon::now(),
         ]);
 
         return $this->respuestaLogin($reto);

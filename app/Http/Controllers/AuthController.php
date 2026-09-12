@@ -116,6 +116,7 @@ class AuthController extends Controller
         $credentials = $request->validate([
             'user_email' => 'required|email',
             'user_password' => 'required',
+            'device_id' => 'nullable|string|max:64',
         ]);
 
         $user = User::where('user_email', $credentials['user_email'])->first();
@@ -124,11 +125,16 @@ class AuthController extends Controller
             return response()->json(['message' => 'Credenciales incorrectas'], 401);
         }
 
-        // Verificación en dos pasos: si está activa, NO se entrega token todavía.
-        // El login crea un reto y el usuario debe aprobarlo desde otro dispositivo
-        // (tarjeta "¿Eres tú?") o escribir el código enviado a su correo (fallback).
+        // Verificación en dos pasos: solo si está activa Y el dispositivo no es
+        // el original ya verificado. Una vez el dueño aprueba un teléfono, ese
+        // device_id queda confiable y el login manual o con huella entra directo.
+        // Solo un dispositivo nuevo (u otro teléfono) genera reto + correo.
         if ($user->two_factor_enabled) {
-            return app(TwoFactorController::class)->iniciarReto($user, $request);
+            $deviceId = $request->input('device_id');
+            $esConfiable = $deviceId && $user->trusted_device_id && hash_equals($user->trusted_device_id, $deviceId);
+            if (!$esConfiable) {
+                return app(TwoFactorController::class)->iniciarReto($user, $request);
+            }
         }
 
         // Crear registro de ingreso

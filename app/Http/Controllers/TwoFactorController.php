@@ -38,6 +38,7 @@ class TwoFactorController extends Controller
             'expires_at' => Carbon::now()->addMinutes(self::RETO_MINUTOS),
             'ip' => $request->ip(),
             'user_agent' => Str::limit($request->userAgent() ?? 'desconocido', 255),
+            'device_id' => $request->input('device_id'),
         ]);
 
         // Fallback: código de 6 dígitos al correo + botones "¿Eres tú?" tipo Google.
@@ -47,7 +48,7 @@ class TwoFactorController extends Controller
             $firma = fn (string $dec) => hash_hmac('sha256', $reto->challenge_id . '|' . $dec, config('app.key'));
             $aprobarUrl = $base . '/api/2fa/decidir?challenge_id=' . $reto->challenge_id . '&dec=aprobar&sig=' . $firma('aprobar');
             $denegarUrl = $base . '/api/2fa/decidir?challenge_id=' . $reto->challenge_id . '&dec=denegar&sig=' . $firma('denegar');
-            Mail::to($user->user_email)->send(new TwoFactorCodeMail($codigo, $aprobarUrl, $denegarUrl));
+            Mail::to($user->user_email)->send(new TwoFactorCodeMail($codigo, $aprobarUrl, $denegarUrl, $reto->challenge_id));
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error("Error enviando codigo 2FA a {$user->user_email}: " . $e->getMessage());
         }
@@ -250,6 +251,10 @@ class TwoFactorController extends Controller
             return response()->json(['message' => 'Acceso denegado.'], 200);
         }
 
+        // El dueño confirmó que es él: ese teléfono queda confiable y no vuelve
+        // a pedirle código en este dispositivo (solo en otros nuevos).
+        $this->confiarDispositivo($reto);
+
         return response()->json(['message' => 'Acceso aprobado.'], 200);
     }
 
@@ -290,6 +295,7 @@ class TwoFactorController extends Controller
 
         if ($validated['dec'] === 'aprobar') {
             $mensaje = '¡Acceso aprobado! Ya puedes volver al dispositivo y continuar.';
+            $this->confiarDispositivo($reto);
             return $this->paginaDecision($mensaje, '#00875A');
         }
 
@@ -300,15 +306,35 @@ class TwoFactorController extends Controller
     private function paginaDecision(string $mensaje, string $color): \Illuminate\Http\Response
     {
         return response(
-            '<!DOCTYPE html><html><head><meta charset="utf-8"><title>SENA Acces</title></head>'
+            '<!DOCTYPE html><html><head><meta charset="utf-8"><title>SENA Access</title></head>'
             . '<body style="margin:0;font-family:Inter,Arial,sans-serif;background:#f4f4f4;display:flex;align-items:center;justify-content:center;min-height:100vh;">'
             . '<div style="background:#fff;border-radius:12px;box-shadow:0 6px 16px rgba(0,0,0,.12);max-width:440px;padding:40px;text-align:center;">'
-            . '<div style="color:#00875A;font-size:26px;font-weight:700;margin-bottom:18px;">SENA Acces</div>'
+            . '<div style="color:#00875A;font-size:26px;font-weight:700;margin-bottom:18px;">SENA Access</div>'
             . '<div style="font-size:15px;line-height:1.5;color:#333;">' . htmlspecialchars($mensaje) . '</div>'
             . '</div></body></html>',
             200,
             ['Content-Type' => 'text/html; charset=utf-8']
         );
+    }
+
+    /**
+     * Marca el teléfono del reto como confiable para que el dueño no vuelva a
+     * ver el 2FA en ese dispositivo (manual o huella). Solo otros teléfonos
+     * generan reto nuevo.
+     */
+    private function confiarDispositivo(TwoFactorChallenge $reto): void
+    {
+        if (empty($reto->device_id)) {
+            return;
+        }
+        try {
+            $usuario = User::find($reto->fk_id_usuario);
+            if ($usuario && $usuario->trusted_device_id !== $reto->device_id) {
+                $usuario->forceFill(['trusted_device_id' => $reto->device_id])->save();
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('No se pudo confiar dispositivo 2FA: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -331,6 +357,9 @@ class TwoFactorController extends Controller
         if (!$user) {
             return response()->json(['message' => 'Usuario no encontrado.'], 404);
         }
+
+        // Reto aprobado = dueño verificado: confía en este teléfono de una vez.
+        $this->confiarDispositivo($reto);
 
         if (!$reto->access_token) {
             $token = $user->createToken('auth_token')->plainTextToken;

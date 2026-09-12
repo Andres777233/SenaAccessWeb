@@ -89,6 +89,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/my-equipment/{id}/comprobante', [EquipmentController::class, 'comprobante']);
     Route::post('/my-equipment', [EquipmentController::class, 'store']);
     Route::put('/my-profile', [AdminController::class, 'updateMyProfile']);
+    Route::post('/my-profile/verificar-password', [AdminController::class, 'verificarPassword']);
 
     // Rutas compartidas entre Admin e Instructor
     Route::middleware('admin_or_instructor')->prefix('admin')->group(function () {

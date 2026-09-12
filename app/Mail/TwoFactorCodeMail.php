@@ -16,15 +16,17 @@ class TwoFactorCodeMail extends Mailable
     public $code;
     public $aprobarUrl;
     public $denegarUrl;
+    public $challengeId;
 
     /**
      * Create a new message instance.
      */
-    public function __construct($code, $aprobarUrl, $denegarUrl)
+    public function __construct($code, $aprobarUrl, $denegarUrl, $challengeId = null)
     {
         $this->code = $code;
         $this->aprobarUrl = $aprobarUrl;
         $this->denegarUrl = $denegarUrl;
+        $this->challengeId = $challengeId;
     }
 
     /**
@@ -33,7 +35,7 @@ class TwoFactorCodeMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Código de verificación en dos pasos - SENA Acces',
+            subject: 'Tu código SENA Access es ' . $this->code . ' — vence en 10 minutos',
         );
     }
 

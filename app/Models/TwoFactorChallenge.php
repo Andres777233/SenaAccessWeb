@@ -20,6 +20,7 @@ class TwoFactorChallenge extends Model
         'access_token',
         'ip',
         'user_agent',
+        'device_id',
     ];
 
     protected $casts = [

@@ -10,7 +10,7 @@
             background-color: #07090D;
             margin: 0;
             padding: 0;
-            color: #F0F2F5;
+            color: #FFFFFF;
         }
         .preheader {
             display: none;
@@ -19,84 +19,107 @@
             opacity: 0;
             color: transparent;
         }
+        .page {
+            padding: 40px 12px;
+        }
         .container {
-            max-width: 600px;
-            margin: 40px auto;
-            background-color: #10141B;
-            border: 1px solid rgba(0, 135, 90, 0.35);
-            border-radius: 16px;
+            max-width: 560px;
+            margin: 0 auto;
+            background-color: #13161C;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 28px;
             overflow: hidden;
-            padding: 0 0 20px 0;
             text-align: center;
         }
-        .header {
-            background: linear-gradient(135deg, #00875A, #00B377);
-            padding: 24px 20px;
-            color: #ffffff;
+        .glow {
+            background: radial-gradient(circle at 15% 0%, rgba(2, 217, 20, 0.22), transparent 55%),
+                        radial-gradient(circle at 85% 10%, rgba(0, 191, 165, 0.14), transparent 50%),
+                        #13161C;
+            padding: 32px 28px 8px 28px;
         }
-        .header h1 {
+        .logo-badge {
+            display: inline-block;
+            background-color: #FFFFFF;
+            border-radius: 16px;
+            padding: 10px 18px;
+            margin-bottom: 16px;
+        }
+        .logo-badge img {
+            display: block;
+            width: 132px;
+            height: auto;
+        }
+        .brand {
             margin: 0;
-            font-size: 24px;
-            letter-spacing: 2px;
+            font-size: 28px;
+            font-weight: bold;
+            letter-spacing: 4px;
+            color: #02D914;
         }
-        .header p {
-            margin: 6px 0 0 0;
+        .brand-sub {
+            margin: 8px 0 0 0;
             font-size: 12px;
             letter-spacing: 3px;
-            opacity: 0.9;
+            color: #A0A0A0;
         }
         .content {
-            padding: 24px 28px 8px 28px;
+            padding: 20px 28px 8px 28px;
         }
         .content h2 {
-            margin: 0 0 8px 0;
-            font-size: 20px;
-            color: #ffffff;
+            margin: 0 0 10px 0;
+            font-size: 18px;
+            font-weight: bold;
+            color: #FFFFFF;
         }
         .content p {
             font-size: 14px;
             line-height: 1.6;
-            color: #C6CDD6;
+            color: #A0A0A0;
+        }
+        .content p strong {
+            color: #FFFFFF;
         }
         .code-box {
             background-color: #07090D;
-            border: 2px dashed #00B377;
+            border: 2px dashed #00E676;
             border-radius: 12px;
-            padding: 20px;
+            padding: 20px 12px;
             margin: 20px 0;
             font-size: 38px;
             font-weight: bold;
             letter-spacing: 8px;
-            color: #00E68A;
+            color: #00E676;
         }
         .btn {
             display: block;
             width: 100%;
-            padding: 16px;
+            padding: 14px;
             margin: 10px 0;
-            border-radius: 10px;
-            font-size: 16px;
+            border-radius: 12px;
+            font-size: 14px;
             font-weight: bold;
-            color: #ffffff;
+            letter-spacing: 2px;
             text-decoration: none;
             text-align: center;
             box-sizing: border-box;
         }
         .btn-app {
-            background-color: #00875A;
+            background-color: #02D914;
+            color: #000000;
         }
         .btn-approve {
             background-color: transparent;
-            border: 1px solid #00875A;
-            color: #00E68A;
+            border: 2px solid #02D914;
+            color: #02D914;
         }
         .btn-deny {
             background-color: transparent;
-            border: 1px solid #BE0000;
+            border: 2px solid #FF6B6B;
             color: #FF6B6B;
         }
         .footer {
-            margin-top: 24px;
+            padding: 0 28px 28px 28px;
+            margin-top: 16px;
             font-size: 12px;
             color: #8A94A3;
         }
@@ -104,36 +127,41 @@
 </head>
 <body>
     <div class="preheader">Tu código SENA Access es {{ $code }} — vence en 10 minutos. Escríbelo en la app sin abrir este correo.</div>
-    <div class="container">
-        <div class="header">
-            <h1>SENA ACCESS</h1>
-            <p>CONTROL DE ACCESO CCyS</p>
-        </div>
-        <div class="content">
-            <h2>Verificación en dos pasos</h2>
-            <p>Hola,</p>
-            <p><strong style="color: #ffffff;">Tu código es {{ $code }}.</strong> Escríbelo en la app SENA Access: vence en 10 minutos y no lo compartas con nadie.</p>
-
-            <div class="code-box">
-                {{ $code }}
+    <div class="page">
+        <div class="container">
+            <div class="glow">
+                <div class="logo-badge">
+                    <img src="{{ url('email/SenaAccessLogo.jpeg') }}" alt="SENA Access">
+                </div>
+                <p class="brand">SENA ACCESS</p>
+                <p class="brand-sub">CONTROL DE ACCESO CCyS</p>
             </div>
+            <div class="content">
+                <h2>Verificación en dos pasos</h2>
+                <p>Hola,</p>
+                <p><strong>Tu código es {{ $code }}.</strong> Escríbelo en la app SENA Access: vence en 10 minutos y no lo compartas con nadie.</p>
 
-            @if(!empty($challengeId))
-                <a href="senaaccess://2fa?challenge_id={{ $challengeId }}" class="btn btn-app">ABRIR LA APP Y VERIFICAR</a>
-            @endif
+                <div class="code-box">
+                    {{ $code }}
+                </div>
 
-            @if(!empty($aprobarUrl) && $aprobarUrl !== '#')
-                <p>¿Intentaste entrar tú? Responde sin escribir el código:</p>
-                <a href="{{ $aprobarUrl }}" class="btn btn-approve">SÍ, soy yo — aprobar acceso</a>
-                <a href="{{ $denegarUrl }}" class="btn btn-deny">NO, no fui yo — bloquear</a>
-            @else
-                <p>Si no pediste este código, ignora este correo y revisa tu cuenta.</p>
-            @endif
+                @if(!empty($challengeId))
+                    <a href="senaaccess://2fa?challenge_id={{ $challengeId }}" class="btn btn-app">ABRIR LA APP Y VERIFICAR</a>
+                @endif
 
-            <p>Este código expira en 10 minutos. No compartas este correo con nadie.</p>
-        </div>
-        <div class="footer">
-            &copy; {{ date('Y') }} SENA Access. Todos los derechos reservados.
+                @if(!empty($aprobarUrl) && $aprobarUrl !== '#')
+                    <p>¿Intentaste entrar tú? Responde sin escribir el código:</p>
+                    <a href="{{ $aprobarUrl }}" class="btn btn-approve">SÍ, SOY YO — APROBAR ACCESO</a>
+                    <a href="{{ $denegarUrl }}" class="btn btn-deny">NO, NO FUI YO — BLOQUEAR</a>
+                @else
+                    <p>Si no pediste este código, ignora este correo y revisa tu cuenta.</p>
+                @endif
+
+                <p>Este código expira en 10 minutos. No compartas este correo con nadie.</p>
+            </div>
+            <div class="footer">
+                &copy; {{ date('Y') }} SENA Access. Todos los derechos reservados.
+            </div>
         </div>
     </div>
 </body>

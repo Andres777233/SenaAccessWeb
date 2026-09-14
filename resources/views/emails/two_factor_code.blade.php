@@ -149,7 +149,13 @@
                     <a href="senaaccess://2fa?challenge_id={{ $challengeId }}" class="btn btn-app">ABRIR LA APP Y VERIFICAR</a>
                 @endif
 
-                @if(!empty($aprobarUrl) && $aprobarUrl !== '#')
+                @if(!empty($challengeId))
+                    <p>¿Intentaste entrar tú? Responde desde la app, sin escribir el código:</p>
+                    <a href="senaaccess://2fa?challenge_id={{ $challengeId }}&dec=aprobar" class="btn btn-approve">SÍ, SOY YO — APROBAR ACCESO</a>
+                    <a href="senaaccess://2fa?challenge_id={{ $challengeId }}&dec=denegar" class="btn btn-deny">NO, NO FUI YO — BLOQUEAR</a>
+                    <p style="font-size:12px;">Si el botón no abre la app (estás en computador), abre este correo en tu celular y toca el botón. Al aprobar o bloquear desde la app se inicia o se cierra la sesión del otro dispositivo.</p>
+                    <p style="font-size:12px;"><a href="{{ url('/2fa?challenge_id=' . $challengeId . '&dec=aprobar') }}" style="color:#02D914;">Abrir aprobación en la app (enlace universal)</a> · <a href="{{ url('/2fa?challenge_id=' . $challengeId . '&dec=denegar') }}" style="color:#FF6B6B;">Bloquear (enlace universal)</a></p>
+                @elseif(!empty($aprobarUrl) && $aprobarUrl !== '#')
                     <p>¿Intentaste entrar tú? Responde sin escribir el código:</p>
                     <a href="{{ $aprobarUrl }}" class="btn btn-approve">SÍ, SOY YO — APROBAR ACCESO</a>
                     <a href="{{ $denegarUrl }}" class="btn btn-deny">NO, NO FUI YO — BLOQUEAR</a>

@@ -55,8 +55,8 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         //VALIDADOR: DATOS NECESARIOS PARA EL REGISTRO
-        // El correo solo se acepta si termina en @gmail.com, @hotmail.com o
-        // @soy.sena.edu.co (evita correos falsos de otros dominios).
+        // El correo solo se acepta si termina en @gmail.com, @hotmail.com,
+        // @outlook.com o @soy.sena.edu.co (evita correos falsos de otros dominios).
         $validator = Validator::make($request->all(), [
             'user_identification' => 'required|string|max:20|unique:usuarios',
             'user_name' => 'required|string|max:50',
@@ -64,11 +64,11 @@ class AuthController extends Controller
             'user_email' => [
                 'required', 'string', 'email', 'max:100', 'unique:usuarios',
                 function ($attribute, $value, $fail) {
-                    $dominios = ['@gmail.com', '@hotmail.com', '@soy.sena.edu.co'];
+                    $dominios = ['@gmail.com', '@hotmail.com', '@outlook.com', '@soy.sena.edu.co'];
                     foreach ($dominios as $d) {
                         if (str_ends_with(strtolower($value), $d)) return;
                     }
-                    $fail('El correo debe ser @gmail.com, @hotmail.com o @soy.sena.edu.co.');
+                    $fail('El correo debe ser @gmail.com, @hotmail.com, @outlook.com o @soy.sena.edu.co.');
                 },
             ],
             'user_password' => 'required|string|min:8|confirmed',

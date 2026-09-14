@@ -248,6 +248,7 @@ class TwoFactorController extends Controller
         ]);
 
         if ($validated['decision'] === 'denegar') {
+            $this->notificarBloqueo($reto);
             return response()->json(['message' => 'Acceso denegado.'], 200);
         }
 
@@ -282,13 +283,13 @@ class TwoFactorController extends Controller
 
         if (!$reto || $reto->estado !== 'pendiente') {
             $mensaje = 'Este intento de acceso ya fue respondido o no existe.';
-            return $this->paginaDecision($mensaje, '#666666');
+            return $this->paginaDecision($mensaje, '#666666', $validated['challenge_id']);
         }
 
         if ($reto->expires_at->isPast()) {
             $reto->update(['estado' => 'expirado', 'resolved_at' => Carbon::now()]);
             $mensaje = 'Este intento de acceso ya expiró. Pide a la persona que vuelva a intentarlo.';
-            return $this->paginaDecision($mensaje, '#b55400');
+            return $this->paginaDecision($mensaje, '#b55400', $validated['challenge_id']);
         }
 
         $reto->update(['estado' => $resultado, 'resolved_at' => Carbon::now()]);
@@ -296,25 +297,58 @@ class TwoFactorController extends Controller
         if ($validated['dec'] === 'aprobar') {
             $mensaje = '¡Acceso aprobado! Ya puedes volver al dispositivo y continuar.';
             $this->confiarDispositivo($reto);
-            return $this->paginaDecision($mensaje, '#00875A');
+            return $this->paginaDecision($mensaje, '#00875A', $validated['challenge_id']);
         }
 
+        $this->notificarBloqueo($reto);
         $mensaje = 'Acceso denegado. La persona que intentó entrar ya fue bloqueada.';
-        return $this->paginaDecision($mensaje, '#BE0000');
+        return $this->paginaDecision($mensaje, '#BE0000', $validated['challenge_id']);
     }
 
-    private function paginaDecision(string $mensaje, string $color): \Illuminate\Http\Response
+    private function paginaDecision(string $mensaje, string $color, ?string $challengeId = null): \Illuminate\Http\Response
     {
+        $botonApp = '';
+        if (!empty($challengeId)) {
+            $id = htmlspecialchars($challengeId, ENT_QUOTES, 'UTF-8');
+            $botonApp = '<div style="margin-top:22px;"><a href="senaaccess://2fa?challenge_id=' . $id . '" '
+                . 'style="display:block;background:#02D914;color:#000;font-weight:700;font-size:14px;letter-spacing:1px;'
+                . 'text-decoration:none;border-radius:10px;padding:13px;">ABRIR LA APP Y CONTINUAR</a>'
+                . '<div style="font-size:12px;color:#666;margin-top:10px;">Si estás en computador, abre el correo en tu celular y toca el botón.</div></div>';
+        }
         return response(
             '<!DOCTYPE html><html><head><meta charset="utf-8"><title>SENA Access</title></head>'
             . '<body style="margin:0;font-family:Inter,Arial,sans-serif;background:#f4f4f4;display:flex;align-items:center;justify-content:center;min-height:100vh;">'
             . '<div style="background:#fff;border-radius:12px;box-shadow:0 6px 16px rgba(0,0,0,.12);max-width:440px;padding:40px;text-align:center;">'
             . '<div style="color:#00875A;font-size:26px;font-weight:700;margin-bottom:18px;">SENA Access</div>'
             . '<div style="font-size:15px;line-height:1.5;color:#333;">' . htmlspecialchars($mensaje) . '</div>'
+            . $botonApp
             . '</div></body></html>',
             200,
             ['Content-Type' => 'text/html; charset=utf-8']
         );
+    }
+
+    /**
+     * Avisa al dueño cuando alguien deniega un intento: lugar (IP), fecha, hora
+     * y dispositivo que intentó entrar. Best-effort: nunca rompe la respuesta.
+     */
+    private function notificarBloqueo(TwoFactorChallenge $reto): void
+    {
+        try {
+            $fecha = $reto->created_at
+                ? $reto->created_at->copy()->setTimezone('America/Bogota')->format('d/m/Y H:i')
+                : 'fecha desconocida';
+            $ip = $reto->ip ?: 'IP desconocida';
+            $disp = $reto->user_agent ? Str::limit($reto->user_agent, 100) : 'dispositivo desconocido';
+            app(NotificacionService::class)->crearParaUsuario(
+                $reto->fk_id_usuario,
+                'Intento de acceso bloqueado',
+                "Bloqueaste un intento de acceso a tu cuenta. Lugar (IP): {$ip}. Fecha y hora: {$fecha} (Bogotá). Dispositivo: {$disp}. Si no fuiste tú, cambia tu contraseña.",
+                'seguridad'
+            );
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('No se pudo notificar bloqueo 2FA: ' . $e->getMessage());
+        }
     }
 
     /**

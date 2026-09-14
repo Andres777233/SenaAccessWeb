@@ -128,6 +128,7 @@ const Register = () => {
                             <div className="col-12 user-box mb-0">
                                 <input type="email" name="user_email" required placeholder=" " value={formData.user_email} onChange={handleChange} />
                                 <label>Correo Electrónico</label>
+                                <div className="small opacity-50 mt-1">Usa @gmail.com, @hotmail.com, @outlook.com o @soy.sena.edu.co</div>
                                 {errors.user_email && <div className="text-danger mt-1 small d-flex align-items-center gap-1"><span className="material-symbols-outlined small" style={{ fontSize: '14px' }}>error</span> {errors.user_email[0]}</div>}
                             </div>
                             <div className="col-12 user-box mb-0">

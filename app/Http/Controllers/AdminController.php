@@ -12,6 +12,13 @@ use Illuminate\Support\Facades\Mail;
 use App\Models\Ingreso;
 use App\Models\Novedad;
 use App\Models\IngresoEquipo;
+use App\Models\Excusa;
+use App\Models\Fingerprint;
+use App\Models\Notificacion;
+use App\Models\Passkey;
+use App\Models\Sugerencia;
+use App\Models\TokenRecovery;
+use App\Models\TwoFactorChallenge;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -214,11 +221,11 @@ class AdminController extends Controller
             'user_email' => [
                 'required', 'email', 'unique:usuarios',
                 function ($attribute, $value, $fail) {
-                    $dominios = ['@gmail.com', '@hotmail.com', '@soy.sena.edu.co'];
+                    $dominios = ['@gmail.com', '@hotmail.com', '@outlook.com', '@soy.sena.edu.co'];
                     foreach ($dominios as $d) {
                         if (str_ends_with(strtolower($value), $d)) return;
                     }
-                    $fail('El correo debe ser @gmail.com, @hotmail.com o @soy.sena.edu.co.');
+                    $fail('El correo debe ser @gmail.com, @hotmail.com, @outlook.com o @soy.sena.edu.co.');
                 },
             ],
             'user_password' => 'required', //VALIDA QUE LA CONTRASEÑA EXISTA
@@ -252,10 +259,32 @@ class AdminController extends Controller
         return response()->json($user->load('role'), 201);
     }
 
-    public function deleteUser($id) //FUNCION PARA ELIMINAR USUARIO POR ID
+    public function deleteUser(Request $request, $id) //FUNCION PARA ELIMINAR USUARIO POR ID (borrado total: primero su rastro, luego el usuario)
     {
+        if ((int) $request->user()->id_usuario === (int) $id) { //NADIE PUEDE BORRARSE A SI MISMO
+            return response()->json(['message' => 'No puedes eliminar tu propia cuenta.'], 403);
+        }
         $user = User::findOrFail($id);
-        $user->delete(); //ELIMINA EL USUARIO
+        DB::transaction(function () use ($user) { //TODO JUNTO O NADA: si algo falla no queda medio borrado
+            $uid = $user->id_usuario;
+            $user->tokens()->delete(); //SESIONES SANCTUM
+            TwoFactorChallenge::where('fk_id_usuario', $uid)->delete(); //RETOS 2FA
+            TokenRecovery::where('fk_id_usuario', $uid)->delete(); //TOKENS DE RECUPERACION
+            Ingreso::where('fk_id_user', $uid)->delete(); //HISTORIAL DE ACCESOS
+            IngresoEquipo::where('fk_id_usuario', $uid)->delete(); //EQUIPOS
+            Novedad::where('fk_id_usuario', $uid)->delete(); //NOVEDADES
+            Excusa::where('fk_id_aprendiz', $uid)->orWhere('fk_id_instructor', $uid)->delete(); //EXCUSAS
+            Notificacion::where('fk_id_usuario', $uid)->delete(); //NOTIFICACIONES
+            Sugerencia::where('fk_id_usuario', $uid)->delete(); //SUGERENCIAS
+            Fingerprint::where('fk_id_user', $uid)->delete(); //HUELLAS
+            Passkey::where('fk_id_user', $uid)->delete(); //PASSKEYS
+            DB::table('ambiente_aprendiz')->where('fk_id_usuario', $uid)->delete(); //PIVOTES DE AMBIENTES
+            DB::table('ambiente_instructor')->where('fk_id_instructor', $uid)->delete();
+            if (\Illuminate\Support\Facades\Schema::hasTable('aprendiz_instructor')) {
+                DB::table('aprendiz_instructor')->where('fk_id_aprendiz', $uid)->orWhere('fk_id_instructor', $uid)->delete();
+            }
+            $user->delete(); //ELIMINA EL USUARIO
+        });
         return response()->json(['message' => 'Usuario eliminado']); //RETORNA MENSAJE DE ELIMINACION
     }
 
@@ -272,11 +301,11 @@ class AdminController extends Controller
             'user_email' => [
                 'required', 'email', 'unique:usuarios,user_email,' . $id . ',id_usuario',
                 function ($attribute, $value, $fail) {
-                    $dominios = ['@gmail.com', '@hotmail.com', '@soy.sena.edu.co'];
+                    $dominios = ['@gmail.com', '@hotmail.com', '@outlook.com', '@soy.sena.edu.co'];
                     foreach ($dominios as $d) {
                         if (str_ends_with(strtolower($value), $d)) return;
                     }
-                    $fail('El correo debe ser @gmail.com, @hotmail.com o @soy.sena.edu.co.');
+                    $fail('El correo debe ser @gmail.com, @hotmail.com, @outlook.com o @soy.sena.edu.co.');
                 },
             ],
             'user_password' => 'nullable|min:6',

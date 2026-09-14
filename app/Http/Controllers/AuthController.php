@@ -37,6 +37,82 @@ class AuthController extends Controller
     }
 
     /**
+     * Registra el acceso de un INVITADO (sin correo ni contraseña): crea un
+     * usuario con rol Aprendiz y un token QR de un solo uso con 60 minutos de
+     * validez. El visitante presenta el QR en recepción para registrar su entrada.
+     */
+    public function registerGuest(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'user_identification' => 'required|string|max:20|unique:usuarios,user_identification',
+            'user_name' => 'required|string|max:50',
+            'user_lastname' => 'required|string|max:50',
+            'user_documento_tipo' => 'nullable|in:CC,CE,TI,PAS',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $role = Role::where('rol_name', 'Aprendiz')->first();
+
+        $user = User::create([
+            'user_identification' => $request->user_identification,
+            'user_name' => $request->user_name,
+            'user_lastname' => $request->user_lastname,
+            'user_email' => 'guest_' . preg_replace('/\W/', '', $request->user_identification) . '@senaaccess.local',
+            'user_password' => Hash::make(Str::random(32)),
+            'user_documento_tipo' => $request->user_documento_tipo ?? 'CC',
+            'email_verified_at' => Carbon::now('America/Bogota'),
+            'fk_id_rol' => $role->id_rol ?? null,
+            'guest_qr_token' => Str::random(64),
+            'guest_qr_expires_at' => Carbon::now('America/Bogota')->addMinutes(60),
+            'guest_qr_used' => false,
+        ]);
+
+        return response()->json([
+            'message' => 'Código de invitado generado por 60 minutos',
+            'user' => $user,
+            'qr_token' => $user->guest_qr_token,
+            'qr_expires_at' => $user->guest_qr_expires_at->toIso8601String(),
+        ], 201);
+    }
+
+    /**
+     * Valida el QR de invitado en recepción: comprueba el token, la expiración
+     * (60 min) y que no haya sido usado. Si es válido registra la Entrada en el
+     * historial de ingresos (tipo "Validación QR") y marca el QR como usado.
+     */
+    public function validateGuestQr(Request $request)
+    {
+        $request->validate([
+            'qr_token' => 'required|string|max:64',
+        ]);
+
+        $user = User::where('guest_qr_token', $request->qr_token)->first();
+
+        if (!$user) {
+            return response()->json(['message' => 'Código de invitado no válido.'], 404);
+        }
+        if ($user->guest_qr_used) {
+            return response()->json(['message' => 'Este QR ya fue utilizado.'], 422);
+        }
+        if ($user->guest_qr_expires_at && $user->guest_qr_expires_at->lt(Carbon::now('America/Bogota'))) {
+            return response()->json(['message' => 'Este QR caducó.'], 422);
+        }
+
+        $user->guest_qr_used = true;
+        $user->save();
+
+        $this->registrarMovimiento($user->id_usuario, 'Validación QR');
+
+        return response()->json([
+            'message' => 'Entrada registrada para el invitado.',
+            'user' => $user,
+        ], 200);
+    }
+
+    /**
      * Código de recuperación legible de 8 caracteres sin caracteres ambiguos
      * (evita O/0, I/1, l). Se envía en texto plano por correo, pero en la base
      * de datos solo se guarda su hash bcrypt para que un robo de la tabla no

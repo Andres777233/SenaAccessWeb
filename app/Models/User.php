@@ -36,6 +36,9 @@ class User extends Authenticatable implements MustVerifyEmail
         'user_telefono',
         'fk_id_rol',
         'profile_photo_path',
+        'guest_qr_token',
+        'guest_qr_expires_at',
+        'guest_qr_used',
     ];
 
     /**
@@ -57,6 +60,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'user_password' => 'hashed',
         'email_verified_at' => 'datetime',
         'two_factor_enabled' => 'boolean',
+        'guest_qr_expires_at' => 'datetime',
+        'guest_qr_used' => 'boolean',
     ];
 
     public function getAuthPassword()

@@ -38,6 +38,10 @@ Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:lo
 Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:forgot-password');
 // Throttle por código: permite probar el código sin abrir fuerza bruta.
 Route::post('/reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:reset-password');
+// Invitados (público): el visitante genera su QR de un solo uso (60 min) y
+// recepción lo valida escaneándolo, registrando su Entrada en el historial.
+Route::post('/validate-guest-qr', [AuthController::class, 'validateGuestQr'])->middleware('throttle:login');
+Route::post('/register-guest', [AuthController::class, 'registerGuest']);
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
 
 // Verificación de correo: enlace firmado temporal (GET, firmado con 'signed');

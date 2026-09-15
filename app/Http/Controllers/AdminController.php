@@ -20,6 +20,7 @@ use App\Models\Sugerencia;
 use App\Models\TokenRecovery;
 use App\Models\TwoFactorChallenge;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
@@ -124,25 +125,138 @@ class AdminController extends Controller
             });
         }
 
-        $ingresos = $query->orderBy('ingreso_datetime', 'desc')->get();
-        $filename = 'historial_ingresos_' . Carbon::now('America/Bogota')->format('Y-m-d_His') . '.csv';
+        // Formato de salida: csv (default), xlsx o pdf. Lista blanca cerrada.
+        $formato = strtolower($request->input('formato', 'csv'));
+        if (!in_array($formato, ['csv', 'xlsx', 'pdf'], true)) {
+            $formato = 'csv';
+        }
 
-        return response()->streamDownload(function () use ($ingresos) {
+        // Columnas disponibles (lista blanca: nadie puede pedir otra).
+        $columnasDisponibles = [
+            'usuario' => 'Usuario',
+            'email' => 'Email',
+            'identificacion' => 'Identificación',
+            'tipo' => 'Tipo',
+            'lugar' => 'Lugar',
+            'fecha' => 'Fecha y Hora',
+        ];
+
+        // Selección de columnas: solo las solicitadas y válidas; si no, todas.
+        $colsSel = [];
+        if (is_string($request->input('cols')) && $request->input('cols') !== '') {
+            foreach (explode(',', $request->input('cols')) as $c) {
+                $c = trim(strtolower($c));
+                if (array_key_exists($c, $columnasDisponibles)) {
+                    $colsSel[] = $c;
+                }
+            }
+        }
+        if (empty($colsSel)) {
+            $colsSel = array_keys($columnasDisponibles);
+        }
+
+        $ingresos = $query->orderBy('ingreso_datetime', 'desc')->get();
+
+        // En hojas de cálculo (CSV/XLSX) hay que neutralizar fórmulas: una celda
+        // que empiece por = + - @ se ejecutaría al abrirla en Excel. Se antepone '.
+        $escaparHoja = ($formato === 'csv' || $formato === 'xlsx');
+        $hacerFila = function ($i) use ($colsSel, $escaparHoja) {
+            $datos = [
+                'usuario' => trim(($i->user->user_name ?? '') . ' ' . ($i->user->user_lastname ?? '')),
+                'email' => $i->user->user_email ?? '',
+                'identificacion' => $i->user->user_identification ?? '',
+                'tipo' => $i->ingreso_type,
+                'lugar' => $i->ingreso_place,
+                'fecha' => $i->ingreso_datetime,
+            ];
+            $fila = [];
+            foreach ($colsSel as $c) {
+                $valor = $datos[$c] ?? '';
+                if ($escaparHoja && is_string($valor) && $valor !== '' && in_array($valor[0], ['=', '+', '-', '@'], true)) {
+                    $valor = "'" . $valor;
+                }
+                $fila[] = $valor;
+            }
+            return $fila;
+        };
+
+        $titulos = array_map(fn ($c) => $columnasDisponibles[$c], $colsSel);
+
+        $base = 'historial_ingresos_' . Carbon::now('America/Bogota')->format('Y-m-d_His');
+
+        if ($formato === 'xlsx') {
+            $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+            $sheet = $spreadsheet->getActiveSheet();
+            $sheet->fromArray($titulos, null, 'A1');
+
+            $filaNum = 2;
+            foreach ($ingresos as $i) {
+                $sheet->fromArray($hacerFila($i), null, "A{$filaNum}");
+                $filaNum++;
+            }
+
+            $ultima = $sheet->getHighestColumn();
+            $header = $sheet->getStyle("A1:{$ultima}1");
+            $header->getFont()->setBold(true)->getColor()->setARGB('FFFFFFFF');
+            $header->getFill()
+                ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+                ->getStartColor()->setARGB('FF02D914');
+            foreach (range('A', $ultima) as $col) {
+                $sheet->getColumnDimension($col)->setAutoSize(true);
+            }
+
+            $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+            ob_start();
+            $writer->save('php://output');
+            $contenido = ob_get_clean();
+
+            return response($contenido, 200, [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'Content-Disposition' => 'attachment; filename="' . $base . '.xlsx"',
+            ]);
+        }
+
+        if ($formato === 'pdf') {
+            $filas = $ingresos->map($hacerFila)->all();
+            $pdf = Pdf::loadView('exports.ingresos_pdf', compact('titulos', 'filas'))
+                ->setPaper('a4', 'landscape');
+            return $pdf->download($base . '.pdf');
+        }
+
+        // csv (default): mantiene el comportamiento original, ahora con columnas libres.
+        return response()->streamDownload(function () use ($ingresos, $colsSel) {
             $handle = fopen('php://output', 'w');
             fwrite($handle, "\xEF\xBB\xBF");
-            fputcsv($handle, ['Usuario', 'Email', 'Identificación', 'Tipo', 'Lugar', 'Fecha y Hora']);
+            $titulosCsv = [];
+            foreach ($colsSel as $c) {
+                $titulosCsv[] = match ($c) {
+                    'usuario' => 'Usuario',
+                    'email' => 'Email',
+                    'identificacion' => 'Identificación',
+                    'tipo' => 'Tipo',
+                    'lugar' => 'Lugar',
+                    'fecha' => 'Fecha y Hora',
+                    default => $c,
+                };
+            }
+            fputcsv($handle, $titulosCsv);
             foreach ($ingresos as $i) {
-                fputcsv($handle, [
-                    trim(($i->user->user_name ?? '') . ' ' . ($i->user->user_lastname ?? '')),
-                    $i->user->user_email ?? '',
-                    $i->user->user_identification ?? '',
-                    $i->ingreso_type,
-                    $i->ingreso_place,
-                    $i->ingreso_datetime,
-                ]);
+                $datos = [
+                    'usuario' => trim(($i->user->user_name ?? '') . ' ' . ($i->user->user_lastname ?? '')),
+                    'email' => $i->user->user_email ?? '',
+                    'identificacion' => $i->user->user_identification ?? '',
+                    'tipo' => $i->ingreso_type,
+                    'lugar' => $i->ingreso_place,
+                    'fecha' => $i->ingreso_datetime,
+                ];
+                $fila = [];
+                foreach ($colsSel as $c) {
+                    $fila[] = $datos[$c] ?? '';
+                }
+                fputcsv($handle, $fila);
             }
             fclose($handle);
-        }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
+        }, $base . '.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 
     public function stats()

@@ -37,17 +37,14 @@
                         #13161C;
             padding: 32px 28px 8px 28px;
         }
-        .logo-badge {
-            display: inline-block;
-            background-color: #FFFFFF;
-            border-radius: 16px;
-            padding: 10px 18px;
-            margin-bottom: 16px;
+        .logo {
+            margin: 0 0 18px 0;
         }
-        .logo-badge img {
+        .logo img {
             display: block;
-            width: 132px;
+            width: 150px;
             height: auto;
+            margin: 0 auto;
         }
         .brand {
             margin: 0;
@@ -63,7 +60,7 @@
             color: #A0A0A0;
         }
         .content {
-            padding: 20px 28px 8px 28px;
+            padding: 20px 28px 12px 28px;
         }
         .content h2 {
             margin: 0 0 10px 0;
@@ -81,14 +78,20 @@
         }
         .code-box {
             background-color: #07090D;
-            border: 2px dashed #00E676;
+            border: 2px dashed #02D914;
             border-radius: 12px;
             padding: 20px 12px;
             margin: 20px 0;
             font-size: 32px;
             font-weight: bold;
             letter-spacing: 4px;
-            color: #00E676;
+            color: #02D914;
+            text-shadow: 0 0 18px rgba(2, 217, 20, 0.55);
+        }
+        .nota {
+            font-size: 12px;
+            color: #A0A0A0;
+            margin: 12px 0 0 0;
         }
         .footer {
             padding: 0 28px 28px 28px;
@@ -103,22 +106,26 @@
     <div class="page">
         <div class="container">
             <div class="glow">
-                <div class="logo-badge">
-                    <img src="{{ url('email/SenaAccessLogo.jpeg') }}" alt="SENA Access">
+                <div class="logo">
+                    <img src="{{ url('email/SenaCodeSolutions.png') }}" alt="SENA Code Solutions">
                 </div>
                 <p class="brand">SENA ACCESS</p>
                 <p class="brand-sub">CONTROL DE ACCESO CCyS</p>
             </div>
             <div class="content">
                 <h2>Recuperación de contraseña</h2>
-                <p>Hola,</p>
-                <p>Pediste restablecer tu contraseña. Usa este código en la app SENA Access para continuar:</p>
+                @if(!empty($nombre))
+                    <p><strong>Hola {{ $nombre }},</strong></p>
+                @else
+                    <p><strong>Hola,</strong></p>
+                @endif
+                <p>Usa este código en la app SENA Access para restablecer tu contraseña:</p>
 
                 <div class="code-box">
                     {{ $code }}
                 </div>
 
-                <p>Si no fuiste tú quien lo pidió, ignora este correo y revisa tu cuenta.</p>
+                <p class="nota">Si no fuiste tú quien lo pidió, ignora este correo y revisa tu cuenta.</p>
             </div>
             <div class="footer">
                 &copy; {{ date('Y') }} SENA Access. Todos los derechos reservados.

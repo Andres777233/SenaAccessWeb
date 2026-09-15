@@ -48,7 +48,13 @@ class TwoFactorController extends Controller
             $firma = fn (string $dec) => hash_hmac('sha256', $reto->challenge_id . '|' . $dec, config('app.key'));
             $aprobarUrl = $base . '/api/2fa/decidir?challenge_id=' . $reto->challenge_id . '&dec=aprobar&sig=' . $firma('aprobar');
             $denegarUrl = $base . '/api/2fa/decidir?challenge_id=' . $reto->challenge_id . '&dec=denegar&sig=' . $firma('denegar');
-            Mail::to($user->user_email)->send(new TwoFactorCodeMail($codigo, $aprobarUrl, $denegarUrl, $reto->challenge_id));
+            Mail::to($user->user_email)->send(new TwoFactorCodeMail(
+                $codigo,
+                $aprobarUrl,
+                $denegarUrl,
+                $reto->challenge_id,
+                trim(($user->user_name ?? '') . ' ' . ($user->user_lastname ?? ''))
+            ));
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error("Error enviando codigo 2FA a {$user->user_email}: " . $e->getMessage());
         }

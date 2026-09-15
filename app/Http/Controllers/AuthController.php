@@ -334,7 +334,10 @@ class AuthController extends Controller
         // El envío nunca debe colgar ni romper la petición: si falla (clave de correo inválida,
         // dominio no verificado, etc.) se registra el error y se responde igual al usuario.
         try {
-            Mail::to($user->user_email)->send(new RecoveryCodeMail($token));
+            Mail::to($user->user_email)->send(new RecoveryCodeMail(
+                $token,
+                trim(($user->user_name ?? '') . ' ' . ($user->user_lastname ?? ''))
+            ));
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error("Error enviando codigo de recuperacion a {$user->user_email}: " . $e->getMessage());
         }

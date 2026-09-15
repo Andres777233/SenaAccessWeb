@@ -14,13 +14,15 @@ class RecoveryCodeMail extends Mailable
     use Queueable, SerializesModels;
 
     public $code;
+    public $nombre;
 
     /**
      * Create a new message instance.
      */
-    public function __construct($code)
+    public function __construct($code, $nombre = '')
     {
         $this->code = $code;
+        $this->nombre = $nombre;
     }
 
     /**
@@ -29,7 +31,7 @@ class RecoveryCodeMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Código de Recuperación - SENA Acces',
+            subject: 'Código de Recuperación - SENA Access',
         );
     }
 

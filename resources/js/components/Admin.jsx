@@ -10,6 +10,16 @@ import Sugerencias from './Sugerencias';
 import { showAlert, showConfirm } from './CustomAlert';
 import downloadComprobante from '../utils/comprobante';
 
+// Columnas disponibles para exportar el historial (mismo orden del backend).
+const EXPORT_COLUMNAS = [
+    { key: 'usuario', label: 'Usuario' },
+    { key: 'email', label: 'Correo' },
+    { key: 'identificacion', label: 'Identificación' },
+    { key: 'tipo', label: 'Tipo' },
+    { key: 'lugar', label: 'Lugar' },
+    { key: 'fecha', label: 'Fecha y Hora' },
+];
+
 const Admin = () => {
     // HOOK: useNavigate se emplea para redirigir al Login si el usuario no tiene una sesión activa o el token expira.
     const navigate = useNavigate();
@@ -36,6 +46,10 @@ const Admin = () => {
     const [equipoRolFilter, setEquipoRolFilter] = useState(''); // Filtro por rol en historial de equipos
     const [equipoSort, setEquipoSort] = useState({ key: 'ingreso', dir: 'desc' }); // Orden de la tabla de equipos
     const [directorioTab, setDirectorioTab] = useState('instructores'); // 'instructores' | 'aprendices'
+    const [exportModalOpen, setExportModalOpen] = useState(false); // Modal de exportación del historial
+    const [exportFormato, setExportFormato] = useState('csv');      // Formato de exportación (csv/xlsx/pdf)
+    const [exportCols, setExportCols] = useState([]);               // Columnas elegidas para exportar
+    const [exportando, setExportando] = useState(false);            // Estado de la descarga en curso
     const [formData, setFormData] = useState({
         user_identification: '',
         user_name: '',
@@ -323,27 +337,48 @@ const handleCancelEdit = () => {
             showAlert('Error al actualizar usuario: ' + (error.response?.data?.message || 'Error desconocido'), 'error');
         }
     };
-    // Funcion para exportar el historial de ingresos a CSV
-    const handleExportCSV = async () => {
+    // Abre el modal para exportar el historial (formato + columnas a elegir).
+    const abrirExportar = () => {
+        setExportCols(EXPORT_COLUMNAS.map(c => c.key));
+        setExportFormato('csv');
+        setExportModalOpen(true);
+    };
+
+    // Alterna una columna en la selección de exportación.
+    const toggleExportCol = (key) => {
+        setExportCols(prev => prev.includes(key)
+            ? prev.filter(c => c !== key)
+            : [...prev, key]);
+    };
+
+    // Descarga el historial según el formato y las columnas elegidas.
+    const descargarExportacion = async () => {
         try {
+            setExportando(true);
             const params = new URLSearchParams();
             if (searchTermIngresos) params.append('q', searchTermIngresos);
             if (filterTipo) params.append('tipo', filterTipo);
             if (filterDesde) params.append('desde', filterDesde);
             if (filterHasta) params.append('hasta', filterHasta);
+            params.append('formato', exportFormato);
+            params.append('cols', exportCols.join(','));
 
             const response = await axios.get(`/api/admin/ingresos/export?${params.toString()}`, { responseType: 'blob' });
             const url = window.URL.createObjectURL(new Blob([response.data]));
+            const ext = exportFormato === 'xlsx' ? 'xlsx' : exportFormato === 'pdf' ? 'pdf' : 'csv';
             const link = document.createElement('a');
             link.href = url;
-            link.download = `historial_ingresos_${new Date().toISOString().slice(0, 10)}.csv`;
+            link.download = `historial_ingresos_${new Date().toISOString().slice(0, 10)}.${ext}`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
             window.URL.revokeObjectURL(url);
+            setExportModalOpen(false);
             showAlert('Exportación completada');
         } catch (error) {
             showAlert('Error al exportar: ' + (error.response?.data?.message || 'Error desconocido'), 'error');
+        } finally {
+            setExportando(false);
         }
     };
 
@@ -594,9 +629,9 @@ const handleCancelEdit = () => {
                                     <button className="btn btn-success action-btn flex-grow-1" onClick={() => fetchIngresos(1)}>
                                         <span className="material-symbols-outlined small">filter_alt</span> Filtrar
                                     </button>
-                                    <button className="btn btn-outline-success action-btn" onClick={handleExportCSV} title="Exportar CSV">
-                                        <span className="material-symbols-outlined small">download</span>
-                                    </button>
+<button className="btn btn-outline-success action-btn" onClick={abrirExportar} title="Exportar historial (CSV, Excel o PDF)">
+                                    <span className="material-symbols-outlined small">download</span>
+                                </button>
                                     <button className="btn btn-outline-secondary action-btn" onClick={() => { setSearchTermIngresos(''); setFilterTipo(''); setFilterDesde(''); setFilterHasta(''); fetchIngresos(1); }}>
                                         <span className="material-symbols-outlined small">restart_alt</span>
                                     </button>
@@ -1002,6 +1037,54 @@ const handleCancelEdit = () => {
             </main>
 
             <Footer />
+
+            {exportModalOpen && (
+                <>
+                    <div className="modal fade show d-block" tabIndex="-1" role="dialog" aria-modal="true">
+                        <div className="modal-dialog modal-dialog-centered">
+                            <div className="modal-content glass-box">
+                                <div className="modal-header border-0 pb-0">
+                                    <h5 className="modal-title fw-bold">Exportar historial</h5>
+                                    <button type="button" className="btn-close" onClick={() => setExportModalOpen(false)} aria-label="Cerrar"></button>
+                                </div>
+                                <div className="modal-body">
+                                    <label className="form-label opacity-75 small mb-2">Formato</label>
+                                    <div className="d-flex gap-2 mb-4 flex-wrap">
+                                        {[{ k: 'csv', l: 'CSV' }, { k: 'xlsx', l: 'Excel' }, { k: 'pdf', l: 'PDF' }].map(f => (
+                                            <button key={f.k} type="button"
+                                                className={`btn ${exportFormato === f.k ? 'btn-success' : 'btn-outline-success'} action-btn`}
+                                                onClick={() => setExportFormato(f.k)}>
+                                                {f.l}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <label className="form-label opacity-75 small mb-2">Columnas a incluir</label>
+                                    <div className="d-flex flex-column gap-2">
+                                        {EXPORT_COLUMNAS.map(c => (
+                                            <div key={c.key} className="form-check">
+                                                <input className="form-check-input" type="checkbox" id={`col-${c.key}`}
+                                                    checked={exportCols.includes(c.key)}
+                                                    onChange={() => toggleExportCol(c.key)} />
+                                                <label className="form-check-label" htmlFor={`col-${c.key}`}>{c.label}</label>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    {exportCols.length === 0 && (
+                                        <p className="text-danger small mt-2 mb-0">Selecciona al menos una columna.</p>
+                                    )}
+                                </div>
+                                <div className="modal-footer border-0 pt-0 d-flex gap-2 flex-wrap">
+                                    <button type="button" className="btn btn-outline-secondary action-btn flex-grow-1" onClick={() => setExportModalOpen(false)}>Cancelar</button>
+                                    <button type="button" className="btn btn-success action-btn flex-grow-1" onClick={descargarExportacion} disabled={exportando || exportCols.length === 0}>
+                                        {exportando ? 'Exportando...' : 'Descargar'}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="modal-backdrop fade show"></div>
+                </>
+            )}
         </div>
     );
 };

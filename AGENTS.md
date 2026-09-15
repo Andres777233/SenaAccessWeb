@@ -21,6 +21,13 @@ Backend Laravel 10 + MySQL + SPA React 19 (Vite, Bootstrap 5.3 CDN) de SennAcces
 ## Autoguardar historial (OBLIGATORIO)
 Al terminar cada tarea/sesión, agrega al FINAL de `## Historial` una entrada fechada `- YYYY-MM-DD — <qué cambiaste y por qué>`: MUY concreta, directa y clara (1-2 líneas máximo). Nunca borres ni reescribas entradas anteriores.
 
+## Agentes y skills (ruteo obligatorio)
+Agentes en `.opencode/agent/`, skills en `.opencode/skill/*/SKILL.md`.
+- `login|auth|2fa|api|controller|middleware|migracion` → agent `backend-laravel` + skill `laravel-secure-api`.
+- `pantalla web|tabla|rol admin|chart|app.jsx|Register.jsx|Admin.jsx` → agent `frontend-react` + skill `react-roles-ui`.
+- `test|hueco|seguridad|vulnerabilidad|revisar|pentest|403|401` → agent `qa-seguridad` + skills `pentest-sena` + `testing-flujos`.
+- Funcionalidad nueva end-to-end → `backend-laravel` + `frontend-react`, cierra `qa-seguridad`.
+
 ## Historial
 - 2026-08-22 — Fotos perfil: copié a `public/avatars/` (admin/aprendiz/instructor) y seteé `profile_photo_path` relativo vía tinker (ids 1, 12, 17); sin tocar código; Cloudinary solo para subidas reales.
 - 2026-08-20 — Buzón sugerencias completo: tabla+controlador (anti-spam 3/día, bandeja admin con filtros/paginación, responder/eliminar solo admin) + componente compartido `Sugerencias.jsx` en los 3 roles.
@@ -57,3 +64,5 @@ Al terminar cada tarea/sesión, agrega al FINAL de `## Historial` una entrada fe
 - 2026-09-12 — 2FA funcional v2.3 (pendiente push+deploy): correo `two_factor_code` solo deep-link directo (`senaaccess://2fa?challenge_id&dec=` + enlace universal `/2fa`, se quitan los botones https `/api/2fa/decidir` del correo pero la ruta sigue como fallback con botón "Abrir la app"); `TwoFactorController@aprobar/decidir` en denegar crea notificación "Intento de acceso bloqueado" con IP, fecha-hora Bogotá y dispositivo; `public/SenaAccessV2.3.apk` (21 MB, v2.3) listo para servir.
 - 2026-09-12 — Borrado total de usuarios (pendiente push+deploy): `AdminController@deleteUser` en `DB::transaction` borra primero el rastro (tokens Sanctum, 2FA, recovery, ingresos, equipos, novedades, excusas, notificaciones, sugerencias, huellas, passkeys, pivotes) y luego el usuario; 403 al auto-borrado; verificado por tinker (usuario con historial 200 y rastro en 0, admin intacto). `public/SenaAccessV2.5.apk` (21 MB, v2.5) listo para servir.
 - 2026-09-14 — APK v3.0 + QR verificado: `public/SenaAccessV3.0.apk` (22,213,049 bytes, md5 198777c3, debug v3.0 code 9 con VersionGuard) servido por ruta explícita en `routes/web.php` (el catch-all SPA devolvía el index para los .apk); descargado de Railway y verificado por md5. QR en `~/Escritorio/QR-SenaAccess-v3.0.png`.
+- 2026-09-14 — Agentes/skills senior instalados: `.opencode/agent/{backend-laravel,frontend-react,qa-seguridad}.md` + `.opencode/skill/{laravel-secure-api,react-roles-ui,testing-flujos,pentest-sena}/SKILL.md` y tabla de ruteo en AGENTS.md.
+- 2026-09-14 — Correos con nombre + logo SenaCodeSolutions + export multi-formato: `two_factor_code`/`recovery_code` reescritos (logo transparente SenaCodeSolutions.png por URL, saludo "Hola nombre apellido", código #02D914 con glow, botones píldora APROBAR #02D914 texto negro / BLOQUEAR #FF6B6B texto blanco); Mailables con `$nombre`; `AdminController@exportIngresos` ahora acepta `formato` (csv/xlsx/pdf, whitelist, phpspreadsheet instalado) y `cols` (whitelist: usuario,email,identificacion,tipo,lugar,fecha), JSON→XLSX con cabecera verde + PDF vía vista `exports/ingresos_pdf`; inyección de fórmula CSV/XLSX neutralizada (prefijo `'` a celdas `=+-@`); `Admin.jsx` con modal Exportar historial (chips formato + checkboxes columnas, download blob). QA seguridad: 0 P0/P1 nuevos; nixt: push+deploy a Railway (php artisan migrate -n) + `composer install` automático.

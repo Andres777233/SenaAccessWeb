@@ -17,16 +17,18 @@ class TwoFactorCodeMail extends Mailable
     public $aprobarUrl;
     public $denegarUrl;
     public $challengeId;
+    public $nombre;
 
     /**
      * Create a new message instance.
      */
-    public function __construct($code, $aprobarUrl, $denegarUrl, $challengeId = null)
+    public function __construct($code, $aprobarUrl, $denegarUrl, $challengeId = null, $nombre = '')
     {
         $this->code = $code;
         $this->aprobarUrl = $aprobarUrl;
         $this->denegarUrl = $denegarUrl;
         $this->challengeId = $challengeId;
+        $this->nombre = $nombre;
     }
 
     /**

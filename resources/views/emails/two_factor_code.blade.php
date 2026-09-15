@@ -37,17 +37,14 @@
                         #13161C;
             padding: 32px 28px 8px 28px;
         }
-        .logo-badge {
-            display: inline-block;
-            background-color: #FFFFFF;
-            border-radius: 16px;
-            padding: 10px 18px;
-            margin-bottom: 16px;
+        .logo {
+            margin: 0 0 18px 0;
         }
-        .logo-badge img {
+        .logo img {
             display: block;
-            width: 132px;
+            width: 150px;
             height: auto;
+            margin: 0 auto;
         }
         .brand {
             margin: 0;
@@ -81,21 +78,22 @@
         }
         .code-box {
             background-color: #07090D;
-            border: 2px dashed #00E676;
+            border: 2px dashed #02D914;
             border-radius: 12px;
             padding: 20px 12px;
             margin: 20px 0;
             font-size: 38px;
             font-weight: bold;
             letter-spacing: 8px;
-            color: #00E676;
+            color: #02D914;
+            text-shadow: 0 0 18px rgba(2, 217, 20, 0.55);
         }
         .btn {
             display: block;
             width: 100%;
             padding: 14px;
             margin: 10px 0;
-            border-radius: 12px;
+            border-radius: 999px;
             font-size: 14px;
             font-weight: bold;
             letter-spacing: 2px;
@@ -108,14 +106,20 @@
             color: #000000;
         }
         .btn-approve {
-            background-color: transparent;
-            border: 2px solid #02D914;
-            color: #02D914;
+            background-color: #02D914;
+            color: #000000;
+            border: none;
         }
         .btn-deny {
-            background-color: transparent;
-            border: 2px solid #FF6B6B;
-            color: #FF6B6B;
+            background-color: #FF6B6B;
+            color: #FFFFFF;
+            border: none;
+        }
+        .nota {
+            font-size: 12px;
+            color: #A0A0A0;
+            margin: 12px 0 0 0;
+            line-height: 1.5;
         }
         .footer {
             padding: 0 28px 28px 28px;
@@ -130,16 +134,20 @@
     <div class="page">
         <div class="container">
             <div class="glow">
-                <div class="logo-badge">
-                    <img src="{{ url('email/SenaAccessLogo.jpeg') }}" alt="SENA Access">
+                <div class="logo">
+                    <img src="{{ url('email/SenaCodeSolutions.png') }}" alt="SENA Code Solutions">
                 </div>
                 <p class="brand">SENA ACCESS</p>
                 <p class="brand-sub">CONTROL DE ACCESO CCyS</p>
             </div>
             <div class="content">
                 <h2>Verificación en dos pasos</h2>
-                <p>Hola,</p>
-                <p><strong>Tu código es {{ $code }}.</strong> Escríbelo en la app SENA Access: vence en 10 minutos y no lo compartas con nadie.</p>
+                @if(!empty($nombre))
+                    <p><strong>Hola {{ $nombre }},</strong></p>
+                @else
+                    <p><strong>Hola,</strong></p>
+                @endif
+                <p>Tu código es <strong>{{ $code }}</strong>. Escríbelo en la app SENA Access: vence en 10 minutos y no lo compartas con nadie.</p>
 
                 <div class="code-box">
                     {{ $code }}
@@ -150,20 +158,21 @@
                 @endif
 
                 @if(!empty($challengeId))
-                    <p>¿Intentaste entrar tú? Responde desde la app, sin escribir el código:</p>
-                    <a href="senaaccess://2fa?challenge_id={{ $challengeId }}&dec=aprobar" class="btn btn-approve">SÍ, SOY YO — APROBAR ACCESO</a>
-                    <a href="senaaccess://2fa?challenge_id={{ $challengeId }}&dec=denegar" class="btn btn-deny">NO, NO FUI YO — BLOQUEAR</a>
-                    <p style="font-size:12px;">Si el botón no abre la app (estás en computador), abre este correo en tu celular y toca el botón. Al aprobar o bloquear desde la app se inicia o se cierra la sesión del otro dispositivo.</p>
-                    <p style="font-size:12px;"><a href="{{ url('/2fa?challenge_id=' . $challengeId . '&dec=aprobar') }}" style="color:#02D914;">Abrir aprobación en la app (enlace universal)</a> · <a href="{{ url('/2fa?challenge_id=' . $challengeId . '&dec=denegar') }}" style="color:#FF6B6B;">Bloquear (enlace universal)</a></p>
+                    <p>¿Fuiste tú? Responde sin escribir el código:</p>
+                    <a href="senaaccess://2fa?challenge_id={{ $challengeId }}&dec=aprobar" class="btn btn-approve">SÍ, APROBAR ACCESO</a>
+                    <a href="senaaccess://2fa?challenge_id={{ $challengeId }}&dec=denegar" class="btn btn-deny">NO, BLOQUEAR</a>
+                    <p class="nota">Se aprueba o se bloquea el acceso del otro dispositivo.</p>
+                    <p class="nota">¿El botón no responde? <a href="{{ url('/2fa?challenge_id=' . $challengeId . '&dec=aprobar') }}" style="color:#02D914;">Abrir en la app</a> · <a href="{{ url('/2fa?challenge_id=' . $challengeId . '&dec=denegar') }}" style="color:#FF6B6B;">Bloquear</a></p>
                 @elseif(!empty($aprobarUrl) && $aprobarUrl !== '#')
-                    <p>¿Intentaste entrar tú? Responde sin escribir el código:</p>
-                    <a href="{{ $aprobarUrl }}" class="btn btn-approve">SÍ, SOY YO — APROBAR ACCESO</a>
-                    <a href="{{ $denegarUrl }}" class="btn btn-deny">NO, NO FUI YO — BLOQUEAR</a>
+                    <p>¿Fuiste tú? Responde sin escribir el código:</p>
+                    <a href="{{ $aprobarUrl }}" class="btn btn-approve">SÍ, APROBAR ACCESO</a>
+                    <a href="{{ $denegarUrl }}" class="btn btn-deny">NO, BLOQUEAR</a>
+                    <p class="nota">Se aprueba o se bloquea el acceso del otro dispositivo.</p>
                 @else
                     <p>Si no pediste este código, ignora este correo y revisa tu cuenta.</p>
                 @endif
 
-                <p>Este código expira en 10 minutos. No compartas este correo con nadie.</p>
+                <p class="nota">Este código expira en 10 minutos. No compartas este correo con nadie.</p>
             </div>
             <div class="footer">
                 &copy; {{ date('Y') }} SENA Access. Todos los derechos reservados.

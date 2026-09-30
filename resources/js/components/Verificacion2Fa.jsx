@@ -135,7 +135,7 @@ const Verificacion2Fa = () => {
         <div className="d-flex flex-column justify-content-center align-items-center vh-90 fade-in-up">
             <div className="glass-box p-4 p-md-5 mx-3">
                 <div className="text-center mb-4">
-                    <img src="https://www.sena.edu.co/Style%20Library/alayout/images/logoSena.png?rev=40" className="logosena mb-3" alt="Logo SENA" />
+                    <img src="/Icons/logoSena.png" className="logosena mb-3" alt="Logo SENA" />
                     <h2 className="landing-title fw-bold mb-0">Verificación en <span className="neon-text">dos pasos</span></h2>
                     <hr className="border-success opacity-25" />
                     <p className="mt-3 small opacity-75">Revisa tu correo e ingresa el código de 6 dígitos. Si aprobaste el acceso desde otro dispositivo, entrarás automáticamente.</p>

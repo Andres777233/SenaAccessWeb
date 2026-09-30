@@ -12,7 +12,6 @@ import Presentes from './Presentes';
 import QrInvitado from './QrInvitado';
 import DosPasos from './DosPasos';
 import RecorteFoto from './RecorteFoto';
-import Sugerencias from './Sugerencias';
 import { showAlert, showConfirm } from './CustomAlert';
 import downloadComprobante from '../utils/comprobante';
 
@@ -1185,8 +1184,6 @@ const handleCancelEdit = () => {
                 return <Novedades currentUser={currentUser} initialMode="form" />;
             case 'novedad_historial':
                 return <Novedades currentUser={currentUser} initialMode="history" />;
-            case 'sugerencias':
-                return <Sugerencias currentUser={currentUser} />;
             default:
                 return null;
         }

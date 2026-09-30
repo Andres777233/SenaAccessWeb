@@ -5,7 +5,6 @@ import Footer from './Footer';
 import Navbar from './Navbar';
 import Novedades from './Novedades';
 import StatsDashboard from './StatsDashboard';
-import Sugerencias from './Sugerencias';
 import Ambientes from './Ambientes';
 import Excusas from './Excusas';
 import QrInvitado from './QrInvitado';
@@ -338,10 +337,6 @@ const Instructor = () => {
                 return <Novedades currentUser={currentUser} initialMode="form" />;
             case 'novedad_historial':
                 return <Novedades currentUser={currentUser} initialMode="history" />;
-            case 'sugerencia_form':
-                return <Sugerencias currentUser={currentUser} initialMode="form" />;
-            case 'sugerencias':
-                return <Sugerencias currentUser={currentUser} initialMode="history" />;
             case 'ambientes':
                 return <Ambientes currentUser={currentUser} rol="instructor" />;
             case 'excusas':

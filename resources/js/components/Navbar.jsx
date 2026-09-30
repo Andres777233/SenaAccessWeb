@@ -69,6 +69,11 @@ const Navbar = ({ currentUser, view, setView, userFilter, setUserFilter, links =
                 {/* Logo compacto visible solo con el menú colapsado (móvil/tablet) */}
                 <img src="/Icons/logoSena.png" alt="SENA" className="d-lg-none ms-2" style={{ height: '34px' }} />
 
+                {/* Salir siempre visible: el de adentro queda oculto con el menú colapsado */}
+                <button className="btn-logout-minimal d-lg-none ms-auto" onClick={handleLogout} title="Cerrar Sesión">
+                    <span className="material-symbols-outlined">logout</span>
+                </button>
+
                 <div className="collapse navbar-collapse" id="navbarMain">
                     {/* Columna izquierda: Logo y Marca */}
                     <div className="navbar-brand-wrap d-flex align-items-center gap-3">

@@ -4,7 +4,6 @@ import axios from 'axios';
 import Footer from './Footer';
 import Navbar from './Navbar';
 import StatsDashboard from './StatsDashboard';
-import Sugerencias from './Sugerencias';
 import Excusas from './Excusas';
 import DosPasos from './DosPasos';
 import RecorteFoto from './RecorteFoto';
@@ -414,10 +413,6 @@ const Aprendiz = () => {
                         </div>
                     </div>
                 );
-            case 'sugerencia_form':
-                return <Sugerencias currentUser={currentUser} initialMode="form" />;
-            case 'sugerencias':
-                return <Sugerencias currentUser={currentUser} initialMode="history" />;
             case 'permisos':
                 return <Excusas currentUser={currentUser} rol="aprendiz" />;
             case 'profile':

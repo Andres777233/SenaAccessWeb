@@ -1092,6 +1092,8 @@ h2 { margin-bottom: 2rem; color: var(--primary-color); }
 .navbar-collapse {
     flex-basis: auto !important;
     align-items: center;
+    flex-wrap: wrap !important;
+    row-gap: 0.5rem;
 }
 
 .navbar-brand-wrap {
@@ -1100,7 +1102,11 @@ h2 { margin-bottom: 2rem; color: var(--primary-color); }
 }
 
 .navbar-center {
-    flex: 0 0 auto;
+    flex: 0 1 auto;
+    min-width: 0;
+    flex-wrap: wrap;
+    justify-content: center;
+    row-gap: 0.25rem;
 }
 
 .navbar-actions {

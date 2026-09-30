@@ -14,7 +14,6 @@ use App\Models\Novedad;
 use App\Models\IngresoEquipo;
 use App\Models\Excusa;
 use App\Models\Notificacion;
-use App\Models\Sugerencia;
 use App\Models\TokenRecovery;
 use App\Models\TwoFactorChallenge;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
@@ -423,7 +422,6 @@ class AdminController extends Controller
             Novedad::where('fk_id_usuario', $uid)->delete(); //NOVEDADES
             Excusa::where('fk_id_aprendiz', $uid)->orWhere('fk_id_instructor', $uid)->delete(); //EXCUSAS
             Notificacion::where('fk_id_usuario', $uid)->delete(); //NOTIFICACIONES
-            Sugerencia::where('fk_id_usuario', $uid)->delete(); //SUGERENCIAS
             DB::table('ambiente_aprendiz')->where('fk_id_usuario', $uid)->delete(); //PIVOTES DE AMBIENTES
             DB::table('ambiente_instructor')->where('fk_id_instructor', $uid)->delete();
             if (\Illuminate\Support\Facades\Schema::hasTable('aprendiz_instructor')) {

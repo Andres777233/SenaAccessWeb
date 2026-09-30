@@ -9,7 +9,6 @@ use App\Http\Controllers\EquipmentController;
 use App\Http\Controllers\ExcusaController;
 use App\Http\Controllers\NovedadController;
 use App\Http\Controllers\NotificacionController;
-use App\Http\Controllers\SugerenciaController;
 use App\Http\Controllers\TwoFactorController;
 
 /*
@@ -130,16 +129,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/2fa/desactivar', [TwoFactorController::class, 'desactivar']);
     Route::get('/2fa/pendientes', [TwoFactorController::class, 'pendientes']);
     Route::post('/2fa/aprobar', [TwoFactorController::class, 'aprobar']);
-
-    // Buzón de sugerencias: cualquier rol envía y consulta las propias;
-    // el admin gestiona la bandeja completa (index rol-aware) y responde/elimina.
-    Route::get('/my-sugerencias', [SugerenciaController::class, 'getMySugerencias']);
-    Route::post('/sugerencias', [SugerenciaController::class, 'store']);
-    Route::get('/sugerencias', [SugerenciaController::class, 'index']);
-    Route::middleware('admin')->group(function () {
-        Route::put('/admin/sugerencias/{id}/responder', [SugerenciaController::class, 'respond']);
-        Route::delete('/admin/sugerencias/{id}', [SugerenciaController::class, 'destroy']);
-    });
 
     // Ambientes (admin crea, instructor gestiona sus ambientes/aprendices).
     Route::get('/ambientes', [AmbienteController::class, 'index']);

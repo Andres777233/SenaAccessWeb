@@ -21,6 +21,9 @@ use Illuminate\Support\Facades\Route;
 Route::get('/SenaAccessV3.0.apk', function () {
     return response()->download(public_path('SenaAccessV3.0.apk'));
 });
+Route::get('/SenaAccessV4.1.apk', function () {
+    return response()->download(public_path('SenaAccessV4.1.apk'));
+});
 Route::get('/SenaAccessV3.7.apk', function () {
     return response()->download(public_path('SenaAccessV3.7.apk'));
 });

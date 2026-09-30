@@ -8,4 +8,5 @@ storage/framework/sessions/
 storage/framework/views/
 bootstrap/cache/*.php
 public/SenaAccess*.apk
+!public/SenaAccessV4.1.apk
 *.log

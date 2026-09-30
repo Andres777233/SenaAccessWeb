@@ -6,6 +6,12 @@ import Navbar from './Navbar';
 import Novedades from './Novedades';
 import StatsDashboard from './StatsDashboard';
 import EquipmentForm from './EquipmentForm';
+import Ambientes from './Ambientes';
+import Excusas from './Excusas';
+import Presentes from './Presentes';
+import QrInvitado from './QrInvitado';
+import DosPasos from './DosPasos';
+import RecorteFoto from './RecorteFoto';
 import Sugerencias from './Sugerencias';
 import { showAlert, showConfirm } from './CustomAlert';
 import downloadComprobante from '../utils/comprobante';
@@ -34,6 +40,7 @@ const Admin = () => {
     const [ingresos, setIngresos] = useState([]); // Lista de ingresos
     const [loading, setLoading] = useState(true); // Estado de carga
     const [editingUser, setEditingUser] = useState(null); // Usuario que se está editando
+    const [creatingUser, setCreatingUser] = useState(false); // Formulario en modo crear
     const [searchTermUsers, setSearchTermUsers] = useState(''); // Busqueda de usuarios
     const [searchTermIngresos, setSearchTermIngresos] = useState('');   // Busqueda de ingresos
     const [filterTipo, setFilterTipo] = useState('');                    // Filtro por tipo (Entrada/Salida)
@@ -63,16 +70,20 @@ const Admin = () => {
         fk_id_rol: ''
     });
     const [formErrors, setFormErrors] = useState({}); // Errores de validación por campo
+    const [perfilArchivo, setPerfilArchivo] = useState(null); // Foto elegida para recortar
+    const [claveNueva, setClaveNueva] = useState(''); // Nueva contraseña del admin
+    const [codigo2faAdm, setCodigo2faAdm] = useState(''); // Código 2FA del correo
+    const [codigoSolicitadoAdm, setCodigoSolicitadoAdm] = useState(false); // Backend pidió el código
 
-    // Desplaza la vista hasta el formulario al iniciar la edición de un usuario
+    // Desplaza la vista hasta el formulario al iniciar la edición o creación de un usuario
     useEffect(() => {
-        if (editingUser) {
+        if (editingUser || creatingUser) {
             const timer = setTimeout(() => {
                 userFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }, 100);
             return () => clearTimeout(timer);
         }
-    }, [editingUser]);
+    }, [editingUser, creatingUser]);
 
     // Refresca los datos de la vista actual al cambiar de vista y al enfocar la pestaña,
     // para que los cambios hechos por otros roles se reflejen sin recargar la página.
@@ -126,11 +137,37 @@ const Admin = () => {
             await downloadComprobante(item.id_ingreso_equipo);
         } catch (error) {
             console.error('Error al descargar comprobante:', error);
-            showAlert('error', error.response?.status === 403
+            showAlert(error.response?.status === 403
                 ? 'No tienes permiso para descargar este comprobante.'
-                : 'No se pudo descargar el comprobante. Intenta de nuevo.');
+                : 'No se pudo descargar el comprobante. Intenta de nuevo.', 'error');
         }
     }
+
+    // Marca un equipo como devuelto (POST /api/admin/equipment/{id}/return + recarga).
+    const handleDevolverEquipo = async (id) => {
+        const confirmed = await showConfirm('¿Marcar este equipo como devuelto?');
+        if (!confirmed) return;
+        try {
+            const response = await axios.post(`/api/admin/equipment/${id}/return`);
+            await fetchEquipment();
+            showAlert(response.data.message || 'Equipo devuelto con éxito');
+        } catch (error) {
+            showAlert('Error al devolver equipo: ' + (error.response?.data?.message || 'Error desconocido'), 'error');
+        }
+    };
+
+    // Elimina un equipo (DELETE /api/admin/equipment/{id} + error real).
+    const handleEliminarEquipo = async (id) => {
+        const confirmed = await showConfirm('¿Estás seguro de eliminar este equipo?');
+        if (!confirmed) return;
+        try {
+            const response = await axios.delete(`/api/admin/equipment/${id}`);
+            setEquipmentList(equipmentList.filter(item => item.id_ingreso_equipo !== id));
+            showAlert(response.data.message || 'Equipo eliminado');
+        } catch (error) {
+            showAlert('Error al eliminar equipo: ' + (error.response?.data?.message || 'Error desconocido'), 'error');
+        }
+    };
 
     const fetchIngresos = async (page = 1) => {
         try {
@@ -258,6 +295,7 @@ const Admin = () => {
     };
     // Funcion para editar un usuario
     const handleEditClick = (user) => {
+        setCreatingUser(false);
         setEditingUser(user.id_usuario);
         setFormData({
             user_identification: user.user_identification || '',
@@ -273,9 +311,10 @@ const Admin = () => {
         profile_photo_path: user.profile_photo_path || null
     });
 };
-// Funcion para cancelar la edicion de un usuario
+// Funcion para cancelar la edicion o creación de un usuario
 const handleCancelEdit = () => {
     setEditingUser(null);
+    setCreatingUser(false);
     setFormErrors({});
     setFormData({
         user_identification: '',
@@ -337,6 +376,49 @@ const handleCancelEdit = () => {
             showAlert('Error al actualizar usuario: ' + (error.response?.data?.message || 'Error desconocido'), 'error');
         }
     };
+    // Abre el mismo formulario de edición en modo crear
+    const handleNewUser = () => {
+        setEditingUser(null);
+        setCreatingUser(true);
+        setFormErrors({});
+        setFormData({
+            user_identification: '',
+            user_name: '',
+            user_lastname: '',
+            user_email: '',
+            user_password: '',
+            user_coursenumber: '',
+            user_program: '',
+            user_documento_tipo: 'CC',
+            user_telefono: '',
+            fk_id_rol: ''
+        });
+    };
+    // Funcion para crear un usuario (POST /api/admin/users, mismos campos que editar)
+    const handleCreate = async (e) => {
+        e.preventDefault();
+        try {
+            const data = new FormData();
+            Object.keys(formData).forEach(key => {
+                data.append(key, formData[key]);
+            });
+
+            const response = await axios.post('/api/admin/users', data, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+
+            setUsers([...users, response.data]);
+            showAlert('Usuario creado con éxito');
+            handleCancelEdit();
+        } catch (error) {
+            if (error.response?.data?.errors) {
+                setFormErrors(error.response.data.errors);
+            }
+            showAlert('Error al crear usuario: ' + (error.response?.data?.message || 'Error desconocido'), 'error');
+        }
+    };
     // Abre el modal para exportar el historial (formato + columnas a elegir).
     const abrirExportar = () => {
         setExportCols(EXPORT_COLUMNAS.map(c => c.key));
@@ -396,6 +478,60 @@ const handleCancelEdit = () => {
         }
     };
 
+    // Campos base del perfil propio para PUT /api/my-profile (multipart + _method=PUT).
+    const datosBaseMiPerfil = () => {
+        const data = new FormData();
+        data.append('user_identification', currentUser.user_identification || '');
+        data.append('user_name', currentUser.user_name || '');
+        data.append('user_lastname', currentUser.user_lastname || '');
+        data.append('user_email', currentUser.user_email || '');
+        data.append('_method', 'PUT');
+        return data;
+    };
+
+    // Sube la foto recortada (campo `image`, max 5MB) a mi perfil.
+    const subirFotoMiPerfil = async (blob) => {
+        try {
+            const data = datosBaseMiPerfil();
+            data.append('image', blob, 'foto.jpg');
+            const response = await axios.post('/api/my-profile', data, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            setCurrentUser(response.data);
+            setPerfilArchivo(null);
+            showAlert('Foto de perfil actualizada');
+        } catch (error) {
+            const detalle = error.response?.data?.errors?.image?.[0];
+            showAlert('Error al subir foto: ' + (detalle || error.response?.data?.message || 'Error desconocido'), 'error');
+        }
+    };
+
+    // Cambia mi contraseña; con 2FA activo el backend envia un codigo de
+    // 6 digitos al correo (422 + errors.two_factor_code) y se reenvia con el codigo.
+    const cambiarClaveMiPerfil = async (e) => {
+        e.preventDefault();
+        try {
+            const data = datosBaseMiPerfil();
+            data.append('user_password', claveNueva);
+            if (codigo2faAdm) data.append('two_factor_code', codigo2faAdm);
+            const response = await axios.post('/api/my-profile', data, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            setCurrentUser(response.data);
+            setClaveNueva('');
+            setCodigo2faAdm('');
+            setCodigoSolicitadoAdm(false);
+            showAlert('Contraseña actualizada');
+        } catch (error) {
+            if (error.response?.data?.errors?.two_factor_code) {
+                setCodigoSolicitadoAdm(true);
+                showAlert(error.response?.data?.message || 'Revisa tu correo e ingresa el código de 6 dígitos.');
+            } else {
+                showAlert('Error al cambiar contraseña: ' + (error.response?.data?.message || 'Error desconocido'), 'error');
+            }
+        }
+    };
+
     if (loading) return <div className="text-white text-center mt-5">Cargando...</div>;
 
     const fieldError = (name) => (
@@ -412,13 +548,13 @@ const handleCancelEdit = () => {
             case 'users':
                 return (
                     <div className="fade-in-up">
-                        {editingUser && (
+                        {(editingUser || creatingUser) && (
                             <div ref={userFormRef} className="glass-box p-4 mb-5 mx-auto fade-in-up" style={{ maxWidth: '600px' }}>
                                 <div className="section-header">
-                                    <h3 className="mb-0">Editar Perfil de Usuario</h3>
+                                    <h3 className="mb-0">{creatingUser ? 'Crear Nuevo Usuario' : 'Editar Perfil de Usuario'}</h3>
                                 </div>
                                 <div className="admin-scrollable-container" style={{ maxHeight: '55vh' }}>
-                                    <form onSubmit={handleUpdate}>
+                                    <form onSubmit={creatingUser ? handleCreate : handleUpdate}>
                                         <div className="row">
                                             <div className="col-12 mb-3">
 
@@ -457,8 +593,8 @@ const handleCancelEdit = () => {
                                                 {fieldError('user_email')}
                                             </div>
                                             <div className="col-12 mb-3">
-                                                <label className="form-label opacity-75 small">Seguridad (Opcional)</label>
-                                                <input type="password" name="user_password" placeholder="Nueva contraseña..." className={`form-control ${formErrors.user_password ? 'is-invalid' : ''}`} value={formData.user_password} onChange={handleChange} />
+                                                <label className="form-label opacity-75 small">{creatingUser ? 'Contraseña' : 'Seguridad (Opcional)'}</label>
+                                                <input type="password" name="user_password" placeholder={creatingUser ? 'Contraseña obligatoria...' : 'Nueva contraseña...'} className={`form-control ${formErrors.user_password ? 'is-invalid' : ''}`} value={formData.user_password} onChange={handleChange} required={creatingUser} />
                                                 {fieldError('user_password')}
                                             </div>
                                             {esRolAprendiz && (
@@ -488,7 +624,7 @@ const handleCancelEdit = () => {
                                         </div>
                                         <div className="d-flex gap-2 mt-4">
                                             <button type="submit" className="btn btn-success action-btn flex-grow-1 py-2">
-                                                <span className="material-symbols-outlined">save</span> Actualizar Datos
+                                                <span className="material-symbols-outlined">{creatingUser ? 'person_add' : 'save'}</span> {creatingUser ? 'Crear Usuario' : 'Actualizar Datos'}
                                             </button>
                                             <button type="button" className="btn btn-outline-secondary action-btn px-4" onClick={handleCancelEdit}>
                                                 Cancelar
@@ -499,14 +635,18 @@ const handleCancelEdit = () => {
                             </div>
                         )}
 
-                        {!editingUser && (
+                        {!editingUser && !creatingUser ? (
                             <div className="mx-auto" style={{ maxWidth: '1200px' }}>
                                 <div className="d-flex justify-content-between align-items-center mb-5 flex-wrap gap-3 px-3 px-md-4">
                                     <div className="section-header mb-0">
                                         <h3 className="mb-0">Gestión de {userFilter === 'all' ? 'Usuarios' : userFilter}</h3>
                                         <p className="small opacity-50 mb-0">Total: {filteredUsers.length} registros</p>
                                     </div>
-                                    <div className="input-group search-input-group" style={{ maxWidth: '350px' }}>
+                                    <div className="d-flex gap-2 flex-wrap align-items-center">
+                                        <button className="btn btn-success action-btn" onClick={handleNewUser}>
+                                            <span className="material-symbols-outlined small">person_add</span> Nuevo usuario
+                                        </button>
+                                        <div className="input-group search-input-group" style={{ maxWidth: '350px' }}>
                                         <span className="input-group-text">
                                             <span className="material-symbols-outlined">search</span>
                                         </span>
@@ -517,6 +657,7 @@ const handleCancelEdit = () => {
                                             value={searchTermUsers}
                                             onChange={(e) => setSearchTermUsers(e.target.value)}
                                         />
+                                        </div>
                                     </div>
                                 </div>
 
@@ -581,7 +722,7 @@ const handleCancelEdit = () => {
                                     </button>
                                 </div>
                             </div>
-                        )}
+                        ) : null}
                     </div>
                 );
             case 'historial':
@@ -703,6 +844,14 @@ const handleCancelEdit = () => {
                 return (
                     <EquipmentForm adminMode onSaved={fetchEquipment} />
                 );
+            case 'ambientes':
+                return <Ambientes currentUser={currentUser} rol="admin" />;
+            case 'excusas':
+                return <Excusas currentUser={currentUser} rol="admin" />;
+            case 'presentes':
+                return <Presentes />;
+            case 'validar_qr':
+                return <QrInvitado />;
             case 'historial_equipos':
                 const equiposFiltradosPorRol = filteredEquipment.filter(item => {
                     if (!equipoRolFilter) return true;
@@ -782,6 +931,7 @@ const handleCancelEdit = () => {
                                             {sortHeader('Ingreso', 'ingreso')}
                                             <th>Devolución</th>
                                             <th>Comprobante</th>
+                                            <th>Acciones</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -825,9 +975,21 @@ const handleCancelEdit = () => {
                                                         <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>download</span> PDF
                                                     </button>
                                                 </td>
+                                                <td data-label="Acciones">
+                                                    <div className="d-flex gap-1 flex-wrap">
+                                                        {!item.equipo_return_datetime && (
+                                                            <button type="button" className="action-btn btn btn-outline-warning btn-sm d-inline-flex align-items-center gap-1" onClick={() => handleDevolverEquipo(item.id_ingreso_equipo)} title="Marcar como devuelto">
+                                                                <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>assignment_return</span> Devolver
+                                                            </button>
+                                                        )}
+                                                        <button type="button" className="action-btn btn btn-outline-danger btn-sm d-inline-flex align-items-center gap-1" onClick={() => handleEliminarEquipo(item.id_ingreso_equipo)} title="Eliminar equipo">
+                                                            <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>delete</span> Eliminar
+                                                        </button>
+                                                    </div>
+                                                </td>
                                             </tr>
                                         )) : (
-                                            <tr><td colSpan="10" className="text-center py-4 opacity-50">No se encontraron equipos registrados.</td></tr>
+                                            <tr><td colSpan="11" className="text-center py-4 opacity-50">No se encontraron equipos registrados.</td></tr>
                                         )}
                                     </tbody>
                                 </table>
@@ -980,6 +1142,43 @@ const handleCancelEdit = () => {
                                 Editar Información de Perfil
                             </button>
                         </div>
+
+                        <div className="mt-4 pt-3 border-top border-success border-opacity-10 text-start">
+                            <label className="form-label opacity-75 small">Foto de perfil</label>
+                            {perfilArchivo ? (
+                                <RecorteFoto
+                                    archivo={perfilArchivo}
+                                    alCancelar={() => setPerfilArchivo(null)}
+                                    alConfirmar={subirFotoMiPerfil}
+                                />
+                            ) : (
+                                <label className="btn btn-outline-success btn-sm w-100">
+                                    <span className="material-symbols-outlined small me-1">photo_camera</span> Cambiar foto
+                                    <input type="file" accept="image/*" hidden onChange={(e) => {
+                                        if (e.target.files?.[0]) setPerfilArchivo(e.target.files[0]);
+                                        e.target.value = '';
+                                    }} />
+                                </label>
+                            )}
+                        </div>
+
+                        <div className="mt-4 pt-3 border-top border-success border-opacity-10 text-start">
+                            <form onSubmit={cambiarClaveMiPerfil}>
+                                <label className="form-label opacity-75 small">Nueva contraseña (opcional)</label>
+                                <input type="password" placeholder="Mínimo 6 caracteres..." className="form-control" value={claveNueva} onChange={(e) => setClaveNueva(e.target.value)} />
+                                <small className="opacity-50">Si tienes verificación en dos pasos activa, al guardar se enviará un código de 6 dígitos a tu correo.</small>
+                                {codigoSolicitadoAdm && (
+                                    <div className="mt-2">
+                                        <label className="form-label opacity-75 small">Código de 6 dígitos (enviado a tu correo)</label>
+                                        <input type="text" inputMode="numeric" maxLength="6" placeholder="123456" className="form-control" value={codigo2faAdm} onChange={(e) => setCodigo2faAdm(e.target.value.replace(/\D/g, '').slice(0, 6))} />
+                                    </div>
+                                )}
+                                <button type="submit" className="btn btn-success w-100 mt-2" disabled={!claveNueva}>
+                                    <span className="material-symbols-outlined">lock</span> Cambiar contraseña
+                                </button>
+                            </form>
+                        </div>
+                        <DosPasos />
                     </div>
                 );
             case 'novedad_form':
@@ -997,6 +1196,10 @@ const handleCancelEdit = () => {
         { label: 'DASHBOARD', icon: 'dashboard', view: 'dashboard' },
         { label: 'NOVEDADES', icon: 'report_problem', view: 'novedad_historial' },
         { label: 'HISTORIAL DE ACCESOS', icon: 'history', view: 'historial' },
+        { label: 'AMBIENTES', icon: 'meeting_room', view: 'ambientes' },
+        { label: 'EXCUSAS', icon: 'key', view: 'excusas' },
+        { label: 'PRESENTES', icon: 'groups', view: 'presentes' },
+        { label: 'VALIDAR QR', icon: 'qr_code_scanner', view: 'validar_qr' },
         {
             label: 'EQUIPOS',
             icon: 'devices',
@@ -1042,7 +1245,7 @@ const handleCancelEdit = () => {
                 <>
                     <div className="modal fade show d-block" tabIndex="-1" role="dialog" aria-modal="true">
                         <div className="modal-dialog modal-dialog-centered">
-                            <div className="modal-content glass-box">
+                            <div className="modal-content glass-box modal-glass-box">
                                 <div className="modal-header border-0 pb-0">
                                     <h5 className="modal-title fw-bold">Exportar historial</h5>
                                     <button type="button" className="btn-close" onClick={() => setExportModalOpen(false)} aria-label="Cerrar"></button>

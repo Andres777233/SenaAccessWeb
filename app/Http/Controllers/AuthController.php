@@ -60,13 +60,13 @@ class AuthController extends Controller
             'user_identification' => $request->user_identification,
             'user_name' => $request->user_name,
             'user_lastname' => $request->user_lastname,
-            'user_email' => 'guest_' . preg_replace('/\W/', '', $request->user_identification) . '@senaaccess.local',
+            'user_email' => 'guest_' . preg_replace('/\W/', '', $request->user_identification) . '_' . strtolower(Str::random(6)) . '@senaaccess.local',
             'user_password' => Hash::make(Str::random(32)),
             'user_documento_tipo' => $request->user_documento_tipo ?? 'CC',
             'email_verified_at' => Carbon::now('America/Bogota'),
             'fk_id_rol' => $role->id_rol ?? null,
             'guest_qr_token' => Str::random(64),
-            'guest_qr_expires_at' => Carbon::now('America/Bogota')->addMinutes(60),
+            'guest_qr_expires_at' => Carbon::now()->addMinutes(60),
             'guest_qr_used' => false,
         ]);
 
@@ -97,7 +97,7 @@ class AuthController extends Controller
         if ($user->guest_qr_used) {
             return response()->json(['message' => 'Este QR ya fue utilizado.'], 422);
         }
-        if ($user->guest_qr_expires_at && $user->guest_qr_expires_at->lt(Carbon::now('America/Bogota'))) {
+        if ($user->guest_qr_expires_at && $user->guest_qr_expires_at->lt(Carbon::now())) {
             return response()->json(['message' => 'Este QR caducó.'], 422);
         }
 
@@ -325,7 +325,7 @@ class AuthController extends Controller
         // la base de datos no puede usar los códigos para cambiar contraseñas.
         TokenRecovery::create([
             'token_code' => Hash::make($token),
-            'token_exp' => Carbon::now('America/Bogota')->addMinutes(15),
+            'token_exp' => Carbon::now()->addMinutes(15),
             'token_used' => false,
             'fk_id_usuario' => $user->id_usuario,
         ]);
@@ -354,7 +354,7 @@ class AuthController extends Controller
 
         // El código guardado es un hash bcrypt: se compara con Hash::check.
         $tokenRecord = TokenRecovery::where('token_used', false) //VALIDA QUE EL TOKEN NO SE HAYA USADO
-            ->where('token_exp', '>=', Carbon::now('America/Bogota')) //VALIDA QUE EL TOKEN NO HAYA EXPIRADO
+            ->where('token_exp', '>=', Carbon::now()) //VALIDA QUE EL TOKEN NO HAYA EXPIRADO
             ->get()
             ->first(function ($t) use ($request) {
                 return Hash::check($request->code, $t->token_code);

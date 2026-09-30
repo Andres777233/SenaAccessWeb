@@ -7,10 +7,8 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AmbienteController;
 use App\Http\Controllers\EquipmentController;
 use App\Http\Controllers\ExcusaController;
-use App\Http\Controllers\JornadaController;
 use App\Http\Controllers\NovedadController;
 use App\Http\Controllers\NotificacionController;
-use App\Http\Controllers\PasskeyController;
 use App\Http\Controllers\SugerenciaController;
 use App\Http\Controllers\TwoFactorController;
 
@@ -41,7 +39,7 @@ Route::post('/reset-password', [AuthController::class, 'resetPassword'])->middle
 // Invitados (público): el visitante genera su QR de un solo uso (60 min) y
 // recepción lo valida escaneándolo, registrando su Entrada en el historial.
 Route::post('/validate-guest-qr', [AuthController::class, 'validateGuestQr'])->middleware('throttle:login');
-Route::post('/register-guest', [AuthController::class, 'registerGuest']);
+Route::post('/register-guest', [AuthController::class, 'registerGuest'])->middleware('throttle:guest');
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
 
 // Verificación de correo: enlace firmado temporal (GET, firmado con 'signed');
@@ -69,17 +67,6 @@ Route::get('/2fa/decidir', [TwoFactorController::class, 'decidir']);
 // (fetch keepalive en pagehide) y puede revertirla si el cierre era un refresh.
 Route::post('/session-exit', [AuthController::class, 'sessionExit'])->middleware('auth:sanctum');
 Route::post('/session-exit/cancel', [AuthController::class, 'cancelSessionExit'])->middleware('auth:sanctum');
-
-// WebAuthn (passkeys): registro requiere sesión; login es público y devuelve
-// el mismo formato que POST /api/login.
-Route::post('/webauthn/login/options', [PasskeyController::class, 'loginOptions']);
-Route::post('/webauthn/login', [PasskeyController::class, 'login']);
-Route::middleware('auth:sanctum')->group(function () {
-    Route::post('/webauthn/register/options', [PasskeyController::class, 'registerOptions']);
-    Route::post('/webauthn/register', [PasskeyController::class, 'register']);
-    Route::get('/webauthn/passkeys', [PasskeyController::class, 'index']);
-    Route::delete('/webauthn/passkeys/{id}', [PasskeyController::class, 'destroy']);
-});
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
@@ -172,16 +159,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/admin/ambientes/{id}/aprendices/{userId}', [AmbienteController::class, 'removeAprendiz']);
     });
 
-    // Jornada / QR dinámico (instructor proyecta, aprendiz valida).
-    Route::get('/jornada/qr/{ambiente}', [JornadaController::class, 'qr']);
-    Route::get('/jornada/qr-actual', [JornadaController::class, 'qrActual']);
-
     // Excusas con PIN: instructor crea (elige aprendiz+ambiente+motivo → genera PIN), admin valida en salida.
     Route::post('/instructor/excusas', [ExcusaController::class, 'store']);
     Route::get('/instructor/excusas', [ExcusaController::class, 'misComoInstructor']);
     Route::delete('/instructor/excusas/{id}', [ExcusaController::class, 'anular']);
     Route::get('/mis-excusas', [ExcusaController::class, 'misExcusas']);
-    Route::post('/excusas/validar', [ExcusaController::class, 'validar']);
+    Route::post('/excusas/validar', [ExcusaController::class, 'validar'])->middleware('throttle:pin');
     Route::middleware('admin')->group(function () {
         Route::get('/admin/excusas', [ExcusaController::class, 'indexAdmin']);
     });

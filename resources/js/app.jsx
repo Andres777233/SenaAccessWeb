@@ -6,10 +6,10 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 
 import Login from './components/Login';
+import Verificacion2Fa from './components/Verificacion2Fa';
 import Register from './components/Register';
 import PasswordRecovery from './components/PasswordRecovery';
 import ResetPassword from './components/ResetPassword';
-import Fingerprint from './components/Fingerprint';
 import Loading from './components/Loading';
 import LandingPage from './components/LandingPage';
 import CustomAlert from './components/CustomAlert';
@@ -30,7 +30,25 @@ const ProtectedRoute = ({ expectedRole, children }) => {
     return children;
 };
 
-console.log("Iniciando aplicación React...");
+// Ruta pública del reto 2FA: si ya hay sesión, redirige por rol como el login.
+const Verificacion2FaRoute = () => {
+    const token = localStorage.getItem('access_token');
+    const role = localStorage.getItem('user_role')?.toLowerCase();
+    if (token) {
+        if (role === 'admin') {
+            return <Navigate to="/admin" replace />;
+        }
+        if (role === 'instructor') {
+            return <Navigate to="/instructor" replace />;
+        }
+        if (role === 'aprendiz') {
+            return <Navigate to="/aprendiz" replace />;
+        }
+        return <Navigate to="/" replace />;
+    }
+    return <Verificacion2Fa />;
+};
+
 // Componente principal de la aplicación
 const LogoutHandler = () => {
     const location = useLocation();
@@ -112,7 +130,6 @@ const App = () => {
         setTheme(prevTheme => prevTheme === 'dark' ? 'light' : 'dark');
     };
 
-    console.log("Renderizando componente App...");
     return (
         <BrowserRouter>
             <LogoutHandler />
@@ -136,10 +153,10 @@ const App = () => {
                 <Routes>
                     <Route path="/" element={<LandingPage />} />
                     <Route path="/login" element={<Login />} />
+                    <Route path="/verificacion-2fa" element={<Verificacion2FaRoute />} />
                     <Route path="/register" element={<Register />} />
                     <Route path="/password-recovery" element={<PasswordRecovery />} />
                     <Route path="/reset-password" element={<ResetPassword />} />
-                    <Route path="/fingerprint" element={<Fingerprint />} />
                     <Route path="/loading" element={<Loading />} />
                     <Route path="/admin" element={<ProtectedRoute expectedRole="admin"><Admin /></ProtectedRoute>} />
                     <Route path="/aprendiz" element={<ProtectedRoute expectedRole="aprendiz"><Aprendiz /></ProtectedRoute>} />
@@ -153,7 +170,6 @@ const App = () => {
 
 const rootElement = document.getElementById('app');
 if (rootElement) {
-    console.log("Elemento #app encontrado. Montando...");
     try {
         const root = ReactDOM.createRoot(rootElement);
         root.render(
@@ -161,7 +177,6 @@ if (rootElement) {
                 <App />
             </React.StrictMode>
         );
-        console.log("Montado ejecutado sin errores inmediatos.");
     } catch (err) {
         console.error("Error durante el renderizado de App.jsx", err);
     }

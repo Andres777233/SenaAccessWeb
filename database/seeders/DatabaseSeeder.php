@@ -130,5 +130,8 @@ class DatabaseSeeder extends Seeder
                 $data + ['user_password' => Hash::make($password)]
             );
         }
+
+        // Ambientes por sede + asignaciones (sin ingresos demo: el historial queda limpio).
+        $this->call(DemoDataSeeder::class);
     }
 }

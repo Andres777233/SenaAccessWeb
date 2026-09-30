@@ -116,17 +116,6 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(IngresoEquipo::class, 'fk_id_usuario', 'id_usuario');
     }
 
-    public function Fingerprints()
-    {
-        return $this->hasMany(Fingerprint::class, 'fk_id_user', 'id_usuario');
-    }
-
-    // Passkeys (WebAuthn): llaves públicas para ingresar con huella.
-    public function passkeys()
-    {
-        return $this->hasMany(Passkey::class, 'fk_id_user', 'id_usuario');
-    }
-    
     public function novedades()
     {
         return $this->hasMany(Novedad::class, 'fk_id_usuario', 'id_usuario');

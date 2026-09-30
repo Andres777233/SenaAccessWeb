@@ -58,5 +58,17 @@ class AppServiceProvider extends ServiceProvider
             $userId = $request->user()?->id_usuario;
             return Limit::perMinute(3)->by($userId ?: $request->ip());
         });
+
+        // Invitados y PIN de excusas: anclados al identificador/código, no a la IP
+        // (mismo criterio que el resto de limiters de este archivo).
+        RateLimiter::for('guest', function (Request $request) {
+            $key = preg_replace('/\W/', '', $request->input('user_identification', ''));
+            return Limit::perMinute(10)->by($key ?: $request->ip());
+        });
+
+        RateLimiter::for('pin', function (Request $request) {
+            $key = trim($request->input('pin', ''));
+            return Limit::perMinute(10)->by($key ?: $request->ip());
+        });
     }
 }

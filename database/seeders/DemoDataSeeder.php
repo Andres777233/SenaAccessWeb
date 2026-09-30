@@ -4,13 +4,11 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use App\Models\Ambiente;
-use App\Models\Ingreso;
 use App\Models\User;
-use Illuminate\Support\Carbon;
 
-// Datos de demostración realistas para la app móvil (idempotente):
-// ambientes por sede, asignación de instructores/aprendices y registros de
-// ingresos del día de hoy (Bogotá) para que la vista Presentes se vea viva.
+// Base operativa para producción (idempotente): ambientes por sede y asignación
+// de instructores/aprendices. NO crea ingresos: el historial queda limpio y
+// Presentes se llena solo con movimientos reales.
 class DemoDataSeeder extends Seeder
 {
     public function run(): void
@@ -94,58 +92,6 @@ class DemoDataSeeder extends Seeder
             );
         }
 
-        // Solo tocar registros de hoy: si ya hay ingresos de hoy de estos usuarios
-        // se recrean (idempotente sobre los datos demo, no sobre registros reales).
-        $emaillist = array_keys($correos);
-        $hoy = Carbon::today('America/Bogota');
-        $demoIds = array_map(fn ($e) => $usuarios[$e]->id_usuario, $emaillist);
-        Ingreso::whereIn('fk_id_user', $demoIds)
-            ->whereDate('ingreso_datetime', $hoy->toDateString())
-            ->delete();
-
-        // Timeline de hoy para cada usuario demo: [hora, tipo, ambiente, ...].
-        $timeline = [
-            'andres.vargas@sena.edu.co' => [
-                '07:50', 'Entrada', 'CCyS 101', '12:05', 'Salida', 'CCyS 101', '13:20', 'Entrada', 'CCyS 101',
-            ],
-            'laura.medina@sena.edu.co' => [
-                '07:45', 'Entrada', 'CCyS 101', '12:10', 'Salida', 'CCyS 101', '13:15', 'Entrada', 'CCyS 101',
-            ],
-            'sebastian@sena.edu.co' => [
-                '07:55', 'Entrada', 'CCyS 102', '11:50', 'Salida', 'CCyS 102',
-            ],
-            'camilo@sena.edu.co' => [
-                '13:10', 'Entrada', 'Ciudad Jardín 201', '15:00', 'Salida', 'Ciudad Jardín 201',
-            ],
-            'katherin@sena.edu.co' => [
-                '13:00', 'Entrada', 'Aulas 301', '15:30', 'Salida', 'Aulas 301',
-            ],
-            'juan.pablo@sena.edu.co' => [
-                '07:40', 'Entrada', 'CCyS 101', '12:15', 'Salida', 'CCyS 101', '13:00', 'Entrada', 'Aulas 302',
-            ],
-            'gustavo@sena.edu.co' => [
-                '07:30', 'Entrada', 'CCyS 103', '12:00', 'Salida', 'CCyS 103',
-            ],
-            'alejandro@sena.edu.co' => [
-                '07:35', 'Entrada', 'CCyS 102', '11:45', 'Salida', 'CCyS 102', '13:10', 'Entrada', 'Aulas 301',
-            ],
-            'raul@sena.edu.co' => [
-                '13:20', 'Entrada', 'Ciudad Jardín 201',
-            ],
-        ];
-
-        foreach ($timeline as $email => $filas) {
-            for ($i = 0; $i < count($filas); $i += 3) {
-                [$hora, $tipo, $ambiente] = [$filas[$i], $filas[$i + 1], $filas[$i + 2]];
-                Ingreso::create([
-                    'ingreso_datetime' => $hoy->copy()->setTimeFromTimeString($hora),
-                    'ingreso_place' => $ambiente,
-                    'ingreso_type' => $tipo,
-                    'fk_id_user' => $usuarios[$email]->id_usuario,
-                ]);
-            }
-        }
-
-        $this->command->info('DemoDataSeeder: ambientes/asignaciones/ingresos de hoy listos.');
+        $this->command->info('DemoDataSeeder: ambientes y asignaciones listos (sin ingresos demo).');
     }
 }

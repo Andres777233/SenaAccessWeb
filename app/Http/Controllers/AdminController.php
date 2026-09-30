@@ -13,9 +13,7 @@ use App\Models\Ingreso;
 use App\Models\Novedad;
 use App\Models\IngresoEquipo;
 use App\Models\Excusa;
-use App\Models\Fingerprint;
 use App\Models\Notificacion;
-use App\Models\Passkey;
 use App\Models\Sugerencia;
 use App\Models\TokenRecovery;
 use App\Models\TwoFactorChallenge;
@@ -83,18 +81,49 @@ class AdminController extends Controller
             ->whereIn('id_ingreso', $idsUltimos)
             ->where('ingreso_type', 'Entrada')
             ->orderBy('ingreso_datetime', 'desc')
-            ->get()
-            ->map(function ($ing) {
+            ->get();
+
+        // Ambiente por usuario (primer nombre alfabético): aprendices por
+        // matrícula (ambiente_aprendiz), instructores/admin por donde enseñan
+        // (ambiente_instructor). Sin ambiente => null. Dos consultas por lote
+        // para no hacer N+1; campos nuevos compatibles (Gson los ignora).
+        $idsUsuarios = $presentes->pluck('fk_id_user')->unique()->values()->all();
+        $ambientePorUsuario = [];
+        if (!empty($idsUsuarios)) {
+            $deMatricula = DB::table('ambiente_aprendiz as pa')
+                ->join('ambientes as a', 'a.id_ambiente', '=', 'pa.fk_id_ambiente')
+                ->whereIn('pa.fk_id_usuario', $idsUsuarios)
+                ->orderBy('a.ambiente_nombre')
+                ->select('pa.fk_id_usuario as uid', 'a.ambiente_nombre')
+                ->get();
+            foreach ($deMatricula as $fila) {
+                $ambientePorUsuario[$fila->uid] ??= $fila->ambiente_nombre;
+            }
+            $deEnsenanza = DB::table('ambiente_instructor as pi')
+                ->join('ambientes as a', 'a.id_ambiente', '=', 'pi.fk_id_ambiente')
+                ->whereIn('pi.fk_id_instructor', $idsUsuarios)
+                ->orderBy('a.ambiente_nombre')
+                ->select('pi.fk_id_instructor as uid', 'a.ambiente_nombre')
+                ->get();
+            foreach ($deEnsenanza as $fila) {
+                $ambientePorUsuario[$fila->uid] ??= $fila->ambiente_nombre;
+            }
+        }
+
+        $resultado = $presentes->map(function ($ing) use ($ambientePorUsuario) {
                 return [
                     'id_usuario' => $ing->fk_id_user,
                     'user_name' => $ing->user->user_name ?? '',
                     'user_lastname' => $ing->user->user_lastname ?? '',
                     'rol' => $ing->user->role->rol_name ?? null,
                     'entrada_hora' => $ing->ingreso_datetime,
+                    'ambiente' => $ambientePorUsuario[$ing->fk_id_user] ?? null,
+                    'user_coursenumber' => $ing->user->user_coursenumber ?? null,
+                    'user_program' => $ing->user->user_program ?? null,
                 ];
             });
 
-        return response()->json($presentes);
+        return response()->json($resultado);
     }
 
     public function exportIngresos(Request $request)
@@ -251,7 +280,12 @@ class AdminController extends Controller
                 ];
                 $fila = [];
                 foreach ($colsSel as $c) {
-                    $fila[] = $datos[$c] ?? '';
+                    // Misma neutralización de fórmulas que el XLSX (inyección CSV).
+                    $valor = $datos[$c] ?? '';
+                    if (is_string($valor) && $valor !== '' && in_array($valor[0], ['=', '+', '-', '@'], true)) {
+                        $valor = "'" . $valor;
+                    }
+                    $fila[] = $valor;
                 }
                 fputcsv($handle, $fila);
             }
@@ -390,8 +424,6 @@ class AdminController extends Controller
             Excusa::where('fk_id_aprendiz', $uid)->orWhere('fk_id_instructor', $uid)->delete(); //EXCUSAS
             Notificacion::where('fk_id_usuario', $uid)->delete(); //NOTIFICACIONES
             Sugerencia::where('fk_id_usuario', $uid)->delete(); //SUGERENCIAS
-            Fingerprint::where('fk_id_user', $uid)->delete(); //HUELLAS
-            Passkey::where('fk_id_user', $uid)->delete(); //PASSKEYS
             DB::table('ambiente_aprendiz')->where('fk_id_usuario', $uid)->delete(); //PIVOTES DE AMBIENTES
             DB::table('ambiente_instructor')->where('fk_id_instructor', $uid)->delete();
             if (\Illuminate\Support\Facades\Schema::hasTable('aprendiz_instructor')) {
@@ -439,6 +471,10 @@ class AdminController extends Controller
         $user->user_identification = $request->user_identification; //ACTUALIZA LA IDENTIFICACION DEL USUARIO
         $user->user_name = $request->user_name; //ACTUALIZA EL NOMBRE DEL USUARIO
         $user->user_lastname = $request->user_lastname; //ACTUALIZA EL APELLIDO DEL USUARIO
+        // Si cambia el correo, se invalida su verificación hasta que lo confirme de nuevo.
+        if ($user->user_email !== $request->user_email) {
+            $user->email_verified_at = null;
+        }
         $user->user_email = $request->user_email; //ACTUALIZA EL CORREO DEL USUARIO
         $user->user_coursenumber = $request->filled('user_coursenumber') ? $request->user_coursenumber : null; //FICHA (NULL PARA ADMIN/INSTRUCTOR)
         $user->user_program = $request->filled('user_program') ? $request->user_program : null; //PROGRAMA (NULL PARA ADMIN/INSTRUCTOR)
@@ -490,7 +526,17 @@ class AdminController extends Controller
             'user_identification' => 'required|string|max:20|unique:usuarios,user_identification,' . $user->id_usuario . ',id_usuario', //VALIDA QUE LA IDENTIFICACION NO SE REPITA
             'user_name' => 'required', //VALIDA QUE EL NOMBRE EXISTA
             'user_lastname' => 'required', //VALIDA QUE EL APELLIDO EXISTA
-            'user_email' => 'required|email|unique:usuarios,user_email,' . $user->id_usuario . ',id_usuario', //VALIDA QUE EL CORREO EXISTA
+            'user_email' => [
+                'required', 'email', 'unique:usuarios,user_email,' . $user->id_usuario . ',id_usuario',
+                // Mismo whitelist de dominios que el registro y el CRUD admin.
+                function ($attribute, $value, $fail) {
+                    $dominios = ['@gmail.com', '@hotmail.com', '@outlook.com', '@soy.sena.edu.co'];
+                    foreach ($dominios as $d) {
+                        if (str_ends_with(strtolower($value), $d)) return;
+                    }
+                    $fail('El correo debe ser @gmail.com, @hotmail.com, @outlook.com o @soy.sena.edu.co.');
+                },
+            ], //VALIDA QUE EL CORREO EXISTA
             'user_password' => 'nullable|min:6', //VALIDA QUE LA CONTRASEÑA EXISTA
             'two_factor_code' => 'nullable|string|size:6', //CODIGO 2FA PARA CAMBIO DE CLAVE
             'user_coursenumber' => $esAprendiz ? 'required' : 'nullable', //FICHA SOLO OBLIGATORIA PARA APRENDIZ
@@ -528,6 +574,10 @@ class AdminController extends Controller
         $user->user_identification = $request->user_identification; //ACTUALIZA LA IDENTIFICACION DEL USUARIO
         $user->user_name = $request->user_name; //ACTUALIZA EL NOMBRE DEL USUARIO
         $user->user_lastname = $request->user_lastname; //ACTUALIZA EL APELLIDO DEL USUARIO
+        // Si cambia el correo, se invalida su verificación hasta que lo confirme de nuevo.
+        if ($user->user_email !== $request->user_email) {
+            $user->email_verified_at = null;
+        }
         $user->user_email = $request->user_email; //ACTUALIZA EL CORREO DEL USUARIO
         $user->user_coursenumber = $request->filled('user_coursenumber') ? $request->user_coursenumber : null; //FICHA (NULL PARA ADMIN/INSTRUCTOR)
         $user->user_program = $request->filled('user_program') ? $request->user_program : null; //PROGRAMA (NULL PARA ADMIN/INSTRUCTOR)

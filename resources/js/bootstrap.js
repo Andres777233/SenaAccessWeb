@@ -25,6 +25,20 @@ window.axios.interceptors.request.use((config) => {
     return Promise.reject(error);
 });
 
+// Sesión vencida o revocada: limpia la sesión local y vuelve al login.
+window.axios.interceptors.response.use((response) => {
+    return response;
+}, (error) => {
+    if (error && error.response && error.response.status === 401) {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('user_role');
+        if (!window.location.pathname.startsWith('/login')) {
+            window.location.href = '/login';
+        }
+    }
+    return Promise.reject(error);
+});
+
 /**
  * Echo exposes an expressive API for subscribing to channels and listening
  * for events that are broadcast by Laravel. Echo and event broadcasting

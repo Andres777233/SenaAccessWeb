@@ -72,6 +72,11 @@ class NovedadController extends Controller
     public function show($id)
     {
         $novedad = Novedad::with('user')->findOrFail($id); //OBTIENE LA NOVEDAD
+        // Solo el dueño o el admin pueden verla (el listado ya filtra por rol).
+        $esAdmin = Auth::user()->role->rol_name === 'admin';
+        if (!$esAdmin && (int) $novedad->fk_id_usuario !== (int) Auth::id()) {
+            return response()->json(['message' => 'No tienes permiso para ver esta novedad'], 403);
+        }
         return response()->json($novedad); //RETORNA LA NOVEDAD
     }
 

@@ -6,6 +6,11 @@ import Navbar from './Navbar';
 import Novedades from './Novedades';
 import StatsDashboard from './StatsDashboard';
 import Sugerencias from './Sugerencias';
+import Ambientes from './Ambientes';
+import Excusas from './Excusas';
+import QrInvitado from './QrInvitado';
+import DosPasos from './DosPasos';
+import RecorteFoto from './RecorteFoto';
 import { showAlert } from './CustomAlert';
 import downloadComprobante from '../utils/comprobante';
 
@@ -21,6 +26,11 @@ const Instructor = () => {
     const [novedades, setNovedades] = useState([]);
     const [editingProfile, setEditingProfile] = useState(false);
     const [profileErrors, setProfileErrors] = useState({});
+    const [fotoBlob, setFotoBlob] = useState(null);
+    const [fotoPreview, setFotoPreview] = useState(null);
+    const [archivoRecorte, setArchivoRecorte] = useState(null);
+    const [codigo2fa, setCodigo2fa] = useState('');
+    const [codigoSolicitado, setCodigoSolicitado] = useState(false);
     const [formData, setFormData] = useState({
         user_identification: '',
         user_name: '',
@@ -78,9 +88,9 @@ const Instructor = () => {
             await downloadComprobante(item.id_ingreso_equipo);
         } catch (error) {
             console.error('Error al descargar comprobante:', error);
-            showAlert('error', error.response?.status === 403
+            showAlert(error.response?.status === 403
                 ? 'No tienes permiso para descargar este comprobante.'
-                : 'No se pudo descargar el comprobante. Intenta de nuevo.');
+                : 'No se pudo descargar el comprobante. Intenta de nuevo.', 'error');
         }
     };
 
@@ -139,15 +149,21 @@ const Instructor = () => {
         }
     };
 
+    // Guarda el perfil en PUT /api/my-profile (multipart + _method=PUT).
+    // Si cambia la clave con 2FA activo, el backend responde 422 con
+    // errors.two_factor_code y envia el codigo al correo: se muestra el
+    // campo del codigo y al reenviar se incluye two_factor_code.
     const handleUpdateProfile = async (e) => {
         e.preventDefault();
         try {
             const data = new FormData();
-            Object.keys(formData).forEach(key => {
-                if (key !== 'profile_photo_path') {
-                    data.append(key, formData[key]);
-                }
-            });
+            data.append('user_identification', formData.user_identification);
+            data.append('user_name', formData.user_name);
+            data.append('user_lastname', formData.user_lastname);
+            data.append('user_email', formData.user_email);
+            if (formData.user_password) data.append('user_password', formData.user_password);
+            if (codigo2fa) data.append('two_factor_code', codigo2fa);
+            if (fotoBlob) data.append('image', fotoBlob, 'foto.jpg');
             data.append('_method', 'PUT');
 
             const response = await axios.post('/api/my-profile', data, {
@@ -160,12 +176,32 @@ const Instructor = () => {
             showAlert('Perfil actualizado con éxito');
             setProfileErrors({});
             setEditingProfile(false);
+            setFotoBlob(null);
+            setFotoPreview(null);
+            setArchivoRecorte(null);
+            setCodigo2fa('');
+            setCodigoSolicitado(false);
         } catch (error) {
             if (error.response?.data?.errors) {
                 setProfileErrors(error.response.data.errors);
             }
-            showAlert('Error al actualizar perfil: ' + (error.response?.data?.message || 'Error desconocido'), 'error');
+            if (error.response?.data?.errors?.two_factor_code) {
+                setCodigoSolicitado(true);
+                showAlert(error.response?.data?.message || 'Revisa tu correo e ingresa el código de 6 dígitos.');
+            } else {
+                showAlert('Error al actualizar perfil: ' + (error.response?.data?.message || 'Error desconocido'), 'error');
+            }
         }
+    };
+
+    // Limpia el formulario de perfil (foto recortada y codigo 2FA incluidos).
+    const cancelarEdicionPerfil = () => {
+        setEditingProfile(false);
+        setFotoBlob(null);
+        setFotoPreview(null);
+        setArchivoRecorte(null);
+        setCodigo2fa('');
+        setCodigoSolicitado(false);
     };
 
     const profileFieldError = (name) => (
@@ -182,6 +218,36 @@ const Instructor = () => {
                         </div>
                         <div className="admin-scrollable-container" style={{ maxHeight: '55vh' }}>
                             <form onSubmit={handleUpdateProfile}>
+                                <div className="text-center mb-3">
+                                    <div className="rounded-circle bg-success mx-auto d-flex align-items-center justify-content-center mb-2 shadow overflow-hidden" style={{ width: '100px', height: '100px', fontSize: '2rem', fontWeight: 'bold' }}>
+                                        {fotoPreview ? (
+                                            <img src={fotoPreview} alt="Nueva foto" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        ) : formData.profile_photo_path ? (
+                                            <img src={formData.profile_photo_path} alt="Foto actual" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        ) : (
+                                            <>{formData.user_name?.[0]}{formData.user_lastname?.[0]}</>
+                                        )}
+                                    </div>
+                                    <label className="btn btn-outline-success btn-sm">
+                                        <span className="material-symbols-outlined small me-1">photo_camera</span> Cambiar foto
+                                        <input type="file" accept="image/*" hidden onChange={(e) => {
+                                            if (e.target.files?.[0]) setArchivoRecorte(e.target.files[0]);
+                                            e.target.value = '';
+                                        }} />
+                                    </label>
+                                    {profileFieldError('image')}
+                                </div>
+                                {archivoRecorte && (
+                                    <RecorteFoto
+                                        archivo={archivoRecorte}
+                                        alCancelar={() => setArchivoRecorte(null)}
+                                        alConfirmar={(blob) => {
+                                            setFotoBlob(blob);
+                                            setFotoPreview(URL.createObjectURL(blob));
+                                            setArchivoRecorte(null);
+                                        }}
+                                    />
+                                )}
                                 <div className="row">
                                     <div className="col-12 mb-3">
                                         <label className="form-label opacity-75 small">N° Documento</label>
@@ -207,13 +273,21 @@ const Instructor = () => {
                                         <label className="form-label opacity-75 small">Nueva Contraseña (Opcional)</label>
                                         <input type="password" name="user_password" placeholder="Mínimo 6 caracteres..." className={`form-control ${profileErrors.user_password ? 'is-invalid' : ''}`} value={formData.user_password} onChange={handleChange} />
                                         {profileFieldError('user_password')}
+                                        <small className="opacity-50">Si tienes verificación en dos pasos activa, al guardar se enviará un código de 6 dígitos a tu correo.</small>
                                     </div>
+                                    {codigoSolicitado && (
+                                        <div className="col-12 mb-3">
+                                            <label className="form-label opacity-75 small">Código de 6 dígitos (enviado a tu correo)</label>
+                                            <input type="text" inputMode="numeric" maxLength="6" placeholder="123456" className={`form-control ${profileErrors.two_factor_code ? 'is-invalid' : ''}`} value={codigo2fa} onChange={(e) => setCodigo2fa(e.target.value.replace(/\D/g, '').slice(0, 6))} />
+                                            {profileFieldError('two_factor_code')}
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="d-flex gap-2 mt-4">
                                     <button type="submit" className="btn btn-success action-btn flex-grow-1 py-2">
                                         <span className="material-symbols-outlined">save</span> Guardar Cambios
                                     </button>
-                                    <button type="button" className="btn btn-outline-secondary action-btn px-4" onClick={() => setEditingProfile(false)}>
+                                    <button type="button" className="btn btn-outline-secondary action-btn px-4" onClick={cancelarEdicionPerfil}>
                                         Cancelar
                                     </button>
                                 </div>
@@ -268,6 +342,12 @@ const Instructor = () => {
                 return <Sugerencias currentUser={currentUser} initialMode="form" />;
             case 'sugerencias':
                 return <Sugerencias currentUser={currentUser} initialMode="history" />;
+            case 'ambientes':
+                return <Ambientes currentUser={currentUser} rol="instructor" />;
+            case 'excusas':
+                return <Excusas currentUser={currentUser} rol="instructor" />;
+            case 'validar_qr':
+                return <QrInvitado />;
             case 'mis_equipos':
                 return (
                     <div className="fade-in-up">
@@ -360,6 +440,7 @@ const Instructor = () => {
                                 Editar Información de Mi Perfil
                             </button>
                         </div>
+                        <DosPasos />
                     </div>
                 );
             default: return null;
@@ -379,6 +460,9 @@ const Instructor = () => {
             ]
         },
         { label: 'HISTORIAL DE ACCESOS', icon: 'history', view: 'historial' },
+        { label: 'MIS SALONES', icon: 'meeting_room', view: 'ambientes' },
+        { label: 'EXCUSAS', icon: 'key', view: 'excusas' },
+        { label: 'VALIDAR QR', icon: 'qr_code_scanner', view: 'validar_qr' },
         {
             label: 'MIS EQUIPOS',
             icon: 'inventory_2',

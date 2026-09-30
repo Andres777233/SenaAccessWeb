@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import QRCode from 'qrcode';
 import Footer from './Footer';
 import { showAlert } from './CustomAlert';
 
@@ -15,17 +16,61 @@ const Login = () => {
     const [isGuestMode, setIsGuestMode] = useState(false); // Estado para alternar modo invitado
     const [guestData, setGuestData] = useState({ // Estado para almacenar datos de invitado
         user_name: '',
-        user_identification: ''
+        user_lastname: '',
+        user_identification: '',
+        user_documento_tipo: 'CC'
     });
+    const [guestErrors, setGuestErrors] = useState({}); // Errores de validación por campo (invitado)
+    const [qrInvitado, setQrInvitado] = useState(null); // { token, expiresAt, dataUrl } tras registro exitoso
+    const [qrRestante, setQrRestante] = useState(''); // Cuenta regresiva mm:ss hasta qr_expires_at
+
+    // Cuenta regresiva del QR de invitado (60 min desde su generación).
+    useEffect(() => {
+        if (!qrInvitado) return;
+        const tick = () => {
+            const ms = new Date(qrInvitado.expiresAt).getTime() - Date.now();
+            if (ms <= 0) {
+                setQrRestante('00:00');
+                return;
+            }
+            const m = Math.floor(ms / 60000);
+            const s = Math.floor((ms % 60000) / 1000);
+            setQrRestante(`${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`);
+        };
+        tick();
+        const timer = setInterval(tick, 1000);
+        return () => clearInterval(timer);
+    }, [qrInvitado]);
 
     // Funcion para manejar el envio del formulario de login
+    // device_id: UUID persistente de este navegador; el backend solo pide 2FA en dispositivos nuevos.
+    const obtenerDeviceId = () => {
+        let id = localStorage.getItem('sena_device_id');
+        if (!id) {
+            id = (typeof crypto !== 'undefined' && crypto.randomUUID)
+                ? crypto.randomUUID()
+                : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+            localStorage.setItem('sena_device_id', id);
+        }
+        return id;
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
             const response = await axios.post('/api/login', {
                 user_email,
-                user_password
+                user_password,
+                device_id: obtenerDeviceId()
             });
+
+            // 2FA requerido: el backend no emitió token; se continúa en /verificacion-2fa.
+            if (response.data.two_factor_required) {
+                localStorage.setItem('2fa_challenge_id', response.data.two_factor_id);
+                showAlert(response.data.message || 'Verificación en dos pasos requerida.');
+                navigate('/verificacion-2fa');
+                return;
+            }
 
             // guardar token y rol en localStorage para uso futuro
             localStorage.setItem('access_token', response.data.access_token);
@@ -58,20 +103,84 @@ const Login = () => {
     };
 
     // Funcion para manejar el envio del formulario de invitado
+    // POST /api/register-guest → { qr_token, qr_expires_at }; genera el QR y lo muestra.
     const handleGuestSubmit = async (e) => {
         e.preventDefault();
+        setGuestErrors({});
         try {
             const response = await axios.post('/api/register-guest', guestData);
+            const dataUrl = await QRCode.toDataURL(response.data.qr_token);
+            setQrInvitado({
+                token: response.data.qr_token,
+                expiresAt: response.data.qr_expires_at,
+                dataUrl
+            });
             showAlert(response.data.message);
-            setIsGuestMode(false);
-            setGuestData({ user_name: '', user_identification: '' });
-            navigate('/loading');
         } catch (error) {
-            showAlert('Error al registrar ingreso de invitado', 'error');
+            if (error.response?.data?.errors) {
+                setGuestErrors(error.response.data.errors);
+                showAlert('Revisa los datos del invitado.', 'error');
+            } else if (error.response) {
+                showAlert(error.response.data.message || 'Error al registrar ingreso de invitado', 'error');
+            } else {
+                showAlert('Error al conectar con el servidor.', 'error');
+            }
         }
     };
 
+    // Copia el token del QR al portapapeles.
+    const copiarToken = async () => {
+        try {
+            await navigator.clipboard.writeText(qrInvitado.token);
+            showAlert('Código copiado al portapapeles.');
+        } catch (err) {
+            showAlert('No se pudo copiar el código.', 'error');
+        }
+    };
+
+    // Limpia el QR mostrado y deja el formulario listo para otro invitado.
+    const registrarOtroInvitado = () => {
+        setQrInvitado(null);
+        setGuestErrors({});
+        setGuestData({ user_name: '', user_lastname: '', user_identification: '', user_documento_tipo: 'CC' });
+    };
+
+    const guestError = (name) =>
+        guestErrors[name] ? <div className="text-danger small mt-1"><span className="material-symbols-outlined small me-1">error</span>{guestErrors[name][0]}</div> : null;
+
     if (isGuestMode) {
+        // Tras el registro exitoso: QR + vigencia + token copiable (un solo uso, 60 min).
+        if (qrInvitado) {
+            return (
+                <div className="d-flex flex-column justify-content-center align-items-center vh-90 fade-in-up">
+                    <div className="glass-box p-4 p-md-5 mx-3 text-center" style={{ maxWidth: '440px' }}>
+                        <h2 className="fw-bold mb-0">Tu código de ingreso</h2>
+                        <h5 className="fw-light text-success">Preséntalo en portería</h5>
+                        <hr className="border-success opacity-25" />
+                        <img src={qrInvitado.dataUrl} alt="QR de invitado" className="img-fluid my-3" style={{ maxWidth: '240px' }} />
+                        <div className="fw-bold fs-4">Vence en {qrRestante}</div>
+                        <p className="small opacity-75 mb-2">Un solo uso · válido por 60 minutos</p>
+                        <code className="d-block text-break small p-2 bg-dark bg-opacity-25 rounded mb-3">{qrInvitado.token}</code>
+                        <div className="d-grid gap-3">
+                            <button className="btn btn-glow w-100 fw-bold" type="button" onClick={copiarToken}>
+                                COPIAR CÓDIGO
+                            </button>
+                            <button className="btn btn-glow w-100" type="button" onClick={registrarOtroInvitado}>
+                                REGISTRAR OTRO
+                            </button>
+                            <button
+                                type="button"
+                                className="btn btn-glow w-100"
+                                onClick={() => { setIsGuestMode(false); setQrInvitado(null); }}
+                            >
+                                VOLVER AL LOGIN
+                            </button>
+                        </div>
+                    </div>
+                    <Footer />
+                </div>
+            );
+        }
         return (
             <div className="d-flex flex-column justify-content-center align-items-center vh-90 fade-in-up">
                 <div className="glass-box p-4 p-md-5 mx-3">
@@ -84,6 +193,20 @@ const Login = () => {
                     </div>
 
                     <form onSubmit={handleGuestSubmit}>
+                        <div className="mb-3">
+                            <label className="form-label opacity-75 small">Tipo de Documento</label>
+                            <select
+                                className={`form-select ${guestErrors.user_documento_tipo ? 'is-invalid' : ''}`}
+                                value={guestData.user_documento_tipo}
+                                onChange={(e) => setGuestData({ ...guestData, user_documento_tipo: e.target.value })}
+                            >
+                                <option value="CC">CC: Cédula de Ciudadanía</option>
+                                <option value="CE">CE: Cédula de Extranjería</option>
+                                <option value="TI">TI: Tarjeta de Identidad</option>
+                                <option value="PAS">PAS: Pasaporte</option>
+                            </select>
+                            {guestError('user_documento_tipo')}
+                        </div>
                         <div className="user-box">
                             <input
                                 type="text"
@@ -93,6 +216,7 @@ const Login = () => {
                                 onChange={(e) => setGuestData({ ...guestData, user_identification: e.target.value })}
                             />
                             <label>Número de Documento</label>
+                            {guestError('user_identification')}
                         </div>
                         <div className="user-box">
                             <input
@@ -103,7 +227,19 @@ const Login = () => {
                                 // Funcion para generar los datos de invitado (guest)
                                 onChange={(e) => setGuestData({ ...guestData, user_name: e.target.value })}
                             />
-                            <label>Nombre Completo</label>
+                            <label>Nombres</label>
+                            {guestError('user_name')}
+                        </div>
+                        <div className="user-box">
+                            <input
+                                type="text"
+                                required
+                                placeholder=" "
+                                value={guestData.user_lastname}
+                                onChange={(e) => setGuestData({ ...guestData, user_lastname: e.target.value })}
+                            />
+                            <label>Apellidos</label>
+                            {guestError('user_lastname')}
                         </div>
 
                         <div className="d-grid gap-3 mt-4">
@@ -212,13 +348,6 @@ const Login = () => {
                 <div className="mt-4 text-center">
                     <p className="mb-2 theme-text opacity-75 small">¿No estás registrado? <Link to="/register" className="custom-link fw-bold text-success">¡Regístrate aquí!</Link></p>
                     <p className="mb-4 theme-text opacity-75 small">¿Olvidaste tu contraseña? <Link to="/password-recovery" className="custom-link fw-bold text-success">Recuperar</Link></p>
-
-                    <div className="d-grid gap-2">
-                        <Link to="/fingerprint" className="btn btn-glow w-100 d-flex align-items-center justify-content-center gap-2" style={{ textDecoration: 'none', color: 'inherit' }}>
-                            <span className="material-symbols-outlined" style={{ color: '#02d914', fontSize: '24px' }}>fingerprint</span>
-                            ACCESO CON HUELLA
-                        </Link>
-                    </div>
                 </div>
             </div>
             <Footer />

@@ -6,6 +6,7 @@ use Illuminate\Database\Seeder;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 
 class DatabaseSeeder extends Seeder
 {
@@ -126,10 +127,18 @@ class DatabaseSeeder extends Seeder
 
         foreach ($users as $data) {
             $password = in_array($data['user_email'], $clave123456, true) ? '123456' : '12345678';
-            User::updateOrCreate(
-                ['user_email' => $data['user_email']],
-                $data + ['user_password' => Hash::make($password)]
-            );
+            try {
+                User::updateOrCreate(
+                    ['user_email' => $data['user_email']],
+                    $data + ['user_password' => Hash::make($password)]
+                );
+            } catch (\Illuminate\Database\QueryException $e) {
+                // Deriva de datos reales (ej. otra cuenta usa esa identificación):
+                // la cuenta real manda, el seed la omite y el deploy sigue verde.
+                // Sin este catch, el releaseCommand `migrate --seed` falla y
+                // Railway marca el deploy como Crashed (502 para todos).
+                Log::warning("Seed omite {$data['user_email']}: {$e->getMessage()}");
+            }
         }
 
         // Ambientes por sede + asignaciones (sin ingresos demo: el historial queda limpio).

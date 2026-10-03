@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use App\Models\Ambiente;
 use App\Models\User;
+use Illuminate\Support\Facades\Log;
 
 // Base operativa para producción (idempotente): ambientes por sede y asignación
 // de instructores/aprendices. NO crea ingresos: el historial queda limpio y
@@ -49,13 +50,16 @@ class DemoDataSeeder extends Seeder
             'sebastian@sena.edu.co' => 'apr', 'camilo@sena.edu.co' => 'apr',
             'katherin@sena.edu.co' => 'apr',
         ];
+        // Usuarios que falten (cuentas reales borradas/renombradas en producción)
+        // se omiten con aviso en vez de tumbar el deploy: el seed nunca puede
+        // fallar el releaseCommand `migrate --seed` (eso deja la app en 502).
         $usuarios = [];
         foreach ($correos as $email => $_) {
             $usuarios[$email] = User::where('user_email', $email)->first();
         }
-
-        if (count(array_filter($usuarios)) !== count($correos)) {
-            throw new \RuntimeException('Faltan usuarios base; ejecuta primero DatabaseSeeder (php artisan db:seed).');
+        $faltantes = array_keys(array_filter($usuarios, fn ($u) => $u === null));
+        if (!empty($faltantes)) {
+            Log::warning('DemoDataSeeder omite cuentas inexistentes: ' . implode(', ', $faltantes));
         }
 
         // Asignaciones de instructores a ambientes.
@@ -69,10 +73,16 @@ class DemoDataSeeder extends Seeder
             'Aulas 302' => ['gustavo@sena.edu.co'],
         ];
         foreach ($instrAmbiente as $nombre => $emails) {
+            $presentes = array_values(array_filter(array_map(
+                fn ($e) => $usuarios[$e]->id_usuario ?? null,
+                $emails
+            )));
+            if (empty($presentes)) continue;
             $amb = Ambiente::find($ids[$nombre]);
-            $amb->instructores()->sync(
-                array_map(fn ($e) => $usuarios[$e]->id_usuario, $emails)
-            );
+            // Lista completa: sync exacto como antes; si falta alguien, solo
+            // agrega sin desprender asignaciones reales existentes.
+            if (count($presentes) === count($emails)) $amb->instructores()->sync($presentes);
+            else $amb->instructores()->syncWithoutDetaching($presentes);
         }
 
         // Asignaciones de aprendices a ambientes.
@@ -86,10 +96,14 @@ class DemoDataSeeder extends Seeder
             'Aulas 302' => ['sebastian@sena.edu.co', 'camilo@sena.edu.co'],
         ];
         foreach ($aprAmbiente as $nombre => $emails) {
+            $presentes = array_values(array_filter(array_map(
+                fn ($e) => $usuarios[$e]->id_usuario ?? null,
+                $emails
+            )));
+            if (empty($presentes)) continue;
             $amb = Ambiente::find($ids[$nombre]);
-            $amb->aprendices()->sync(
-                array_map(fn ($e) => $usuarios[$e]->id_usuario, $emails)
-            );
+            if (count($presentes) === count($emails)) $amb->aprendices()->sync($presentes);
+            else $amb->aprendices()->syncWithoutDetaching($presentes);
         }
 
         $this->command->info('DemoDataSeeder: ambientes y asignaciones listos (sin ingresos demo).');

@@ -473,19 +473,11 @@ const Aprendiz = () => {
         }
     };
 
-    const aprendizLinks = [ // Definicion de enlaces para el navbar
+    const aprendizLinks = [ // Definicion de enlaces para el navbar (espejo del dock móvil: Inicio·Excusas·Historial·Equipos)
         { label: 'DASHBOARD', icon: 'dashboard', view: 'dashboard' },
-        { label: 'HISTORIAL DE ACCESOS', icon: 'history', view: 'historial' },
-        {
-            label: 'MIS EQUIPOS',
-            icon: 'inventory_2',
-            view: 'comprobantes',
-            dropdown: true,
-            items: [
-                { label: 'Equipos', icon: 'inventory_2', view: 'comprobantes' }
-            ]
-        },
         { label: 'MIS PERMISOS', icon: 'key', view: 'permisos' },
+        { label: 'HISTORIAL DE ACCESOS', icon: 'history', view: 'historial' },
+        { label: 'MIS EQUIPOS', icon: 'inventory_2', view: 'comprobantes' }
     ];
 
     return ( // Estructura principal

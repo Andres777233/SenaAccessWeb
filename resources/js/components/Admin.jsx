@@ -649,7 +649,9 @@ const handleCancelEdit = () => {
                                             {[
                                                 { key: 'all', label: 'Todos' },
                                                 { key: 'Instructor', label: 'Instructores' },
-                                                { key: 'Aprendiz', label: 'Aprendices' }
+                                                { key: 'Aprendiz', label: 'Aprendices' },
+                                                { key: 'Portero', label: 'Porteros' },
+                                                { key: 'Invitado', label: 'Invitados' }
                                             ].map(f => (
                                                 <button
                                                     key={f.key}
@@ -1205,28 +1207,13 @@ const handleCancelEdit = () => {
         }
     };
 
-    // Nav espeja el dock del admin móvil (INICIO·NOVEDADES·USUARIOS·AMBIENTES);
-    // el resto vive en el secundario MÁS. Sin borrar vistas ni rutas.
+    // Nav espeja el dock del admin móvil (INICIO·NOVEDADES·USUARIOS·AMBIENTES).
+    // Sin MÁS: las vistas secundarias siguen en el switch (reversible).
     const adminLinks = [
         { label: 'DASHBOARD', icon: 'dashboard', view: 'dashboard' },
         { label: 'NOVEDADES', icon: 'report_problem', view: 'novedad_historial' },
         { label: 'USUARIOS', icon: 'group', view: 'users', filter: 'all' },
-        { label: 'AMBIENTES', icon: 'meeting_room', view: 'ambientes' },
-        {
-            label: 'MÁS',
-            icon: 'more_horiz',
-            view: 'historial',
-            dropdown: true,
-            items: [
-                { label: 'Historial de Accesos', icon: 'history', view: 'historial' },
-                { label: 'Presentes', icon: 'groups', view: 'presentes' },
-                { label: 'Excusas', icon: 'key', view: 'excusas' },
-                { label: 'Validar QR', icon: 'qr_code_scanner', view: 'validar_qr' },
-                { divider: true },
-                { label: 'Nuevo Registro de Equipo', icon: 'add_circle', view: 'equipo_entry' },
-                { label: 'Historial de Equipos', icon: 'inventory_2', view: 'historial_equipos' }
-            ]
-        }
+        { label: 'AMBIENTES', icon: 'meeting_room', view: 'ambientes' }
     ];
 
     return (

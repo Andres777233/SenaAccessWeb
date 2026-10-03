@@ -11,6 +11,20 @@ const Login = () => {
 
     // HOOK: Múltiples useState para almacenar temporalmente los datos del formulario (email, password) mientras el usuario escribe.
     const [user_email, setEmail] = useState(''); // Estado para almacenar email del usuario
+    // Correos usados en este navegador (espejo del autorrelleno del móvil; la clave la pone el navegador, nunca se guarda aquí).
+    const [correosGuardados, setCorreosGuardados] = useState(() => {
+        try { return JSON.parse(localStorage.getItem('sena_emails') || '[]'); }
+        catch { return []; }
+    });
+    const guardarCorreoUsado = (correo) => {
+        const limpio = (correo || '').trim();
+        if (!limpio) return;
+        setCorreosGuardados((prev) => {
+            const lista = [limpio, ...prev.filter((c) => c.toLowerCase() !== limpio.toLowerCase())].slice(0, 5);
+            try { localStorage.setItem('sena_emails', JSON.stringify(lista)); } catch {}
+            return lista;
+        });
+    };
     const [user_password, setPassword] = useState(''); // Estado para almacenar contraseña del usuario
     const [showPassword, setShowPassword] = useState(false); // Estado para alternar visibilidad de contraseña
     const [isGuestMode, setIsGuestMode] = useState(false); // Estado para alternar modo invitado
@@ -75,6 +89,7 @@ const Login = () => {
             // guardar token y rol en localStorage para uso futuro
             localStorage.setItem('access_token', response.data.access_token);
             localStorage.setItem('user_role', response.data.role);
+            guardarCorreoUsado(user_email);
 
             showAlert(response.data.message);
             // Redirige según el rol hacia los paneles del SPA React
@@ -283,13 +298,19 @@ const Login = () => {
                             placeholder=" "
                             value={user_email}
                             onChange={(e) => setEmail(e.target.value)}
+                            list="sena-emails"
+                            autoComplete="email"
                         />
+                        <datalist id="sena-emails">
+                            {correosGuardados.map((c) => <option key={c} value={c} />)}
+                        </datalist>
                         <label>Correo electrónico</label>
                     </div>
                     <div className="user-box">
                         <input
                             type={showPassword ? "text" : "password"}
                             name="user_password"
+                            autoComplete="current-password"
                             required
                             placeholder=" "
                             value={user_password}

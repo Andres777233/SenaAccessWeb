@@ -225,22 +225,14 @@ const Portero = () => {
         profileErrors[name] ? <div className="text-danger small mt-1"><span className="material-symbols-outlined small me-1">error</span>{profileErrors[name][0]}</div> : null
     );
 
+    // Nav espeja el dock del portero móvil (Inicio·Validar·Equipos·Historial).
+    // EXCUSAS valida PIN y VALIDAR QR el QR de invitado (en el móvil van unificados).
     const porteroLinks = [
         { label: 'DASHBOARD', icon: 'dashboard', view: 'dashboard' },
-        { label: 'HISTORIAL DE ACCESOS', icon: 'history', view: 'historial' },
-        { label: 'PRESENTES', icon: 'groups', view: 'presentes' },
         { label: 'EXCUSAS', icon: 'key', view: 'excusas' },
-        {
-            label: 'EQUIPOS',
-            icon: 'inventory_2',
-            view: 'equipos',
-            dropdown: true,
-            items: [
-                { label: 'Registrar Equipo', icon: 'add_circle', view: 'equipo_entry' },
-                { label: 'Inventario de Equipos', icon: 'inventory_2', view: 'equipos' }
-            ]
-        },
-        { label: 'VALIDAR QR', icon: 'qr_code_scanner', view: 'validar_qr' }
+        { label: 'VALIDAR QR', icon: 'qr_code_scanner', view: 'validar_qr' },
+        { label: 'EQUIPOS', icon: 'inventory_2', view: 'equipos' },
+        { label: 'HISTORIAL DE ACCESOS', icon: 'history', view: 'historial' }
     ];
 
     const filteredEquipment = equipmentList.filter(item => {
@@ -462,7 +454,14 @@ const Portero = () => {
             case 'excusas':
                 return <Excusas currentUser={currentUser} rol="portero" />;
             case 'equipo_entry':
-                return <EquipmentForm adminMode onSaved={fetchEquipment} />;
+                return (
+                    <div className="fade-in-up">
+                        <button className="btn btn-outline-success btn-sm mb-3" onClick={() => setView('equipos')}>
+                            <span className="material-symbols-outlined small">arrow_back</span> Volver al inventario
+                        </button>
+                        <EquipmentForm adminMode onSaved={fetchEquipment} />
+                    </div>
+                );
             case 'equipos':
                 return (
                     <div className="fade-in-up">
@@ -472,7 +471,11 @@ const Portero = () => {
                                     <h3 className="mb-0">Inventario de Equipos</h3>
                                     <p className="opacity-50 small mb-0">Total: {filteredEquipment.length} equipo(s)</p>
                                 </div>
-                                <div className="input-group search-input-group" style={{ maxWidth: '350px' }}>
+                                <div className="d-flex gap-2 flex-wrap align-items-center">
+                                <button className="btn btn-success action-btn" onClick={() => setView('equipo_entry')}>
+                                    <span className="material-symbols-outlined small">add_circle</span> Registrar equipo
+                                </button>
+                                <div className="input-group search-input-group" style={{ maxWidth: '300px' }}>
                                     <span className="input-group-text">
                                         <span className="material-symbols-outlined">search</span>
                                     </span>
@@ -483,6 +486,7 @@ const Portero = () => {
                                         value={searchTermEquipment}
                                         onChange={(e) => setSearchTermEquipment(e.target.value)}
                                     />
+                                </div>
                                 </div>
                             </div>
                             <div className="table-responsive admin-scrollable-container" style={{ maxHeight: '50vh' }}>

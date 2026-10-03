@@ -442,8 +442,11 @@ const Instructor = () => {
         }
     };
 
+    // Nav espeja el dock del instructor móvil (Inicio·Ambientes·Novedades·Historial·Equipos).
+    // EXCUSAS se conserva: es la única entrada a generar PIN (en el móvil vive dentro del detalle del ambiente).
     const instructorLinks = [
         { label: 'DASHBOARD', icon: 'dashboard', view: 'dashboard' },
+        { label: 'MIS SALONES', icon: 'meeting_room', view: 'ambientes' },
         {
             label: 'NOVEDADES',
             icon: 'report_problem',
@@ -455,18 +458,8 @@ const Instructor = () => {
             ]
         },
         { label: 'HISTORIAL DE ACCESOS', icon: 'history', view: 'historial' },
-        { label: 'MIS SALONES', icon: 'meeting_room', view: 'ambientes' },
         { label: 'EXCUSAS', icon: 'key', view: 'excusas' },
-        { label: 'VALIDAR QR', icon: 'qr_code_scanner', view: 'validar_qr' },
-        {
-            label: 'MIS EQUIPOS',
-            icon: 'inventory_2',
-            view: 'mis_equipos',
-            dropdown: true,
-            items: [
-                { label: 'Equipos', icon: 'inventory_2', view: 'mis_equipos' }
-            ]
-        },
+        { label: 'MIS EQUIPOS', icon: 'inventory_2', view: 'mis_equipos' }
     ];
 
     if (loading) return <div className="text-white text-center mt-5">Cargando...</div>;

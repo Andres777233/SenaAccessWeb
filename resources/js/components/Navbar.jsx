@@ -197,7 +197,7 @@ const Navbar = ({ currentUser, view, setView, userFilter, setUserFilter, links =
                             </div>
                             <div className="rounded-circle bg-success d-flex align-items-center justify-content-center shadow-sm border border-2 border-success border-opacity-25 overflow-hidden" style={{ width: '38px', height: '38px', fontSize: '0.9rem', fontWeight: 'bold', color: '#000' }}>
                                 {currentUser?.profile_photo_path ? (
-                                    <img src={currentUser.profile_photo_path} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    <img src={currentUser.profile_photo_path} alt="Profile" loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                 ) : (
                                     <>{currentUser?.user_name?.[0]}{currentUser?.user_lastname?.[0]}</>
                                 )}

@@ -1,7 +1,7 @@
 import './bootstrap';
 import '../css/app.css';
 
-import React, { Suspense, useState, useEffect } from 'react';
+import React, { Suspense, lazy, useState, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 
@@ -13,10 +13,12 @@ import ResetPassword from './components/ResetPassword';
 import Loading from './components/Loading';
 import LandingPage from './components/LandingPage';
 import CustomAlert from './components/CustomAlert';
-import Admin from './components/Admin';
-import Aprendiz from './components/Aprendiz';
-import Instructor from './components/Instructor';
-import Portero from './components/Portero';
+// Paneles pesados por rol: lazy para que la primera carga solo baje el chunk
+// de la ruta visitada (antes las 12 rutas viajaban en un solo app-*.js).
+const Admin = lazy(() => import('./components/Admin'));
+const Aprendiz = lazy(() => import('./components/Aprendiz'));
+const Instructor = lazy(() => import('./components/Instructor'));
+const Portero = lazy(() => import('./components/Portero'));
 
 // Guard: redirige a /login si no hay token o el rol no coincide con el esperado.
 const ProtectedRoute = ({ expectedRole, children }) => {

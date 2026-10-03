@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Footer from './Footer';
@@ -35,6 +35,14 @@ const Admin = () => {
     const [view, setView] = useState('dashboard'); // 'dashboard', 'historial', 'users', 'profile'
     const [userFilter, setUserFilter] = useState('all'); // 'all', 'Instructor', 'Aprendiz'
     const [users, setUsers] = useState([]); // Lista de usuarios
+    // Página actual del carrusel de usuarios (paginada en servidor).
+    const [usuariosPagina, setUsuariosPagina] = useState([]);
+    const [usuariosTotal, setUsuariosTotal] = useState(0);
+    const [usuariosUltima, setUsuariosUltima] = useState(1);
+    const [usuariosPag, setUsuariosPag] = useState(1);
+    const [usuariosCargando, setUsuariosCargando] = useState(false);
+    const [usersSearchDeb, setUsersSearchDeb] = useState(''); // Búsqueda con debounce
+    const usuariosPagRef = useRef(1); // Página vigente para refrescos (evita closures viejos)
     const [roles, setRoles] = useState([]); // Lista de roles
     const [ingresos, setIngresos] = useState([]); // Lista de ingresos
     const [loading, setLoading] = useState(true); // Estado de carga
@@ -84,24 +92,36 @@ const Admin = () => {
         }
     }, [editingUser, creatingUser]);
 
+    // Página del carrusel de usuarios desde el servidor (24 por página,
+    // con búsqueda y rol filtrados allá, no en el navegador).
+    const fetchUsers = async (page) => {
+        const p = page || usuariosPagRef.current || 1;
+        setUsuariosCargando(true);
+        try {
+            const params = new URLSearchParams();
+            params.append('per_page', '24');
+            params.append('page', String(p));
+            if (usersSearchDeb) params.append('search', usersSearchDeb);
+            if (userFilter !== 'all') params.append('rol', userFilter);
+            const resp = await axios.get(`/api/admin/users?${params.toString()}`);
+            setUsuariosPagina(resp.data.data || []);
+            setUsuariosTotal(resp.data.total || 0);
+            setUsuariosUltima(resp.data.last_page || 1);
+        } catch (error) {
+            console.error('Error al cargar usuarios:', error);
+        } finally {
+            setUsuariosCargando(false);
+        }
+    };
+
     // Refresca los datos de la vista actual al cambiar de vista y al enfocar la pestaña,
     // para que los cambios hechos por otros roles se reflejen sin recargar la página.
     const refreshViewData = async () => {
+        // Usuarios lo cubre el efecto de paginación (view/página/búsqueda/filtro).
         if (view === 'historial') {
             await fetchIngresos(1);
         } else if (view === 'historial_equipos') {
             await fetchEquipment();
-        } else if (view === 'users') {
-            try {
-                const [usersResponse, rolesResponse] = await Promise.all([
-                    axios.get('/api/admin/users'),
-                    axios.get('/api/admin/roles')
-                ]);
-                setUsers(usersResponse.data);
-                setRoles(rolesResponse.data);
-            } catch (error) {
-                console.error('Error al refrescar usuarios:', error);
-            }
         }
     };
 
@@ -111,7 +131,11 @@ const Admin = () => {
     }, [view]);
 
     useEffect(() => {
-        const onFocus = () => refreshViewData();
+        // Al volver a la pestaña se re-pide solo la página visible de usuarios.
+        const onFocus = () => {
+            if (view === 'users') fetchUsers();
+            else refreshViewData();
+        };
         window.addEventListener('focus', onFocus);
         document.addEventListener('visibilitychange', onFocus);
         return () => {
@@ -120,6 +144,27 @@ const Admin = () => {
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [view]);
+
+    // Debounce de 400 ms en la búsqueda de usuarios: no dispara un GET por tecla.
+    useEffect(() => {
+        const t = setTimeout(() => {
+            setUsersSearchDeb(searchTermUsers.trim());
+            setUsuariosPag(1);
+            usuariosPagRef.current = 1;
+        }, 400);
+        return () => clearTimeout(t);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [searchTermUsers]);
+
+    // La página del carrusel vive en el servidor: buscar, filtrar o paginar
+    // re-pide solo 24 filas en vez de refiltrar todo en el navegador.
+    useEffect(() => {
+        if (view === 'users' && !editingUser && !creatingUser) {
+            usuariosPagRef.current = usuariosPag;
+            fetchUsers(usuariosPag);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [view, usuariosPag, usersSearchDeb, userFilter]);
 
     const fetchEquipment = async () => {
         try {
@@ -227,36 +272,30 @@ const Admin = () => {
         fetchData();
     }, []);
 
-    // Filtro de usuarios por nombre, apellido, email, numero de ficha y rol
-    const filteredUsers = users.filter(user => {
-        const search = searchTermUsers.toLowerCase();
-        const matchesSearch = (
-            (user.user_identification?.toLowerCase() || '').includes(search) ||
-            user.user_name.toLowerCase().includes(search) ||
-            user.user_lastname.toLowerCase().includes(search) ||
-            user.user_email.toLowerCase().includes(search) ||
-            user.user_coursenumber.toString().includes(search) ||
-            user.role?.rol_name.toLowerCase().includes(search)
-        );
-
-        if (userFilter === 'all') return matchesSearch;
-        return matchesSearch && user.role?.rol_name === userFilter;
-    });
+    // El carrusel de usuarios ya viene filtrado y paginado del servidor
+    // (fetchUsers con search/rol); aquí no se refiltra nada en el navegador.
+    const filteredUsers = usuariosPagina;
 
     // Los ingresos ya vienen filtrados y paginados desde el servidor (/api/admin/ingresos)
     const filteredIngresos = ingresos;
 
-    // Instructores disponibles para asignar a un aprendiz
-    const instructors = users.filter(user => user.role?.rol_name === 'Instructor');
+    // Instructores disponibles para asignar a un aprendiz (lista de directorio).
+    const instructors = useMemo(
+        () => users.filter(user => user.role?.rol_name === 'Instructor'),
+        [users]
+    );
 
     // Filtro de instructores del directorio (sin ambientes)
     const filteredInstructors = instructors;
 
     // Filtro de aprendices del directorio
-    const filteredAprendices = users.filter(user => user.role?.rol_name === 'Aprendiz');
+    const filteredAprendices = useMemo(
+        () => users.filter(user => user.role?.rol_name === 'Aprendiz'),
+        [users]
+    );
 
     // Filtro de equipos por nombre, apellido, email, tipo de equipo, marca, modelo, color y serial
-    const filteredEquipment = equipmentList.filter(item => {
+    const filteredEquipment = useMemo(() => equipmentList.filter(item => {
         const search = searchTermEquipment.toLowerCase();
         const userName = `${item.user?.user_name} ${item.user?.user_lastname}`.toLowerCase();
         return (
@@ -266,7 +305,7 @@ const Admin = () => {
             item.equipo_serial.toLowerCase().includes(search) ||
             item.user?.user_identification?.toLowerCase().includes(search)
         );
-    });
+    }), [equipmentList, searchTermEquipment]);
 
     const handleLogout = async () => {
         // Logica para el log-out asincronica 
@@ -360,6 +399,7 @@ const handleCancelEdit = () => {
             }); // El metodo axios.post se usa para enviar los datos del formulario al backend.
 
             setUsers(users.map(u => u.id_usuario === editingUser ? response.data : u));
+            fetchUsers(); // Refresca la página visible del carrusel
 
             // Si el usuario editado es el actual, actualizarlo también
             if (currentUser && currentUser.id_usuario === editingUser) {
@@ -409,6 +449,7 @@ const handleCancelEdit = () => {
             });
 
             setUsers([...users, response.data]);
+            fetchUsers(); // Refresca la página visible del carrusel
             showAlert('Usuario creado con éxito');
             handleCancelEdit();
         } catch (error) {
@@ -470,6 +511,7 @@ const handleCancelEdit = () => {
             try {
                 await axios.delete(`/api/admin/users/${id}`);
                 setUsers(users.filter(u => u.id_usuario !== id));
+                fetchUsers(); // Refresca la página visible del carrusel
                 showAlert('Usuario eliminado');
             } catch (error) {
                 showAlert('Error al eliminar usuario', 'error');
@@ -639,7 +681,7 @@ const handleCancelEdit = () => {
                                 <div className="d-flex justify-content-between align-items-center mb-5 flex-wrap gap-3 px-3 px-md-4">
                                     <div className="section-header mb-0">
                                         <h3 className="mb-0">Gestión de {userFilter === 'all' ? 'Usuarios' : userFilter}</h3>
-                                        <p className="small opacity-50 mb-0">Total: {filteredUsers.length} registros</p>
+                                        <p className="small opacity-50 mb-0">Total: {usuariosTotal} registros{usuariosCargando ? ' • cargando…' : ''}</p>
                                     </div>
                                     <div className="d-flex gap-2 flex-wrap align-items-center">
                                         <button className="btn btn-success action-btn" onClick={handleNewUser}>
@@ -657,7 +699,7 @@ const handleCancelEdit = () => {
                                                     key={f.key}
                                                     type="button"
                                                     className={`btn btn-sm ${userFilter === f.key ? 'btn-success' : 'btn-outline-success'}`}
-                                                    onClick={() => setUserFilter(f.key)}
+                                                    onClick={() => { setUserFilter(f.key); setUsuariosPag(1); usuariosPagRef.current = 1; }}
                                                 >
                                                     {f.label}
                                                 </button>
@@ -690,7 +732,7 @@ const handleCancelEdit = () => {
                                                 <div className="user-card-header text-center pt-4 mb-3">
                                                     <div className="user-avatar-lg mx-auto mb-3 shadow overflow-hidden">
                                                         {user.profile_photo_path ? (
-                                                            <img src={user.profile_photo_path} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                            <img src={user.profile_photo_path} alt="Avatar" loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                                         ) : (
                                                             <>{user.user_name[0]}{user.user_lastname[0]}</>
                                                         )}
@@ -738,6 +780,26 @@ const handleCancelEdit = () => {
                                         <span className="material-symbols-outlined">chevron_right</span>
                                     </button>
                                 </div>
+                                {/* Paginación del servidor: 24 por página, sin renderizar cientos de tarjetas */}
+                                {usuariosUltima > 1 && (
+                                    <div className="d-flex justify-content-center align-items-center gap-3 mt-3">
+                                        <button
+                                            className="btn btn-sm btn-outline-success"
+                                            disabled={usuariosPag <= 1 || usuariosCargando}
+                                            onClick={() => setUsuariosPag(p => Math.max(1, p - 1))}
+                                        >
+                                            Anterior
+                                        </button>
+                                        <span className="small opacity-75">Página {usuariosPag} de {usuariosUltima}</span>
+                                        <button
+                                            className="btn btn-sm btn-outline-success"
+                                            disabled={usuariosPag >= usuariosUltima || usuariosCargando}
+                                            onClick={() => setUsuariosPag(p => Math.min(usuariosUltima, p + 1))}
+                                        >
+                                            Siguiente
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         ) : null}
                     </div>
@@ -958,7 +1020,7 @@ const handleCancelEdit = () => {
                                                     <div className="d-flex align-items-center gap-2">
                                                         <div className="rounded-circle bg-success d-flex align-items-center justify-content-center border border-2 border-success border-opacity-25 overflow-hidden flex-shrink-0" style={{ width: '34px', height: '34px', fontSize: '0.75rem', fontWeight: 'bold', color: '#000' }}>
                                                             {item.user?.profile_photo_path ? (
-                                                                <img src={item.user.profile_photo_path} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                                <img src={item.user.profile_photo_path} alt="Avatar" loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                                             ) : (
                                                                 <>{item.user?.user_name?.[0]}{item.user?.user_lastname?.[0]}</>
                                                             )}
@@ -1049,7 +1111,7 @@ const handleCancelEdit = () => {
                                                          <div className="d-flex align-items-center gap-3 mb-3">
                                                              <div className="rounded-circle bg-success d-flex align-items-center justify-content-center border border-2 border-success border-opacity-25 shadow-sm overflow-hidden" style={{ width: '48px', height: '48px', fontWeight: 'bold', color: '#000', flexShrink: 0 }}>
                                                                  {instructor.profile_photo_path ? (
-                                                                     <img src={instructor.profile_photo_path} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                                     <img src={instructor.profile_photo_path} alt="Avatar" loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                                                  ) : (
                                                                      <>{instructor.user_name?.[0]}{instructor.user_lastname?.[0]}</>
                                                                  )}
@@ -1083,7 +1145,7 @@ const handleCancelEdit = () => {
                                                             <div className="d-flex align-items-center gap-3 mb-3">
                                                                 <div className="rounded-circle bg-success d-flex align-items-center justify-content-center border border-2 border-success border-opacity-25 shadow-sm overflow-hidden" style={{ width: '48px', height: '48px', fontWeight: 'bold', color: '#000', flexShrink: 0 }}>
                                                                     {aprendiz.profile_photo_path ? (
-                                                                        <img src={aprendiz.profile_photo_path} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                                        <img src={aprendiz.profile_photo_path} alt="Avatar" loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                                                     ) : (
                                                                         <>{aprendiz.user_name?.[0]}{aprendiz.user_lastname?.[0]}</>
                                                                     )}
@@ -1118,7 +1180,7 @@ const handleCancelEdit = () => {
                         <div className="text-center mb-4">
                             <div className="rounded-circle bg-success mx-auto d-flex align-items-center justify-content-center mb-3 shadow overflow-hidden" style={{ width: '100px', height: '100px', fontSize: '2.5rem', fontWeight: 'bold' }}>
                                 {currentUser?.profile_photo_path ? (
-                                    <img src={currentUser.profile_photo_path} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    <img src={currentUser.profile_photo_path} alt="Profile" loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                 ) : (
                                     <>{currentUser?.user_name[0]}{currentUser?.user_lastname[0]}</>
                                 )}

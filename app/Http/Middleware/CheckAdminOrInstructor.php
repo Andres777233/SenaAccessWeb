@@ -14,11 +14,11 @@ class CheckAdminOrInstructor
      *
      */
 
-    // Verificación de rol admin o instructor
+    // Verificación de rol admin, instructor o portero (lectura operativa).
     public function handle(Request $request, Closure $next): Response
     {
         $user = $request->user();
-        if (!$user || !in_array(strtolower($user->role?->rol_name), ['admin', 'instructor'])) {
+        if (!$user || !in_array(strtolower($user->role?->rol_name), ['admin', 'instructor', 'portero'])) {
             return response()->json(['message' => 'No tienes permisos para realizar esta acción'], 403);
         }
 

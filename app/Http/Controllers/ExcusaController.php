@@ -113,14 +113,15 @@ class ExcusaController extends Controller
         return response()->json($q->get());
     }
 
-    // Admin valida PIN en recepción: marca usada y registra Salida del aprendiz.
+    // Admin, instructor o portero valida PIN en recepción: marca usada y registra Salida del aprendiz.
     public function validar(Request $request)
     {
         $user = $request->user();
         $esAdmin = $user->role && $user->role->rol_name === 'admin';
         $esInstructor = $user->role && $user->role->rol_name === 'Instructor';
-        if (!$esAdmin && !$esInstructor) {
-            return response()->json(['message' => 'Solo admin o instructor puede validar PIN'], 403);
+        $esPortero = $user->role && $user->role->rol_name === 'Portero';
+        if (!$esAdmin && !$esInstructor && !$esPortero) {
+            return response()->json(['message' => 'Solo admin, instructor o portero puede validar PIN'], 403);
         }
 
         $data = $request->validate([

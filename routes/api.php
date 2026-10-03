@@ -93,20 +93,20 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::delete('/users/{id}', [AdminController::class, 'deleteUser']);
         });
 
-        // El historial global de accesos y las estadísticas del centro son SOLO admin:
-        // el instructor únicamente consulta su propio historial (/my-ingresos).
-        Route::middleware('admin')->group(function () {
+        // El historial global de accesos y las estadísticas del centro son admin
+        // o portero: la portería consulta movimientos sin gestionar usuarios.
+        Route::middleware('admin_or_portero')->group(function () {
             Route::get('/ingresos', [AdminController::class, 'getIngresos']);
             Route::get('/ingresos/export', [AdminController::class, 'exportIngresos']);
             Route::get('/stats', [AdminController::class, 'stats']);
             Route::get('/presentes', [AdminController::class, 'presentes']);
         });
 
-        // Rutas para gestionar equipos: SOLO el admin registra y marca devoluciones;
-        // ver el inventario completo y eliminar también solo admin.
-        Route::post('/equipment', [EquipmentController::class, 'store'])->middleware('admin');
-        Route::post('/equipment/{id}/return', [EquipmentController::class, 'markReturn'])->middleware('admin');
-        Route::middleware('admin')->group(function () {
+        // Rutas para gestionar equipos: admin o portero registran y marcan
+        // devoluciones; ver el inventario completo y eliminar también ambos.
+        Route::post('/equipment', [EquipmentController::class, 'store'])->middleware('admin_or_portero');
+        Route::post('/equipment/{id}/return', [EquipmentController::class, 'markReturn'])->middleware('admin_or_portero');
+        Route::middleware('admin_or_portero')->group(function () {
             Route::get('/equipment', [EquipmentController::class, 'index']);
             Route::delete('/equipment/{id}', [EquipmentController::class, 'deleteEquipment']);
         });
@@ -154,7 +154,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/instructor/excusas/{id}', [ExcusaController::class, 'anular']);
     Route::get('/mis-excusas', [ExcusaController::class, 'misExcusas']);
     Route::post('/excusas/validar', [ExcusaController::class, 'validar'])->middleware('throttle:pin');
-    Route::middleware('admin')->group(function () {
+    Route::middleware('admin_or_portero')->group(function () {
         Route::get('/admin/excusas', [ExcusaController::class, 'indexAdmin']);
     });
 

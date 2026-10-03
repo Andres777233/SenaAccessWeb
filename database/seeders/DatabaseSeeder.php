@@ -16,6 +16,7 @@ class DatabaseSeeder extends Seeder
         $instructorRole = Role::firstOrCreate(['rol_name' => 'Instructor']);
         $aprendizRole = Role::firstOrCreate(['rol_name' => 'Aprendiz']);
         Role::firstOrCreate(['rol_name' => 'Invitado']);
+        Role::firstOrCreate(['rol_name' => 'Portero']);
 
         // Credenciales de prueba documentadas en AGENTS.md (password: 12345678)
         // 6 cuentas para login con password: 123456 (instructores + aprendices)

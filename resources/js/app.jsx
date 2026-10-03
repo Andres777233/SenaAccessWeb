@@ -16,6 +16,7 @@ import CustomAlert from './components/CustomAlert';
 import Admin from './components/Admin';
 import Aprendiz from './components/Aprendiz';
 import Instructor from './components/Instructor';
+import Portero from './components/Portero';
 
 // Guard: redirige a /login si no hay token o el rol no coincide con el esperado.
 const ProtectedRoute = ({ expectedRole, children }) => {
@@ -43,6 +44,9 @@ const Verificacion2FaRoute = () => {
         }
         if (role === 'aprendiz') {
             return <Navigate to="/aprendiz" replace />;
+        }
+        if (role === 'portero') {
+            return <Navigate to="/portero" replace />;
         }
         return <Navigate to="/" replace />;
     }
@@ -161,6 +165,7 @@ const App = () => {
                     <Route path="/admin" element={<ProtectedRoute expectedRole="admin"><Admin /></ProtectedRoute>} />
                     <Route path="/aprendiz" element={<ProtectedRoute expectedRole="aprendiz"><Aprendiz /></ProtectedRoute>} />
                     <Route path="/instructor" element={<ProtectedRoute expectedRole="instructor"><Instructor /></ProtectedRoute>} />
+                    <Route path="/portero" element={<ProtectedRoute expectedRole="portero"><Portero /></ProtectedRoute>} />
                     <Route path="*" element={<div style={{color: 'var(--text-color)'}}>404 - Página no encontrada</div>} />
                 </Routes>
             </Suspense>

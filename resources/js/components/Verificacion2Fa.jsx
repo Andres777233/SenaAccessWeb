@@ -20,6 +20,8 @@ const redirigirPorRol = (navigate, role) => {
         navigate('/instructor');
     } else if (userRole === 'aprendiz') {
         navigate('/aprendiz');
+    } else if (userRole === 'portero') {
+        navigate('/portero');
     } else {
         navigate('/loading');
     }

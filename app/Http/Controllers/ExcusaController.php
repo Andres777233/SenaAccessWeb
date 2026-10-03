@@ -117,9 +117,10 @@ class ExcusaController extends Controller
     public function validar(Request $request)
     {
         $user = $request->user();
-        $esAdmin = $user->role && $user->role->rol_name === 'admin';
-        $esInstructor = $user->role && $user->role->rol_name === 'Instructor';
-        $esPortero = $user->role && $user->role->rol_name === 'Portero';
+        $rol = strtolower($user->role->rol_name ?? '');
+        $esAdmin = $rol === 'admin';
+        $esInstructor = $rol === 'instructor';
+        $esPortero = $rol === 'portero';
         if (!$esAdmin && !$esInstructor && !$esPortero) {
             return response()->json(['message' => 'Solo admin, instructor o portero puede validar PIN'], 403);
         }

@@ -32,6 +32,7 @@ class ParidadTest extends TestCase
         foreach ($this->uidsCreados as $uid) {
             DB::table('personal_access_tokens')->where('tokenable_id', $uid)->delete();
             DB::table('two_factor_challenges')->where('fk_id_usuario', $uid)->delete();
+            DB::table('ingreso_equipos')->where('fk_id_usuario', $uid)->delete();
             DB::table('ingresos')->where('fk_id_user', $uid)->delete();
             DB::table('notificaciones')->where('fk_id_usuario', $uid)->delete();
             DB::table('usuarios')->where('id_usuario', $uid)->delete();
@@ -419,5 +420,66 @@ class ParidadTest extends TestCase
         $r = $this->getJson('/api/admin/ingresos/export?formato=csv&cols=usuario');
         $r->assertOk();
         $this->assertStringContainsString("'=CMD", $r->streamedContent() ?? '');
+    }
+
+    public function test_portero_accede_presentes_e_historial(): void
+    {
+        Sanctum::actingAs($this->crearUsuario('Portero'));
+
+        $r = $this->getJson('/api/admin/presentes');
+        $r->assertOk();
+        $this->assertIsArray($r->json());
+
+        $this->getJson('/api/admin/ingresos')->assertOk();
+        $this->getJson('/api/admin/stats')->assertOk();
+        $this->getJson('/api/admin/excusas')->assertOk();
+    }
+
+    public function test_portero_registra_y_devuelve_equipo(): void
+    {
+        Sanctum::actingAs($this->crearUsuario('Portero'));
+
+        $r = $this->postJson('/api/admin/equipment', [
+            'equipo_type' => 'Portátil',
+            'equipo_brand' => 'Test',
+            'equipo_color' => 'Negro',
+            'equipo_serial' => 'PAREQ' . substr(uniqid(), -8),
+        ]);
+        $r->assertStatus(201);
+        $id = $r->json('data.id_ingreso_equipo') ?? $r->json('data.id');
+        $this->assertNotNull($id);
+
+        $this->postJson("/api/admin/equipment/{$id}/return")->assertOk();
+        // Segunda devolución: ya está devuelto.
+        $this->postJson("/api/admin/equipment/{$id}/return")->assertStatus(422);
+
+        Sanctum::actingAs($this->crearUsuario('Aprendiz'));
+        $this->postJson('/api/admin/equipment', [
+            'equipo_type' => 'Portátil',
+            'equipo_brand' => 'Test',
+            'equipo_color' => 'Negro',
+            'equipo_serial' => 'PAREQ' . substr(uniqid(), -8),
+        ])->assertStatus(403);
+    }
+
+    public function test_validar_pin_solo_roles_operativos(): void
+    {
+        // PIN inexistente: los roles operativos pasan la autorización (400) y el resto no (403).
+        Sanctum::actingAs($this->crearUsuario('Portero'));
+        $this->postJson('/api/excusas/validar', ['pin' => '0000'])->assertStatus(400);
+
+        Sanctum::actingAs($this->crearUsuario('Instructor'));
+        $this->postJson('/api/excusas/validar', ['pin' => '0000'])->assertStatus(400);
+
+        Sanctum::actingAs($this->crearUsuario('Aprendiz'));
+        $this->postJson('/api/excusas/validar', ['pin' => '0000'])->assertStatus(403);
+    }
+
+    public function test_portero_no_gestiona_usuarios_ni_ambientes(): void
+    {
+        Sanctum::actingAs($this->crearUsuario('Portero'));
+
+        $this->postJson('/api/admin/users', ['user_email' => 'x@y.com'])->assertStatus(403);
+        $this->postJson('/api/admin/ambientes', ['ambiente_nombre' => 'X'])->assertStatus(403);
     }
 }

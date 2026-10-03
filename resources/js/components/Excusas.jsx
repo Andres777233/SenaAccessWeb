@@ -27,10 +27,11 @@ const restoVigencia = (expira_en, ahora) => {
 
 const Excusas = ({ currentUser, rol }) => {
     const rolNorm = (rol || currentUser?.role?.rol_name || '').toLowerCase();
-    const esAdmin = rolNorm === 'admin';
+    // Portería opera como admin: valida PIN y ve la bandeja (sin crear excusas).
+    const esOperativo = rolNorm === 'admin' || rolNorm === 'portero';
     const esInstructor = rolNorm === 'instructor' || rolNorm === 'instructora';
 
-    if (esAdmin) return <ExcusasAdmin />;
+    if (esOperativo) return <ExcusasAdmin />;
     if (esInstructor) return <InstructorExcusas />;
     return <MisExcusas />;
 };

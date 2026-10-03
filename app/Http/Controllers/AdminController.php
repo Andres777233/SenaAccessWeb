@@ -23,9 +23,40 @@ use Carbon\Carbon;
 
 class AdminController extends Controller
 {
-    public function index()
+    // Lista de usuarios con paginación opt-in: sin parámetros devuelve la tabla
+    // completa (compatibilidad con APKs anteriores); con page/per_page/search/rol
+    // devuelve un paginador Laravel {data, total, ...} filtrado en el servidor.
+    public function index(Request $request)
     {
-        $users = User::with('role')->get();
+        $query = User::with('role');
+
+        if ($request->filled('rol')) {
+            $rol = $request->rol;
+            $query->whereHas('role', function ($r) use ($rol) {
+                $r->where('rol_name', $rol);
+            });
+        }
+
+        if ($request->filled('search')) {
+            $s = $request->search;
+            $query->where(function ($sub) use ($s) {
+                $sub->where('user_name', 'like', "%{$s}%")
+                    ->orWhere('user_lastname', 'like', "%{$s}%")
+                    ->orWhere('user_email', 'like', "%{$s}%")
+                    ->orWhere('user_identification', 'like', "%{$s}%");
+            });
+        }
+
+        if ($request->filled('page') || $request->filled('per_page') || $request->filled('search') || $request->filled('rol')) {
+            $perPage = $request->integer('per_page', 50);
+            if ($perPage < 1) { $perPage = 50; }
+            if ($perPage > 200) { $perPage = 200; }
+            return response()->json(
+                $query->orderBy('id_usuario', 'desc')->paginate($perPage)
+            );
+        }
+
+        $users = $query->get();
         return response()->json($users); //CONSULTA DE TODOS LOS USUARIOS
     }
 
@@ -38,11 +69,12 @@ class AdminController extends Controller
         }
 
         if ($request->filled('desde')) {
-            $query->whereDate('ingreso_datetime', '>=', $request->desde);
+            // Rango sobre el datetime (no whereDate) para que use el índice.
+            $query->where('ingreso_datetime', '>=', $request->desde . ' 00:00:00');
         }
 
         if ($request->filled('hasta')) {
-            $query->whereDate('ingreso_datetime', '<=', $request->hasta);
+            $query->where('ingreso_datetime', '<', Carbon::parse($request->hasta)->addDay()->toDateString() . ' 00:00:00');
         }
 
         if ($request->filled('q')) {
@@ -134,11 +166,12 @@ class AdminController extends Controller
         }
 
         if ($request->filled('desde')) {
-            $query->whereDate('ingreso_datetime', '>=', $request->desde);
+            // Rango sobre el datetime (no whereDate) para que use el índice.
+            $query->where('ingreso_datetime', '>=', $request->desde . ' 00:00:00');
         }
 
         if ($request->filled('hasta')) {
-            $query->whereDate('ingreso_datetime', '<=', $request->hasta);
+            $query->where('ingreso_datetime', '<', Carbon::parse($request->hasta)->addDay()->toDateString() . ' 00:00:00');
         }
 
         if ($request->filled('q')) {
@@ -183,7 +216,9 @@ class AdminController extends Controller
             $colsSel = array_keys($columnasDisponibles);
         }
 
-        $ingresos = $query->orderBy('ingreso_datetime', 'desc')->get();
+        // Tope de seguridad: el export nunca materializa más de 5000 filas
+        // (las más recientes) para no tumbar el contenedor con historiales enormes.
+        $ingresos = $query->orderBy('ingreso_datetime', 'desc')->limit(5000)->get();
 
         // En hojas de cálculo (CSV/XLSX) hay que neutralizar fórmulas: una celda
         // que empiece por = + - @ se ejecutaría al abrirla en Excel. Se antepone '.

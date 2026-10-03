@@ -90,10 +90,11 @@ const Navbar = ({ currentUser, view, setView, userFilter, setUserFilter, links =
                     <ul className="navbar-nav navbar-center mx-auto mb-2 mb-lg-0 gap-2">
                         {links.map((link, index) => {
                             if (link.dropdown) {
+                                const hijoActivo = (link.items || []).some(item => item.view && item.view === view);
                                 return (
                                     <li key={index} className="nav-item dropdown">
                                         <button
-                                            className={`nav-item-link dropdown-toggle ${view === link.view ? 'active' : ''}`}
+                                            className={`nav-item-link dropdown-toggle ${hijoActivo ? 'active' : ''}`}
                                             type="button"
                                             data-bs-toggle="dropdown"
                                             aria-expanded="false"
@@ -127,7 +128,10 @@ const Navbar = ({ currentUser, view, setView, userFilter, setUserFilter, links =
                                 <li key={index} className="nav-item">
                                     <button
                                         className={`nav-item-link ${view === link.view ? 'active' : ''}`}
-                                        onClick={() => setView(link.view)}
+                                        onClick={() => {
+                                            setView(link.view);
+                                            if (link.filter && setUserFilter) setUserFilter(link.filter);
+                                        }}
                                     >
                                         <span className="material-symbols-outlined small me-1">{link.icon}</span> {link.label}
                                     </button>

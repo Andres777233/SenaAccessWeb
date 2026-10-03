@@ -645,6 +645,22 @@ const handleCancelEdit = () => {
                                         <button className="btn btn-success action-btn" onClick={handleNewUser}>
                                             <span className="material-symbols-outlined small">person_add</span> Nuevo usuario
                                         </button>
+                                        <div className="btn-group" role="group" aria-label="Filtrar por rol">
+                                            {[
+                                                { key: 'all', label: 'Todos' },
+                                                { key: 'Instructor', label: 'Instructores' },
+                                                { key: 'Aprendiz', label: 'Aprendices' }
+                                            ].map(f => (
+                                                <button
+                                                    key={f.key}
+                                                    type="button"
+                                                    className={`btn btn-sm ${userFilter === f.key ? 'btn-success' : 'btn-outline-success'}`}
+                                                    onClick={() => setUserFilter(f.key)}
+                                                >
+                                                    {f.label}
+                                                </button>
+                                            ))}
+                                        </div>
                                         <div className="input-group search-input-group" style={{ maxWidth: '350px' }}>
                                         <span className="input-group-text">
                                             <span className="material-symbols-outlined">search</span>
@@ -1189,34 +1205,26 @@ const handleCancelEdit = () => {
         }
     };
 
+    // Nav espeja el dock del admin móvil (INICIO·NOVEDADES·USUARIOS·AMBIENTES);
+    // el resto vive en el secundario MÁS. Sin borrar vistas ni rutas.
     const adminLinks = [
         { label: 'DASHBOARD', icon: 'dashboard', view: 'dashboard' },
         { label: 'NOVEDADES', icon: 'report_problem', view: 'novedad_historial' },
-        { label: 'HISTORIAL DE ACCESOS', icon: 'history', view: 'historial' },
+        { label: 'USUARIOS', icon: 'group', view: 'users', filter: 'all' },
         { label: 'AMBIENTES', icon: 'meeting_room', view: 'ambientes' },
-        { label: 'EXCUSAS', icon: 'key', view: 'excusas' },
-        { label: 'PRESENTES', icon: 'groups', view: 'presentes' },
-        { label: 'VALIDAR QR', icon: 'qr_code_scanner', view: 'validar_qr' },
         {
-            label: 'EQUIPOS',
-            icon: 'devices',
-            view: 'historial_equipos',
+            label: 'MÁS',
+            icon: 'more_horiz',
+            view: 'historial',
             dropdown: true,
             items: [
-                { label: 'Nuevo Registro de Equipo', icon: 'add_circle', view: 'equipo_entry' },
-                { label: 'Historial de Equipos', icon: 'history', view: 'historial_equipos' }
-            ]
-        },
-        {
-            label: 'GESTIÓN DE USUARIOS',
-            icon: 'group',
-            view: 'users',
-            dropdown: true,
-            items: [
-                { label: 'Instructores', icon: 'school', filter: 'Instructor', view: 'users' },
-                { label: 'Aprendices', icon: 'person', filter: 'Aprendiz', view: 'users' },
+                { label: 'Historial de Accesos', icon: 'history', view: 'historial' },
+                { label: 'Presentes', icon: 'groups', view: 'presentes' },
+                { label: 'Excusas', icon: 'key', view: 'excusas' },
+                { label: 'Validar QR', icon: 'qr_code_scanner', view: 'validar_qr' },
                 { divider: true },
-                { label: 'Ver Todos los Usuarios', icon: 'groups', filter: 'all', view: 'users' }
+                { label: 'Nuevo Registro de Equipo', icon: 'add_circle', view: 'equipo_entry' },
+                { label: 'Historial de Equipos', icon: 'inventory_2', view: 'historial_equipos' }
             ]
         }
     ];

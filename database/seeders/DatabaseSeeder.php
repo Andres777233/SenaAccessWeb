@@ -13,11 +13,11 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         // Create Roles
-        $adminRole = Role::firstOrCreate(['rol_name' => 'admin']);
+        $adminRole = Role::firstOrCreate(['rol_name' => 'Superadmin']);
         $instructorRole = Role::firstOrCreate(['rol_name' => 'Instructor']);
         $aprendizRole = Role::firstOrCreate(['rol_name' => 'Aprendiz']);
         Role::firstOrCreate(['rol_name' => 'Invitado']);
-        Role::firstOrCreate(['rol_name' => 'Portero']);
+        Role::firstOrCreate(['rol_name' => 'Admin']);
 
         // Credenciales de prueba documentadas en AGENTS.md (password: 12345678)
         // 6 cuentas para login con password: 123456 (instructores + aprendices)

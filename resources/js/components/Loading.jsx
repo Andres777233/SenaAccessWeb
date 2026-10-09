@@ -7,12 +7,14 @@ const Loading = () => {
     useEffect(() => { // HOOK: useEffect ejecuta codigo cuando el componente se monta, redireccion programatica.
         const timer = setTimeout(() => {
             const role = localStorage.getItem('user_role')?.toLowerCase();
-            if (role === 'admin') {
+            if (role === 'superadmin') {
                 navigate('/admin'); // Redirige al panel de administración.
             } else if (role === 'aprendiz') {
                 navigate('/aprendiz'); // Redirige al panel de aprendices.
             } else if (role === 'instructor') {
                 navigate('/instructor'); // Redirige al panel de instructores.
+            } else if (role === 'admin' || role === 'portero') {
+                navigate('/portero'); // Redirige al panel operativo (portería).
             } else {
                 navigate('/'); // Redirige al inicio.
             }

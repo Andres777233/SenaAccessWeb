@@ -15,7 +15,7 @@ class EquipmentController extends Controller
     public function store(Request $request)
     {
         // Admin o portero pueden registrar equipos (comparación insensible a mayúsculas).
-        if (!in_array(strtolower(Auth::user()->role->rol_name ?? ''), ['admin', 'portero'])) {
+        if (!in_array(strtolower(Auth::user()->role->rol_name ?? ''), ['superadmin', 'admin'])) {
             return response()->json(['message' => 'No tienes permiso para registrar equipos'], 403);
         }
 
@@ -83,7 +83,7 @@ class EquipmentController extends Controller
         $ingreso = IngresoEquipo::with('user.role')->findOrFail($id);
 
         $esDueno = $ingreso->fk_id_usuario === Auth::id();
-        $esAdmin = in_array(strtolower(Auth::user()->role->rol_name ?? ''), ['admin', 'portero']);
+        $esAdmin = in_array(strtolower(Auth::user()->role->rol_name ?? ''), ['superadmin', 'admin']);
         if (!$esDueno && !$esAdmin) {
             return response()->json(['message' => 'No tienes permiso para descargar este comprobante'], 403);
         }

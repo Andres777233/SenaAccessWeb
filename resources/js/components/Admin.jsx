@@ -10,6 +10,7 @@ import Ambientes from './Ambientes';
 import Excusas from './Excusas';
 import Presentes from './Presentes';
 import QrInvitado from './QrInvitado';
+import QrScannerModal from './QrScannerModal';
 import DosPasos from './DosPasos';
 import RecorteFoto from './RecorteFoto';
 import { showAlert, showConfirm } from './CustomAlert';
@@ -49,6 +50,7 @@ const Admin = () => {
     const [editingUser, setEditingUser] = useState(null); // Usuario que se está editando
     const [creatingUser, setCreatingUser] = useState(false); // Formulario en modo crear
     const [searchTermUsers, setSearchTermUsers] = useState(''); // Busqueda de usuarios
+    const [isQrScannerOpen, setIsQrScannerOpen] = useState(false); // Escáner de carnet digital
     const [searchTermIngresos, setSearchTermIngresos] = useState('');   // Busqueda de ingresos
     const [filterTipo, setFilterTipo] = useState('');                    // Filtro por tipo (Entrada/Salida)
     const [filterDesde, setFilterDesde] = useState('');                  // Filtro por fecha desde
@@ -112,6 +114,25 @@ const Admin = () => {
         } finally {
             setUsuariosCargando(false);
         }
+    };
+
+    // Escáner de carnet digital (paridad Sebastián): el QR trae JSON SENA_ACCESS;
+    // se busca por identificación y se filtra el listado de usuarios.
+    const handleQrScan = (rawData) => {
+        setIsQrScannerOpen(false);
+        try {
+            const parsed = JSON.parse(rawData);
+            if (parsed.app === 'SENA_ACCESS' && parsed.user_identification) {
+                setSearchTermUsers(parsed.user_identification);
+            } else {
+                setSearchTermUsers(rawData.trim());
+            }
+        } catch {
+            setSearchTermUsers(rawData.trim());
+        }
+        setUserFilter('all');
+        setView('users');
+        showAlert('Búsqueda aplicada desde el carnet escaneado');
     };
 
     // Refresca los datos de la vista actual al cambiar de vista y al enfocar la pestaña,
@@ -692,7 +713,7 @@ const handleCancelEdit = () => {
                                                 { key: 'all', label: 'Todos' },
                                                 { key: 'Instructor', label: 'Instructores' },
                                                 { key: 'Aprendiz', label: 'Aprendices' },
-                                                { key: 'Portero', label: 'Porteros' },
+                                                { key: 'Admin', label: 'Admins' },
                                                 { key: 'Invitado', label: 'Invitados' }
                                             ].map(f => (
                                                 <button
@@ -924,13 +945,26 @@ const handleCancelEdit = () => {
                     <EquipmentForm adminMode onSaved={fetchEquipment} />
                 );
             case 'ambientes':
-                return <Ambientes currentUser={currentUser} rol="admin" />;
+                return <Ambientes currentUser={currentUser} rol="superadmin" />;
             case 'excusas':
-                return <Excusas currentUser={currentUser} rol="admin" />;
+                return <Excusas currentUser={currentUser} rol="superadmin" />;
             case 'presentes':
                 return <Presentes />;
             case 'validar_qr':
                 return <QrInvitado />;
+            case 'escanear_carnet':
+                return (
+                    <div className="fade-in-up">
+                        <div className="glass-box p-4 mb-5 mx-auto text-center" style={{ maxWidth: '640px' }}>
+                            <h3 className="mb-2">Escanear Carnet Digital</h3>
+                            <p className="opacity-50 small">Apunta al QR del carnet para buscar al usuario.</p>
+                            <button type="button" className="btn btn-success px-4 py-2" onClick={() => setIsQrScannerOpen(true)}>
+                                <span className="material-symbols-outlined small me-1">qr_code_scanner</span> Abrir escáner
+                            </button>
+                        </div>
+                        <QrScannerModal isOpen={isQrScannerOpen} onClose={() => setIsQrScannerOpen(false)} onScanSuccess={handleQrScan} />
+                    </div>
+                );
             case 'historial_equipos':
                 const equiposFiltradosPorRol = filteredEquipment.filter(item => {
                     if (!equipoRolFilter) return true;
@@ -1275,7 +1309,8 @@ const handleCancelEdit = () => {
         { label: 'DASHBOARD', icon: 'dashboard', view: 'dashboard' },
         { label: 'NOVEDADES', icon: 'report_problem', view: 'novedad_historial' },
         { label: 'USUARIOS', icon: 'group', view: 'users', filter: 'all' },
-        { label: 'AMBIENTES', icon: 'meeting_room', view: 'ambientes' }
+        { label: 'AMBIENTES', icon: 'meeting_room', view: 'ambientes' },
+        { label: 'ESCANEAR CARNET', icon: 'qr_code_scanner', view: 'escanear_carnet' }
     ];
 
     return (

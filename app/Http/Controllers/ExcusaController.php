@@ -33,7 +33,7 @@ class ExcusaController extends Controller
     public function store(Request $request)
     {
         $user = $request->user();
-        $esAdmin = $user->role && $user->role->rol_name === 'admin';
+        $esAdmin = strtolower($user->role->rol_name ?? '') === 'superadmin';
         $esInstructor = $user->role && $user->role->rol_name === 'Instructor';
         if (!$esAdmin && !$esInstructor) {
             return response()->json(['message' => 'Solo instructores o admin pueden crear excusas'], 403);
@@ -91,7 +91,7 @@ class ExcusaController extends Controller
     {
         $user = $request->user();
         $excusa = Excusa::findOrFail($id);
-        $esAdmin = $user->role && $user->role->rol_name === 'admin';
+        $esAdmin = strtolower($user->role->rol_name ?? '') === 'superadmin';
         if (!$esAdmin && $excusa->fk_id_instructor !== $user->id_usuario) {
             return response()->json(['message' => 'No autorizado'], 403);
         }
@@ -113,16 +113,16 @@ class ExcusaController extends Controller
         return response()->json($q->get());
     }
 
-    // Admin, instructor o portero valida PIN en recepción: marca usada y registra Salida del aprendiz.
+    // Superadmin, instructor o admin (operativo de portería) valida PIN en recepción: marca usada y registra Salida del aprendiz.
     public function validar(Request $request)
     {
         $user = $request->user();
         $rol = strtolower($user->role->rol_name ?? '');
-        $esAdmin = $rol === 'admin';
+        $esAdmin = $rol === 'superadmin';
         $esInstructor = $rol === 'instructor';
-        $esPortero = $rol === 'portero';
+        $esPortero = $rol === 'admin';
         if (!$esAdmin && !$esInstructor && !$esPortero) {
-            return response()->json(['message' => 'Solo admin, instructor o portero puede validar PIN'], 403);
+            return response()->json(['message' => 'Solo superadmin, instructor o admin puede validar PIN'], 403);
         }
 
         $data = $request->validate([

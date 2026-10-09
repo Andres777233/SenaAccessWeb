@@ -94,13 +94,13 @@ const Login = () => {
             showAlert(response.data.message);
             // Redirige según el rol hacia los paneles del SPA React
             const userRole = response.data.role.toLowerCase();
-            if (userRole === 'admin') {
+            if (userRole === 'superadmin') {
                 navigate('/admin');
             } else if (userRole === 'instructor') {
                 navigate('/instructor');
             } else if (userRole === 'aprendiz') {
                 navigate('/aprendiz');
-            } else if (userRole === 'portero') {
+            } else if (userRole === 'admin' || userRole === 'portero') {
                 navigate('/portero');
             } else {
                 navigate('/loading');

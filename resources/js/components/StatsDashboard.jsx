@@ -7,7 +7,7 @@ const StatsDashboard = ({ currentUser = null }) => {
     const [error, setError] = useState('');
 
     // Portería ve estadísticas del centro (mismo alcance operativo que admin).
-    const isAdmin = ['admin', 'portero'].includes(currentUser?.role?.rol_name?.toLowerCase());
+    const isAdmin = ['superadmin', 'admin'].includes(currentUser?.role?.rol_name?.toLowerCase());
 
     useEffect(() => {
         const fetchStats = async () => {

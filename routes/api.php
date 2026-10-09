@@ -10,6 +10,7 @@ use App\Http\Controllers\ExcusaController;
 use App\Http\Controllers\NovedadController;
 use App\Http\Controllers\NotificacionController;
 use App\Http\Controllers\TwoFactorController;
+use App\Http\Controllers\ChatbotController;
 
 /*
 |--------------------------------------------------------------------------
@@ -129,6 +130,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/2fa/desactivar', [TwoFactorController::class, 'desactivar']);
     Route::get('/2fa/pendientes', [TwoFactorController::class, 'pendientes']);
     Route::post('/2fa/aprobar', [TwoFactorController::class, 'aprobar']);
+
+    // Chatbot flotante (Gemini): responde 503 honesto sin GEMINI_API_KEY.
+    Route::post('/chatbot', [ChatbotController::class, 'chat']);
 
     // Ambientes (admin crea, instructor gestiona sus ambientes/aprendices).
     Route::get('/ambientes', [AmbienteController::class, 'index']);

@@ -6,7 +6,7 @@
     <title>Tu código de recuperación SENA Access es {{ $code }}</title>
     <style>
         body {
-            font-family: 'Inter', Arial, sans-serif;
+            font-family: Arial, Helvetica, sans-serif;
             background-color: #07090D;
             margin: 0;
             padding: 0;
@@ -20,58 +20,58 @@
             color: transparent;
         }
         .page {
-            padding: 40px 12px;
+            padding: 32px 12px;
         }
         .container {
             max-width: 560px;
             margin: 0 auto;
             background-color: #13161C;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 28px;
+            border: 1px solid rgba(2, 217, 20, 0.25);
+            border-radius: 24px;
             overflow: hidden;
             text-align: center;
         }
         .glow {
-            background: radial-gradient(circle at 15% 0%, rgba(2, 217, 20, 0.22), transparent 55%),
-                        radial-gradient(circle at 85% 10%, rgba(0, 191, 165, 0.14), transparent 50%),
+            background: radial-gradient(circle at 50% 0%, rgba(2, 217, 20, 0.25), transparent 60%),
                         #13161C;
-            padding: 32px 28px 8px 28px;
+            padding: 28px 28px 4px 28px;
+            border-bottom: 1px solid rgba(2, 217, 20, 0.15);
         }
         .logo {
-            margin: 0 0 18px 0;
+            margin: 0 0 14px 0;
         }
         .logo img {
             display: block;
-            width: 150px;
+            width: 132px;
             height: auto;
             margin: 0 auto;
         }
         .brand {
             margin: 0;
-            font-size: 28px;
+            font-size: 24px;
             font-weight: bold;
             letter-spacing: 4px;
             color: #02D914;
         }
         .brand-sub {
-            margin: 8px 0 0 0;
-            font-size: 12px;
+            margin: 6px 0 0 0;
+            font-size: 11px;
             letter-spacing: 3px;
-            color: #A0A0A0;
+            color: #7A828B;
         }
         .content {
             padding: 20px 28px 12px 28px;
         }
         .content h2 {
-            margin: 0 0 10px 0;
-            font-size: 18px;
+            margin: 0 0 8px 0;
+            font-size: 20px;
             font-weight: bold;
             color: #FFFFFF;
         }
         .content p {
             font-size: 14px;
             line-height: 1.6;
-            color: #A0A0A0;
+            color: #B9C0C7;
         }
         .content p strong {
             color: #FFFFFF;
@@ -79,7 +79,7 @@
         .code-box {
             background-color: #07090D;
             border: 2px dashed #02D914;
-            border-radius: 12px;
+            border-radius: 16px;
             padding: 20px 12px;
             margin: 20px 0;
             font-size: 32px;
@@ -88,9 +88,24 @@
             color: #02D914;
             text-shadow: 0 0 18px rgba(2, 217, 20, 0.55);
         }
+        .steps {
+            text-align: left;
+            margin: 4px 0 8px 0;
+            padding: 16px 18px;
+            background-color: #07090D;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+        }
+        .steps p {
+            margin: 6px 0;
+            font-size: 13px;
+        }
+        .steps strong {
+            color: #02D914;
+        }
         .nota {
             font-size: 12px;
-            color: #A0A0A0;
+            color: #7A828B;
             margin: 12px 0 0 0;
         }
         .footer {
@@ -123,6 +138,12 @@
 
                 <div class="code-box">
                     {{ $code }}
+                </div>
+
+                <div class="steps">
+                    <p><strong>1.</strong> Abre la app y ve a "Recuperar contraseña".</p>
+                    <p><strong>2.</strong> Escribe este código y tu clave nueva.</p>
+                    <p><strong>3.</strong> Entra con tu clave nueva.</p>
                 </div>
 
                 <p class="nota">Si no fuiste tú quien lo pidió, ignora este correo y revisa tu cuenta.</p>

@@ -8,6 +8,7 @@ import StatsDashboard from './StatsDashboard';
 import Ambientes from './Ambientes';
 import Excusas from './Excusas';
 import QrInvitado from './QrInvitado';
+import UserQrCarnet from './UserQrCarnet';
 import DosPasos from './DosPasos';
 import RecorteFoto from './RecorteFoto';
 import { showAlert } from './CustomAlert';
@@ -343,6 +344,8 @@ const Instructor = () => {
                 return <Excusas currentUser={currentUser} rol="instructor" />;
             case 'validar_qr':
                 return <QrInvitado />;
+            case 'qr_carnet':
+                return <UserQrCarnet currentUser={currentUser} />;
             case 'mis_equipos':
                 return (
                     <div className="fade-in-up">
@@ -459,7 +462,8 @@ const Instructor = () => {
         },
         { label: 'HISTORIAL DE ACCESOS', icon: 'history', view: 'historial' },
         { label: 'EXCUSAS', icon: 'key', view: 'excusas' },
-        { label: 'MIS EQUIPOS', icon: 'inventory_2', view: 'mis_equipos' }
+        { label: 'MIS EQUIPOS', icon: 'inventory_2', view: 'mis_equipos' },
+        { label: 'MI CARNET', icon: 'id_card', view: 'qr_carnet' }
     ];
 
     if (loading) return <div className="text-white text-center mt-5">Cargando...</div>;

@@ -14,13 +14,13 @@ const guardarSesion2Fa = (data) => {
 // Redirige al panel según rol (mismo mapa que Login.jsx).
 const redirigirPorRol = (navigate, role) => {
     const userRole = (role || '').toLowerCase();
-    if (userRole === 'admin') {
+    if (userRole === 'superadmin') {
         navigate('/admin');
     } else if (userRole === 'instructor') {
         navigate('/instructor');
     } else if (userRole === 'aprendiz') {
         navigate('/aprendiz');
-    } else if (userRole === 'portero') {
+    } else if (userRole === 'admin' || userRole === 'portero') {
         navigate('/portero');
     } else {
         navigate('/loading');

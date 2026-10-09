@@ -123,7 +123,7 @@ class AmbienteController extends Controller
     {
         $ambiente = Ambiente::findOrFail($id);
         $user = $request->user();
-        $isAdmin = $user->role && $user->role->rol_name === 'admin';
+        $isAdmin = strtolower($user->role->rol_name ?? '') === 'superadmin';
         $isInstructorDelAmbiente = $ambiente->instructores()->where('fk_id_instructor', $user->id_usuario)->exists();
         if (!$isAdmin && !$isInstructorDelAmbiente) {
             return response()->json(['message' => 'No autorizado para ver este ambiente'], 403);
@@ -149,7 +149,7 @@ class AmbienteController extends Controller
         }
         // No autorizar si el requester es instructor no asignado y no es admin
         $user = $request->user();
-        $isAdmin = $user->role && $user->role->rol_name === 'admin';
+        $isAdmin = strtolower($user->role->rol_name ?? '') === 'superadmin';
         if (!$isAdmin && !$ambiente->instructores()->where('fk_id_instructor', $user->id_usuario)->exists()) {
             return response()->json(['message' => 'No autorizado para modificar este ambiente'], 403);
         }
@@ -167,7 +167,7 @@ class AmbienteController extends Controller
     {
         $ambiente = Ambiente::findOrFail($id);
         $user = $request->user();
-        $isAdmin = $user->role && $user->role->rol_name === 'admin';
+        $isAdmin = strtolower($user->role->rol_name ?? '') === 'superadmin';
         if (!$isAdmin && !$ambiente->instructores()->where('fk_id_instructor', $user->id_usuario)->exists()) {
             return response()->json(['message' => 'No autorizado'], 403);
         }

@@ -14,7 +14,7 @@ class NovedadController extends Controller
     {
         $search = $request->query('search'); //OBTIENE EL PARAMETRO DE BUSQUEDA
 
-        $esAdmin = Auth::user()->role->rol_name === 'admin'; //VALIDA SI EL USUARIO ES ADMIN
+        $esAdmin = strtolower(Auth::user()->role->rol_name ?? '') === 'superadmin'; //VALIDA SI EL USUARIO ES ADMIN
         $query = Novedad::with('user'); //OBTIENE LAS NOVEDADES
 
         if (!$esAdmin) { //SI NO ES ADMIN SOLO VE SUS PROPIAS NOVEDADES
@@ -73,7 +73,7 @@ class NovedadController extends Controller
     {
         $novedad = Novedad::with('user')->findOrFail($id); //OBTIENE LA NOVEDAD
         // Solo el dueño o el admin pueden verla (el listado ya filtra por rol).
-        $esAdmin = Auth::user()->role->rol_name === 'admin';
+        $esAdmin = strtolower(Auth::user()->role->rol_name ?? '') === 'superadmin';
         if (!$esAdmin && (int) $novedad->fk_id_usuario !== (int) Auth::id()) {
             return response()->json(['message' => 'No tienes permiso para ver esta novedad'], 403);
         }
@@ -85,7 +85,7 @@ class NovedadController extends Controller
         $novedad = Novedad::findOrFail($id); //OBTIENE LA NOVEDAD
 
         // SOLO EL ADMIN PUEDE ACTUALIZAR
-        if (Auth::user()->role->rol_name !== 'admin') { //VALIDA QUE EL USUARIO SEA ADMIN
+        if (strtolower(Auth::user()->role->rol_name ?? '') !== 'superadmin') { //VALIDA QUE EL USUARIO SEA ADMIN
             return response()->json(['message' => 'No tienes permiso para actualizar esta novedad'], 403); //RETORNA MENSAJE DE ERROR
         }
 
@@ -105,7 +105,7 @@ class NovedadController extends Controller
         $novedad = Novedad::findOrFail($id);
 
         // SOLO EL ADMIN PUEDE ELIMINAR
-        if (Auth::user()->role->rol_name !== 'admin') {
+        if (strtolower(Auth::user()->role->rol_name ?? '') !== 'superadmin') {
             return response()->json(['message' => 'No tienes permiso para eliminar esta novedad'], 403);
         }
 

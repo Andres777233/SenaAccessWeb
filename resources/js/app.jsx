@@ -13,6 +13,7 @@ import ResetPassword from './components/ResetPassword';
 import Loading from './components/Loading';
 import LandingPage from './components/LandingPage';
 import CustomAlert from './components/CustomAlert';
+import ChatbotWidget from './components/ChatbotWidget';
 // Paneles pesados por rol: lazy para que la primera carga solo baje el chunk
 // de la ruta visitada (antes las 12 rutas viajaban en un solo app-*.js).
 const Admin = lazy(() => import('./components/Admin'));
@@ -38,7 +39,7 @@ const Verificacion2FaRoute = () => {
     const token = localStorage.getItem('access_token');
     const role = localStorage.getItem('user_role')?.toLowerCase();
     if (token) {
-        if (role === 'admin') {
+        if (role === 'superadmin') {
             return <Navigate to="/admin" replace />;
         }
         if (role === 'instructor') {
@@ -47,7 +48,7 @@ const Verificacion2FaRoute = () => {
         if (role === 'aprendiz') {
             return <Navigate to="/aprendiz" replace />;
         }
-        if (role === 'portero') {
+        if (role === 'admin' || role === 'portero') {
             return <Navigate to="/portero" replace />;
         }
         return <Navigate to="/" replace />;
@@ -153,6 +154,9 @@ const App = () => {
             {/* Alerta y Confirmación Personalizada Global */}
             <CustomAlert />
 
+            {/* Chatbot flotante: visible solo cuando hay sesión (como en Sebastián) */}
+            {!!localStorage.getItem('access_token') && <ChatbotWidget />}
+
             <div style={{color: 'var(--text-color)', position: 'fixed', bottom: 10, right: 10, background: 'var(--glass-bg)', padding: '5px', zIndex: 9999, borderRadius: '5px', fontSize: '12px'}}>
             </div>
             <Suspense fallback={<div className="text-white text-center mt-5">Cargando componentes...</div>}>
@@ -164,10 +168,10 @@ const App = () => {
                     <Route path="/password-recovery" element={<PasswordRecovery />} />
                     <Route path="/reset-password" element={<ResetPassword />} />
                     <Route path="/loading" element={<Loading />} />
-                    <Route path="/admin" element={<ProtectedRoute expectedRole="admin"><Admin /></ProtectedRoute>} />
+                    <Route path="/admin" element={<ProtectedRoute expectedRole="superadmin"><Admin /></ProtectedRoute>} />
                     <Route path="/aprendiz" element={<ProtectedRoute expectedRole="aprendiz"><Aprendiz /></ProtectedRoute>} />
                     <Route path="/instructor" element={<ProtectedRoute expectedRole="instructor"><Instructor /></ProtectedRoute>} />
-                    <Route path="/portero" element={<ProtectedRoute expectedRole="portero"><Portero /></ProtectedRoute>} />
+                    <Route path="/portero" element={<ProtectedRoute expectedRole="admin"><Portero /></ProtectedRoute>} />
                     <Route path="*" element={<div style={{color: 'var(--text-color)'}}>404 - Página no encontrada</div>} />
                 </Routes>
             </Suspense>

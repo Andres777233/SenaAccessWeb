@@ -22,8 +22,10 @@ const FORM_VACIO = {
 };
 
 const Ambientes = ({ currentUser, rol }) => {
-    const esAdmin = rol === 'admin' || currentUser?.role?.rol_name === 'admin';
-    const esInstructor = rol === 'instructor' || currentUser?.role?.rol_name === 'Instructor';
+    const rolNorm = (rol || '').toLowerCase();
+    const nombreRol = (currentUser?.role?.rol_name || '').toLowerCase();
+    const esAdmin = rolNorm === 'superadmin' || nombreRol === 'superadmin';
+    const esInstructor = rolNorm === 'instructor' || nombreRol === 'instructor';
 
     const [ambientes, setAmbientes] = useState([]);
     const [loading, setLoading] = useState(true);

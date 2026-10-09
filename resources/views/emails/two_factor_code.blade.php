@@ -6,7 +6,7 @@
     <title>Tu código SENA Access es {{ $code }}</title>
     <style>
         body {
-            font-family: 'Inter', Arial, sans-serif;
+            font-family: Arial, Helvetica, sans-serif;
             background-color: #07090D;
             margin: 0;
             padding: 0;
@@ -20,58 +20,58 @@
             color: transparent;
         }
         .page {
-            padding: 40px 12px;
+            padding: 32px 12px;
         }
         .container {
             max-width: 560px;
             margin: 0 auto;
             background-color: #13161C;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 28px;
+            border: 1px solid rgba(2, 217, 20, 0.25);
+            border-radius: 24px;
             overflow: hidden;
             text-align: center;
         }
         .glow {
-            background: radial-gradient(circle at 15% 0%, rgba(2, 217, 20, 0.22), transparent 55%),
-                        radial-gradient(circle at 85% 10%, rgba(0, 191, 165, 0.14), transparent 50%),
+            background: radial-gradient(circle at 50% 0%, rgba(2, 217, 20, 0.25), transparent 60%),
                         #13161C;
-            padding: 32px 28px 8px 28px;
+            padding: 28px 28px 4px 28px;
+            border-bottom: 1px solid rgba(2, 217, 20, 0.15);
         }
         .logo {
-            margin: 0 0 18px 0;
+            margin: 0 0 14px 0;
         }
         .logo img {
             display: block;
-            width: 150px;
+            width: 132px;
             height: auto;
             margin: 0 auto;
         }
         .brand {
             margin: 0;
-            font-size: 28px;
+            font-size: 24px;
             font-weight: bold;
             letter-spacing: 4px;
             color: #02D914;
         }
         .brand-sub {
-            margin: 8px 0 0 0;
-            font-size: 12px;
+            margin: 6px 0 0 0;
+            font-size: 11px;
             letter-spacing: 3px;
-            color: #A0A0A0;
+            color: #7A828B;
         }
         .content {
             padding: 20px 28px 8px 28px;
         }
         .content h2 {
-            margin: 0 0 10px 0;
-            font-size: 18px;
+            margin: 0 0 8px 0;
+            font-size: 20px;
             font-weight: bold;
             color: #FFFFFF;
         }
         .content p {
             font-size: 14px;
             line-height: 1.6;
-            color: #A0A0A0;
+            color: #B9C0C7;
         }
         .content p strong {
             color: #FFFFFF;
@@ -79,7 +79,7 @@
         .code-box {
             background-color: #07090D;
             border: 2px dashed #02D914;
-            border-radius: 12px;
+            border-radius: 16px;
             padding: 20px 12px;
             margin: 20px 0;
             font-size: 38px;
@@ -91,12 +91,12 @@
         .btn {
             display: block;
             width: 100%;
-            padding: 14px;
+            padding: 15px;
             margin: 10px 0;
-            border-radius: 999px;
+            border-radius: 16px;
             font-size: 14px;
             font-weight: bold;
-            letter-spacing: 2px;
+            letter-spacing: 1px;
             text-decoration: none;
             text-align: center;
             box-sizing: border-box;
@@ -111,13 +111,27 @@
             border: none;
         }
         .btn-deny {
-            background-color: #FF6B6B;
-            color: #FFFFFF;
-            border: none;
+            background-color: transparent;
+            color: #FF6B6B;
+            border: 1px solid #FF6B6B;
+        }
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 20px 0 4px 0;
+            color: #7A828B;
+            font-size: 12px;
+            letter-spacing: 2px;
+        }
+        .divider::before, .divider::after {
+            content: "";
+            flex: 1;
+            border-top: 1px solid rgba(255, 255, 255, 0.12);
         }
         .nota {
             font-size: 12px;
-            color: #A0A0A0;
+            color: #7A828B;
             margin: 12px 0 0 0;
             line-height: 1.5;
         }
@@ -158,15 +172,17 @@
                 @endif
 
                 @if(!empty($challengeId))
-                    <p>¿Fuiste tú? Responde sin escribir el código:</p>
-                    <a href="senaaccess://2fa?challenge_id={{ $challengeId }}&dec=aprobar" class="btn btn-approve">SÍ, APROBAR ACCESO</a>
-                    <a href="senaaccess://2fa?challenge_id={{ $challengeId }}&dec=denegar" class="btn btn-deny">NO, BLOQUEAR</a>
+                    <div class="divider">O RESPONDE SIN CÓDIGO</div>
+                    <p>¿Fuiste tú? Decide desde aquí:</p>
+                    <a href="senaaccess://2fa?challenge_id={{ $challengeId }}&dec=aprobar" class="btn btn-approve">SÍ, SOY YO</a>
+                    <a href="senaaccess://2fa?challenge_id={{ $challengeId }}&dec=denegar" class="btn btn-deny">NO SOY YO</a>
                     <p class="nota">Se aprueba o se bloquea el acceso del otro dispositivo.</p>
                     <p class="nota">¿El botón no responde? <a href="{{ url('/2fa?challenge_id=' . $challengeId . '&dec=aprobar') }}" style="color:#02D914;">Abrir en la app</a> · <a href="{{ url('/2fa?challenge_id=' . $challengeId . '&dec=denegar') }}" style="color:#FF6B6B;">Bloquear</a></p>
                 @elseif(!empty($aprobarUrl) && $aprobarUrl !== '#')
-                    <p>¿Fuiste tú? Responde sin escribir el código:</p>
-                    <a href="{{ $aprobarUrl }}" class="btn btn-approve">SÍ, APROBAR ACCESO</a>
-                    <a href="{{ $denegarUrl }}" class="btn btn-deny">NO, BLOQUEAR</a>
+                    <div class="divider">O RESPONDE SIN CÓDIGO</div>
+                    <p>¿Fuiste tú? Decide desde aquí:</p>
+                    <a href="{{ $aprobarUrl }}" class="btn btn-approve">SÍ, SOY YO</a>
+                    <a href="{{ $denegarUrl }}" class="btn btn-deny">NO SOY YO</a>
                     <p class="nota">Se aprueba o se bloquea el acceso del otro dispositivo.</p>
                 @else
                     <p>Si no pediste este código, ignora este correo y revisa tu cuenta.</p>

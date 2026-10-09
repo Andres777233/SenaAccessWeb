@@ -208,7 +208,7 @@ const Novedades = ({ currentUser, initialMode = 'history' }) => {
                                         <span className="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2" style={{ fontSize: '0.7rem' }}>
                                             {novedad.novedad_ambiente}
                                         </span>
-                                        {currentUser?.role?.rol_name === 'admin' && (
+                                        {(currentUser?.role?.rol_name || '').toLowerCase() === 'superadmin' && (
                                             <button className="btn btn-sm btn-outline-danger p-1 d-flex align-items-center justify-content-center" onClick={() => handleDelete(novedad.id_novedad)}>
                                                 <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>delete</span>
                                             </button>

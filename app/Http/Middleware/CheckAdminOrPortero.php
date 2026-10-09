@@ -8,12 +8,12 @@ use Symfony\Component\HttpFoundation\Response;
 
 class CheckAdminOrPortero
 {
-    // Portería operativa: admin conserva acceso total y el portero entra solo
-    // a equipos, historial de accesos y validación de excusas.
+    // Operativa Admin (ex-portero): superadmin conserva acceso total y el
+    // admin entra solo a equipos, historial de accesos y validación de excusas.
     public function handle(Request $request, Closure $next): Response
     {
         $user = $request->user();
-        if (!$user || !in_array(strtolower($user->role?->rol_name ?? ''), ['admin', 'portero'])) {
+        if (!$user || !in_array(strtolower($user->role?->rol_name ?? ''), ['superadmin', 'admin'])) {
             return response()->json(['message' => 'No tienes permisos de portería'], 403);
         }
 

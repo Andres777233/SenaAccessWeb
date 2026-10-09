@@ -86,8 +86,8 @@ const Navbar = ({ currentUser, view, setView, userFilter, setUserFilter, links =
                         </div>
                     </div>
 
-                    {/* Enlaces de Navegación Dinámicos (centro) */}
-                    <ul className="navbar-nav navbar-center mx-auto mb-2 mb-lg-0 gap-2">
+                    {/* Enlaces de Navegación Dinámicos (a la izquierda, estética Sebastián) */}
+                    <ul className="navbar-nav me-auto mb-2 mb-lg-0 gap-2">
                         {links.map((link, index) => {
                             if (link.dropdown) {
                                 const hijoActivo = (link.items || []).some(item => item.view && item.view === view);

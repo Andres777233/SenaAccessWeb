@@ -7,6 +7,7 @@ import StatsDashboard from './StatsDashboard';
 import Presentes from './Presentes';
 import Excusas from './Excusas';
 import QrInvitado from './QrInvitado';
+import UserQrCarnet from './UserQrCarnet';
 import EquipmentForm from './EquipmentForm';
 import DosPasos from './DosPasos';
 import RecorteFoto from './RecorteFoto';
@@ -232,7 +233,8 @@ const Portero = () => {
         { label: 'EXCUSAS', icon: 'key', view: 'excusas' },
         { label: 'VALIDAR QR', icon: 'qr_code_scanner', view: 'validar_qr' },
         { label: 'EQUIPOS', icon: 'inventory_2', view: 'equipos' },
-        { label: 'HISTORIAL DE ACCESOS', icon: 'history', view: 'historial' }
+        { label: 'HISTORIAL DE ACCESOS', icon: 'history', view: 'historial' },
+        { label: 'MI CARNET', icon: 'id_card', view: 'qr_carnet' }
     ];
 
     const filteredEquipment = equipmentList.filter(item => {
@@ -452,7 +454,7 @@ const Portero = () => {
             case 'presentes':
                 return <Presentes />;
             case 'excusas':
-                return <Excusas currentUser={currentUser} rol="portero" />;
+                return <Excusas currentUser={currentUser} rol="admin" />;
             case 'equipo_entry':
                 return (
                     <div className="fade-in-up">
@@ -546,6 +548,8 @@ const Portero = () => {
                 );
             case 'validar_qr':
                 return <QrInvitado />;
+            case 'qr_carnet':
+                return <UserQrCarnet currentUser={currentUser} />;
             case 'profile':
                 return (
                     <div className="fade-in-up glass-box p-5 mx-auto" style={{ maxWidth: '600px' }}>

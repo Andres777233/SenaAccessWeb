@@ -127,7 +127,7 @@ class ParidadTest extends TestCase
         Sanctum::actingAs($this->crearUsuario('Instructor'));
         $this->getJson('/api/admin/presentes')->assertStatus(403);
 
-        Sanctum::actingAs($this->crearUsuario('admin'));
+        Sanctum::actingAs($this->crearUsuario('Superadmin'));
         $r = $this->getJson('/api/admin/presentes');
         $r->assertOk();
         $this->assertIsArray($r->json());
@@ -263,7 +263,7 @@ class ParidadTest extends TestCase
 
     public function test_create_user_ignora_campos_sensibles(): void
     {
-        Sanctum::actingAs($this->crearUsuario('admin'));
+        Sanctum::actingAs($this->crearUsuario('Superadmin'));
         $uniq = uniqid();
 
         $r = $this->postJson('/api/admin/users', [
@@ -310,7 +310,7 @@ class ParidadTest extends TestCase
         Sanctum::actingAs($this->crearUsuario('Instructor'));
         $this->getJson('/api/admin/ingresos/export?formato=csv')->assertStatus(403);
 
-        Sanctum::actingAs($this->crearUsuario('admin'));
+        Sanctum::actingAs($this->crearUsuario('Superadmin'));
         $r = $this->getJson('/api/admin/ingresos/export?formato=exe');
         $r->assertOk();
         $this->assertStringContainsString('text/csv', $r->headers->get('Content-Type'));
@@ -356,7 +356,7 @@ class ParidadTest extends TestCase
             $this->getJson('/api/novedades/' . $nov->id_novedad)->assertStatus(403);
             Sanctum::actingAs($a);
             $this->getJson('/api/novedades/' . $nov->id_novedad)->assertOk();
-            Sanctum::actingAs($this->crearUsuario('admin'));
+            Sanctum::actingAs($this->crearUsuario('Superadmin'));
             $this->getJson('/api/novedades/' . $nov->id_novedad)->assertOk();
         } finally {
             $nov->delete();
@@ -416,15 +416,15 @@ class ParidadTest extends TestCase
             'ingreso_place' => 'Portería',
             'ingreso_type' => 'Entrada',
         ]);
-        Sanctum::actingAs($this->crearUsuario('admin'));
+        Sanctum::actingAs($this->crearUsuario('Superadmin'));
         $r = $this->getJson('/api/admin/ingresos/export?formato=csv&cols=usuario');
         $r->assertOk();
         $this->assertStringContainsString("'=CMD", $r->streamedContent() ?? '');
     }
 
-    public function test_portero_accede_presentes_e_historial(): void
+    public function test_admin_operativo_accede_presentes_e_historial(): void
     {
-        Sanctum::actingAs($this->crearUsuario('Portero'));
+        Sanctum::actingAs($this->crearUsuario('Admin'));
 
         $r = $this->getJson('/api/admin/presentes');
         $r->assertOk();
@@ -435,9 +435,9 @@ class ParidadTest extends TestCase
         $this->getJson('/api/admin/excusas')->assertOk();
     }
 
-    public function test_portero_registra_y_devuelve_equipo(): void
+    public function test_admin_operativo_registra_y_devuelve_equipo(): void
     {
-        Sanctum::actingAs($this->crearUsuario('Portero'));
+        Sanctum::actingAs($this->crearUsuario('Admin'));
 
         $r = $this->postJson('/api/admin/equipment', [
             'equipo_type' => 'Portátil',
@@ -465,7 +465,7 @@ class ParidadTest extends TestCase
     public function test_validar_pin_solo_roles_operativos(): void
     {
         // PIN inexistente: los roles operativos pasan la autorización (400) y el resto no (403).
-        Sanctum::actingAs($this->crearUsuario('Portero'));
+        Sanctum::actingAs($this->crearUsuario('Admin'));
         $this->postJson('/api/excusas/validar', ['pin' => '0000'])->assertStatus(400);
 
         Sanctum::actingAs($this->crearUsuario('Instructor'));
@@ -475,9 +475,9 @@ class ParidadTest extends TestCase
         $this->postJson('/api/excusas/validar', ['pin' => '0000'])->assertStatus(403);
     }
 
-    public function test_portero_no_gestiona_usuarios_ni_ambientes(): void
+    public function test_admin_operativo_no_gestiona_usuarios_ni_ambientes(): void
     {
-        Sanctum::actingAs($this->crearUsuario('Portero'));
+        Sanctum::actingAs($this->crearUsuario('Admin'));
 
         $this->postJson('/api/admin/users', ['user_email' => 'x@y.com'])->assertStatus(403);
         $this->postJson('/api/admin/ambientes', ['ambiente_nombre' => 'X'])->assertStatus(403);

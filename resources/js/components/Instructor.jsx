@@ -9,6 +9,7 @@ import Ambientes from './Ambientes';
 import Excusas from './Excusas';
 import QrInvitado from './QrInvitado';
 import UserQrCarnet from './UserQrCarnet';
+import EscanearAcceso from './EscanearAcceso';
 import DosPasos from './DosPasos';
 import RecorteFoto from './RecorteFoto';
 import { showAlert } from './CustomAlert';
@@ -346,6 +347,8 @@ const Instructor = () => {
                 return <QrInvitado />;
             case 'qr_carnet':
                 return <UserQrCarnet currentUser={currentUser} />;
+            case 'escanear_acceso':
+                return <EscanearAcceso />;
             case 'mis_equipos':
                 return (
                     <div className="fade-in-up">
@@ -463,7 +466,8 @@ const Instructor = () => {
         { label: 'HISTORIAL DE ACCESOS', icon: 'history', view: 'historial' },
         { label: 'EXCUSAS', icon: 'key', view: 'excusas' },
         { label: 'MIS EQUIPOS', icon: 'inventory_2', view: 'mis_equipos' },
-        { label: 'MI CARNET', icon: 'id_card', view: 'qr_carnet' }
+        { label: 'MI CARNET', icon: 'id_card', view: 'qr_carnet' },
+        { label: 'MARCAR ACCESO', icon: 'qr_code_scanner', view: 'escanear_acceso' }
     ];
 
     if (loading) return <div className="text-white text-center mt-5">Cargando...</div>;

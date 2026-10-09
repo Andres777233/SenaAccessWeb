@@ -8,6 +8,7 @@ import Presentes from './Presentes';
 import Excusas from './Excusas';
 import QrInvitado from './QrInvitado';
 import UserQrCarnet from './UserQrCarnet';
+import AccesoQr from './AccesoQr';
 import EquipmentForm from './EquipmentForm';
 import DosPasos from './DosPasos';
 import RecorteFoto from './RecorteFoto';
@@ -234,7 +235,8 @@ const Portero = () => {
         { label: 'VALIDAR QR', icon: 'qr_code_scanner', view: 'validar_qr' },
         { label: 'EQUIPOS', icon: 'inventory_2', view: 'equipos' },
         { label: 'HISTORIAL DE ACCESOS', icon: 'history', view: 'historial' },
-        { label: 'MI CARNET', icon: 'id_card', view: 'qr_carnet' }
+        { label: 'MI CARNET', icon: 'id_card', view: 'qr_carnet' },
+        { label: 'ACCESO QR', icon: 'qr_code_2', view: 'acceso_qr' }
     ];
 
     const filteredEquipment = equipmentList.filter(item => {
@@ -550,6 +552,8 @@ const Portero = () => {
                 return <QrInvitado />;
             case 'qr_carnet':
                 return <UserQrCarnet currentUser={currentUser} />;
+            case 'acceso_qr':
+                return <AccesoQr />;
             case 'profile':
                 return (
                     <div className="fade-in-up glass-box p-5 mx-auto" style={{ maxWidth: '600px' }}>

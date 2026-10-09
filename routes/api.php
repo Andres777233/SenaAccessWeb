@@ -11,6 +11,7 @@ use App\Http\Controllers\NovedadController;
 use App\Http\Controllers\NotificacionController;
 use App\Http\Controllers\TwoFactorController;
 use App\Http\Controllers\ChatbotController;
+use App\Http\Controllers\AccesoQrController;
 
 /*
 |--------------------------------------------------------------------------
@@ -63,10 +64,8 @@ Route::get('/2fa/estado/{challengeId}', [TwoFactorController::class, 'estado']);
 // Botones "¿Eres tú?" del correo (tipo Google): público pero con enlace firmado.
 Route::get('/2fa/decidir', [TwoFactorController::class, 'decidir']);
 
-// Salida en tiempo real: el frontend la dispara al cerrar la última pestaña/app
-// (fetch keepalive en pagehide) y puede revertirla si el cierre era un refresh.
-Route::post('/session-exit', [AuthController::class, 'sessionExit'])->middleware('auth:sanctum');
-Route::post('/session-exit/cancel', [AuthController::class, 'cancelSessionExit'])->middleware('auth:sanctum');
+// Salida en tiempo real: ELIMINADA. Cerrar la app o el navegador nunca genera
+// salidas; la Salida solo se marca con el QR de salida o el PIN de excusa.
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
@@ -92,6 +91,8 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/users', [AdminController::class, 'createUser']);
             Route::put('/users/{id}', [AdminController::class, 'updateUser']);
             Route::delete('/users/{id}', [AdminController::class, 'deleteUser']);
+            Route::post('/users/{id}/aprobar', [AdminController::class, 'aprobarCuenta']);
+            Route::post('/users/{id}/rechazar', [AdminController::class, 'rechazarCuenta']);
         });
 
         // El historial global de accesos y las estadísticas del centro son admin
@@ -133,6 +134,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Chatbot flotante (Gemini): responde 503 honesto sin GEMINI_API_KEY.
     Route::post('/chatbot', [ChatbotController::class, 'chat']);
+
+    // QR rotativo de portería: mostrar (admin/superadmin) y validar (cualquiera).
+    Route::get('/acceso/qr/{tipo}', [AccesoQrController::class, 'mostrar'])->middleware('admin_or_portero');
+    Route::post('/acceso/validar', [AccesoQrController::class, 'validar']);
 
     // Ambientes (admin crea, instructor gestiona sus ambientes/aprendices).
     Route::get('/ambientes', [AmbienteController::class, 'index']);

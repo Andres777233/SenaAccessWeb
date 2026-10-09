@@ -72,56 +72,6 @@ const LogoutHandler = () => {
 const App = () => {
     const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
 
-    // Entradas/Salidas en tiempo real:
-    // - El login ya registra Entrada y el logout Salida (backend).
-    // - Al cerrar la ÚLTIMA pestaña/app se dispara POST /api/session-exit
-    //   (fetch keepalive en pagehide, sobrevive al cierre de la página).
-    // - Si el "cierre" era un refresh (F5), al recargar se revierte con
-    //   POST /api/session-exit/cancel para que no cuente como salida.
-    useEffect(() => {
-        const TABS_KEY = 'senaaccess_open_tabs';
-        const token = localStorage.getItem('access_token');
-
-        const contarTab = (delta) => {
-            const n = Math.max(0, (parseInt(localStorage.getItem(TABS_KEY) || '0', 10) || 0) + delta);
-            localStorage.setItem(TABS_KEY, String(n));
-            return n;
-        };
-
-        contarTab(1);
-
-        // Si la carga proviene de un refresh, revertimos la salida falsa registrada al descargar.
-        let navType = '';
-        try {
-            navType = performance.getEntriesByType('navigation')[0]?.type || '';
-        } catch (e) { /* navegadores antiguos */ }
-        if (navType === 'reload' && token) {
-            fetch('/api/session-exit/cancel', {
-                method: 'POST',
-                keepalive: true,
-                headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
-            }).catch(() => {});
-        }
-
-        const handlePageHide = () => {
-            const tk = localStorage.getItem('access_token');
-            if (!tk) return;
-            // Solo el último tab abierto registra la salida.
-            if (contarTab(-1) > 0) return;
-            fetch('/api/session-exit', {
-                method: 'POST',
-                keepalive: true,
-                headers: { 'Authorization': `Bearer ${tk}`, 'Accept': 'application/json' }
-            }).catch(() => {});
-        };
-
-        window.addEventListener('pagehide', handlePageHide);
-        return () => {
-            window.removeEventListener('pagehide', handlePageHide);
-            contarTab(-1);
-        };
-    }, []);
-
     // Efecto para aplicar el tema seleccionado y guardarlo en localStorage
     useEffect(() => {
         if (theme === 'light') {

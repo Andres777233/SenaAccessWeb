@@ -51,6 +51,7 @@ class ParidadTest extends TestCase
             'user_email' => 'paridad+' . $uniq . '@gmail.com',
             'user_password' => Hash::make('Clave1234'),
             'user_documento_tipo' => 'CC',
+            'estado_cuenta' => 'aprobada',
             'fk_id_rol' => Role::where('rol_name', $rol)->value('id_rol'),
         ], $extra));
         $this->uidsCreados[] = $user->id_usuario;
@@ -481,5 +482,62 @@ class ParidadTest extends TestCase
 
         $this->postJson('/api/admin/users', ['user_email' => 'x@y.com'])->assertStatus(403);
         $this->postJson('/api/admin/ambientes', ['ambiente_nombre' => 'X'])->assertStatus(403);
+    }
+
+    public function test_registro_queda_pendiente_y_login_bloquea(): void
+    {
+        $uniq = uniqid();
+        $r = $this->postJson('/api/register', [
+            'user_identification' => 'PEN' . substr($uniq, -10),
+            'user_name' => 'Pend',
+            'user_lastname' => 'Iente',
+            'user_email' => 'pendiente+' . $uniq . '@gmail.com',
+            'user_password' => 'Clave1234',
+            'user_password_confirmation' => 'Clave1234',
+            'user_coursenumber' => 2675891,
+            'user_program' => 'ADSO',
+            'user_documento_tipo' => 'CC',
+        ]);
+        $r->assertStatus(201);
+        $uid = $r->json('user.id_usuario');
+        $this->assertNotNull($uid);
+        $this->uidsCreados[] = $uid;
+
+        $this->postJson('/api/login', [
+            'user_email' => 'pendiente+' . $uniq . '@gmail.com',
+            'user_password' => 'Clave1234',
+        ])->assertStatus(403);
+
+        // El superadmin aprueba y el login ya entra.
+        Sanctum::actingAs($this->crearUsuario('Superadmin'));
+        $this->postJson("/api/admin/users/{$uid}/aprobar")->assertOk();
+
+        $this->postJson('/api/login', [
+            'user_email' => 'pendiente+' . $uniq . '@gmail.com',
+            'user_password' => 'Clave1234',
+        ])->assertOk()->assertJsonStructure(['access_token', 'role']);
+    }
+
+    public function test_qr_acceso_entrada_y_salida(): void
+    {
+        $apr = $this->crearUsuario('Aprendiz');
+        Sanctum::actingAs($apr);
+
+        $this->postJson('/api/acceso/validar', ['qr_payload' => 'basura'])->assertStatus(422);
+        $this->postJson('/api/acceso/validar', ['qr_payload' => 'a.b'])->assertStatus(422);
+
+        // QR falsificado: firma inválida.
+        $falso = base64_encode(json_encode(['app' => 'SENA_ACCESS', 'acceso' => 'entrada', 'sede' => 'CCyS', 'ventana' => 1])) . '.firmafalsa';
+        $this->postJson('/api/acceso/validar', ['qr_payload' => $falso])->assertStatus(422);
+    }
+
+    public function test_logout_no_registra_salida(): void
+    {
+        $user = $this->crearUsuario('Aprendiz', ['two_factor_enabled' => false]);
+        $antes = DB::table('ingresos')->where('fk_id_user', $user->id_usuario)->count();
+        Sanctum::actingAs($user);
+        $this->postJson('/api/logout')->assertOk();
+        $despues = DB::table('ingresos')->where('fk_id_user', $user->id_usuario)->count();
+        $this->assertSame($antes, $despues);
     }
 }

@@ -35,6 +35,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'user_documento_tipo',
         'user_telefono',
         'fk_id_rol',
+        'estado_cuenta',
         'profile_photo_path',
         'guest_qr_token',
         'guest_qr_expires_at',

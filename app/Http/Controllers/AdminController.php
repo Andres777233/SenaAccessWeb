@@ -8,6 +8,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
+use App\Mail\CuentaAprobadaMail;
 
 use App\Models\Ingreso;
 use App\Models\Novedad;
@@ -37,6 +39,10 @@ class AdminController extends Controller
             });
         }
 
+        if ($request->filled('estado')) {
+            $query->where('estado_cuenta', $request->estado);
+        }
+
         if ($request->filled('search')) {
             $s = $request->search;
             $query->where(function ($sub) use ($s) {
@@ -47,7 +53,7 @@ class AdminController extends Controller
             });
         }
 
-        if ($request->filled('page') || $request->filled('per_page') || $request->filled('search') || $request->filled('rol')) {
+        if ($request->filled('page') || $request->filled('per_page') || $request->filled('search') || $request->filled('rol') || $request->filled('estado')) {
             $perPage = $request->integer('per_page', 50);
             if ($perPage < 1) { $perPage = 50; }
             if ($perPage > 200) { $perPage = 200; }
@@ -436,9 +442,35 @@ class AdminController extends Controller
             'user_telefono' => $request->user_telefono,
             'fk_id_rol' => $request->fk_id_rol,
             'profile_photo_path' => $profile_photo_path,
+            'estado_cuenta' => 'aprobada',
         ]);
 
         return response()->json($user->load('role'), 201);
+    }
+
+    // Aprueba una cuenta pendiente (bandeja del superadmin): marca aprobada
+    // y avisa al correo. El envío nunca rompe la petición.
+    public function aprobarCuenta(Request $request, $id)
+    {
+        $user = User::findOrFail($id);
+        $user->estado_cuenta = 'aprobada';
+        $user->save();
+        try {
+            $nombre = trim(($user->user_name ?? '') . ' ' . ($user->user_lastname ?? ''));
+            Mail::to($user->user_email)->send(new CuentaAprobadaMail($nombre));
+        } catch (\Throwable $e) {
+            Log::error('No se pudo enviar correo de aprobación a ' . $user->user_email . ': ' . $e->getMessage());
+        }
+        return response()->json(['message' => 'Cuenta aprobada. Se avisó al correo del usuario.', 'user' => $user->load('role')]);
+    }
+
+    // Rechaza una cuenta pendiente: marca rechazada (el login la bloquea con aviso).
+    public function rechazarCuenta(Request $request, $id)
+    {
+        $user = User::findOrFail($id);
+        $user->estado_cuenta = 'rechazada';
+        $user->save();
+        return response()->json(['message' => 'Solicitud rechazada.', 'user' => $user->load('role')]);
     }
 
     public function deleteUser(Request $request, $id) //FUNCION PARA ELIMINAR USUARIO POR ID (borrado total: primero su rastro, luego el usuario)

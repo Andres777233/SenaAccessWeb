@@ -7,6 +7,7 @@ import StatsDashboard from './StatsDashboard';
 import Excusas from './Excusas';
 import DosPasos from './DosPasos';
 import UserQrCarnet from './UserQrCarnet';
+import EscanearAcceso from './EscanearAcceso';
 import RecorteFoto from './RecorteFoto';
 import { showAlert } from './CustomAlert';
 import downloadComprobante from '../utils/comprobante';
@@ -418,6 +419,8 @@ const Aprendiz = () => {
                 return <Excusas currentUser={currentUser} rol="aprendiz" />;
             case 'qr_carnet':
                 return <UserQrCarnet currentUser={currentUser} />;
+            case 'escanear_acceso':
+                return <EscanearAcceso />;
             case 'profile':
                 return (
                     <div className="fade-in-up glass-box p-5 mx-auto" style={{ maxWidth: '600px' }}>
@@ -481,7 +484,8 @@ const Aprendiz = () => {
         { label: 'MIS PERMISOS', icon: 'key', view: 'permisos' },
         { label: 'HISTORIAL DE ACCESOS', icon: 'history', view: 'historial' },
         { label: 'MIS EQUIPOS', icon: 'inventory_2', view: 'comprobantes' },
-        { label: 'MI CARNET', icon: 'id_card', view: 'qr_carnet' }
+        { label: 'MI CARNET', icon: 'id_card', view: 'qr_carnet' },
+        { label: 'MARCAR ACCESO', icon: 'qr_code_scanner', view: 'escanear_acceso' }
     ];
 
     return ( // Estructura principal

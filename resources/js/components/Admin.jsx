@@ -11,6 +11,7 @@ import Excusas from './Excusas';
 import Presentes from './Presentes';
 import QrInvitado from './QrInvitado';
 import QrScannerModal from './QrScannerModal';
+import AccesoQr from './AccesoQr';
 import DosPasos from './DosPasos';
 import RecorteFoto from './RecorteFoto';
 import { showAlert, showConfirm } from './CustomAlert';
@@ -104,7 +105,8 @@ const Admin = () => {
             params.append('per_page', '24');
             params.append('page', String(p));
             if (usersSearchDeb) params.append('search', usersSearchDeb);
-            if (userFilter !== 'all') params.append('rol', userFilter);
+            if (userFilter !== 'all' && userFilter !== 'pendientes') params.append('rol', userFilter);
+            if (userFilter === 'pendientes') params.append('estado', 'pendiente');
             const resp = await axios.get(`/api/admin/users?${params.toString()}`);
             setUsuariosPagina(resp.data.data || []);
             setUsuariosTotal(resp.data.total || 0);
@@ -526,6 +528,29 @@ const handleCancelEdit = () => {
     };
 
     // Funcion para eliminar un usuario
+    // Bandeja de pendientes: aprueba (avisa al correo) o rechaza la solicitud.
+    const handleAprobar = async (id) => {
+        try {
+            const { data } = await axios.post(`/api/admin/users/${id}/aprobar`);
+            showAlert(data.message || 'Cuenta aprobada');
+            fetchUsers();
+        } catch (error) {
+            showAlert(error.response?.data?.message || 'Error al aprobar', 'error');
+        }
+    };
+
+    const handleRechazar = async (id) => {
+        const confirmed = await showConfirm('¿Rechazar esta solicitud de cuenta?');
+        if (!confirmed) return;
+        try {
+            const { data } = await axios.post(`/api/admin/users/${id}/rechazar`);
+            showAlert(data.message || 'Solicitud rechazada');
+            fetchUsers();
+        } catch (error) {
+            showAlert(error.response?.data?.message || 'Error al rechazar', 'error');
+        }
+    };
+
     const handleDelete = async (id) => {
         const confirmed = await showConfirm('¿Estás seguro de eliminar este usuario?');
         if (confirmed) {
@@ -701,7 +726,7 @@ const handleCancelEdit = () => {
                             <div className="mx-auto" style={{ maxWidth: '1200px' }}>
                                 <div className="d-flex justify-content-between align-items-center mb-5 flex-wrap gap-3 px-3 px-md-4">
                                     <div className="section-header mb-0">
-                                        <h3 className="mb-0">Gestión de {userFilter === 'all' ? 'Usuarios' : userFilter}</h3>
+                                        <h3 className="mb-0">Gestión de {userFilter === 'all' ? 'Usuarios' : userFilter === 'pendientes' ? 'Cuentas pendientes' : userFilter}</h3>
                                         <p className="small opacity-50 mb-0">Total: {usuariosTotal} registros{usuariosCargando ? ' • cargando…' : ''}</p>
                                     </div>
                                     <div className="d-flex gap-2 flex-wrap align-items-center">
@@ -711,6 +736,7 @@ const handleCancelEdit = () => {
                                         <div className="btn-group" role="group" aria-label="Filtrar por rol">
                                             {[
                                                 { key: 'all', label: 'Todos' },
+                                                { key: 'pendientes', label: 'Pendientes' },
                                                 { key: 'Instructor', label: 'Instructores' },
                                                 { key: 'Aprendiz', label: 'Aprendices' },
                                                 { key: 'Admin', label: 'Admins' },
@@ -777,15 +803,38 @@ const handleCancelEdit = () => {
                                                         <span className="material-symbols-outlined">groups</span>
                                                         <span className="text-truncate">Ficha: {user.user_coursenumber || '—'}</span>
                                                     </div>
+                                                    <div className="user-info-item mb-2">
+                                                        <span className="material-symbols-outlined">school</span>
+                                                        <span className="text-truncate">{user.user_program || 'Sin programa'}</span>
+                                                    </div>
+                                                    {user.user_telefono && (
+                                                        <div className="user-info-item">
+                                                            <span className="material-symbols-outlined">call</span>
+                                                            <span className="text-truncate">{user.user_telefono}</span>
+                                                        </div>
+                                                    )}
                                                 </div>
 
                                                 <div className="d-flex gap-2 px-3 pb-4">
-                                                    <button className="btn btn-warning btn-sm action-btn flex-grow-1" onClick={() => handleEditClick(user)}>
-                                                        <span className="material-symbols-outlined small">edit</span> Editar
-                                                    </button>
-                                                    <button className="btn btn-danger btn-sm action-btn flex-grow-1" onClick={() => handleDelete(user.id_usuario)}>
-                                                        <span className="material-symbols-outlined small">delete</span> Eliminar
-                                                    </button>
+                                                    {user.estado_cuenta === 'pendiente' ? (
+                                                        <>
+                                                            <button className="btn btn-success btn-sm action-btn flex-grow-1" onClick={() => handleAprobar(user.id_usuario)}>
+                                                                <span className="material-symbols-outlined small">check_circle</span> Aprobar
+                                                            </button>
+                                                            <button className="btn btn-danger btn-sm action-btn flex-grow-1" onClick={() => handleRechazar(user.id_usuario)}>
+                                                                <span className="material-symbols-outlined small">cancel</span> Rechazar
+                                                            </button>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <button className="btn btn-warning btn-sm action-btn flex-grow-1" onClick={() => handleEditClick(user)}>
+                                                                <span className="material-symbols-outlined small">edit</span> Editar
+                                                            </button>
+                                                            <button className="btn btn-danger btn-sm action-btn flex-grow-1" onClick={() => handleDelete(user.id_usuario)}>
+                                                                <span className="material-symbols-outlined small">delete</span> Eliminar
+                                                            </button>
+                                                        </>
+                                                    )}
                                                 </div>
                                             </div>
                                         )) : (
@@ -952,6 +1001,8 @@ const handleCancelEdit = () => {
                 return <Presentes />;
             case 'validar_qr':
                 return <QrInvitado />;
+            case 'acceso_qr':
+                return <AccesoQr />;
             case 'escanear_carnet':
                 return (
                     <div className="fade-in-up">
@@ -1310,7 +1361,8 @@ const handleCancelEdit = () => {
         { label: 'NOVEDADES', icon: 'report_problem', view: 'novedad_historial' },
         { label: 'USUARIOS', icon: 'group', view: 'users', filter: 'all' },
         { label: 'AMBIENTES', icon: 'meeting_room', view: 'ambientes' },
-        { label: 'ESCANEAR CARNET', icon: 'qr_code_scanner', view: 'escanear_carnet' }
+        { label: 'ESCANEAR CARNET', icon: 'qr_code_scanner', view: 'escanear_carnet' },
+        { label: 'ACCESO QR', icon: 'qr_code_2', view: 'acceso_qr' }
     ];
 
     return (

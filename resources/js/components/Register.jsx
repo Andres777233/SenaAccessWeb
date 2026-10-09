@@ -27,6 +27,9 @@ const Register = () => {
     const [showPassword, setShowPassword] = useState(false);
     // Estado para controlar la visibilidad del spinner de carga
     const [loading, setLoading] = useState(false);
+    // Mensaje de cuenta en espera: tras registrarse, la cuenta queda pendiente
+    // de aprobación del superadmin y se muestra este aviso en vez del login.
+    const [mensajeEspera, setMensajeEspera] = useState('');
     // Función para manejar cambios en los campos del formulario, actualizando el estado formData y limpiando errores
     const handleChange = (e) => {
         setFormData({
@@ -52,8 +55,7 @@ const Register = () => {
         setErrors({});
         try {
             const response = await axios.post('/api/register', formData);
-            showAlert(response.data.message);
-            navigate('/');
+            setMensajeEspera(response.data.message || 'Tu cuenta está en espera por el superadmin.');
         } catch (error) {
             if (error.response && error.response.data.errors) {
                 setErrors(error.response.data.errors);
@@ -77,6 +79,17 @@ const Register = () => {
                     </div>
                 </div>
 
+                {mensajeEspera ? (
+                    <div className="text-center py-4">
+                        <span className="material-symbols-outlined text-warning" style={{ fontSize: '56px' }}>hourglass_top</span>
+                        <h4 className="fw-bold mt-3">Solicitud enviada</h4>
+                        <p className="opacity-75">{mensajeEspera}</p>
+                        <Link to="/login" className="btn btn-glow text-decoration-none d-inline-flex align-items-center gap-2 mt-2">
+                            <span className="material-symbols-outlined">login</span>
+                            IR AL LOGIN
+                        </Link>
+                    </div>
+                ) : (
                 <form onSubmit={handleSubmit} className="mt-2">
                     {/* Sección: Información Personal */}
                     <div className="mb-4">
@@ -212,6 +225,7 @@ const Register = () => {
                         </Link>
                     </div>
                 </form>
+                )}
             </div>
 
             <Footer />

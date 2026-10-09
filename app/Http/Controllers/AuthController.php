@@ -68,6 +68,7 @@ class AuthController extends Controller
             'guest_qr_token' => Str::random(64),
             'guest_qr_expires_at' => Carbon::now()->addMinutes(60),
             'guest_qr_used' => false,
+            'estado_cuenta' => 'aprobada',
         ]);
 
         return response()->json([
@@ -161,6 +162,8 @@ class AuthController extends Controller
         // ROL PREDETERMINADO APRENDIZ 
         $role = Role::where('rol_name', 'Aprendiz')->first();
 
+        // La cuenta nace pendiente: el superadmin la aprueba desde su bandeja
+        // y solo entonces el usuario puede entrar (ver mensaje abajo).
         $user = User::create([
             'user_identification' => $request->user_identification,
             'user_name' => $request->user_name,
@@ -172,13 +175,14 @@ class AuthController extends Controller
             'user_documento_tipo' => $request->user_documento_tipo,
             'user_telefono' => $request->user_telefono,
             'fk_id_rol' => $role->id_rol,
+            'estado_cuenta' => 'pendiente',
         ]);
 
         // Dispara el evento Registered -> SendEmailVerificationNotification:
         // al usuario se le envía el enlace de verificación de correo.
         event(new Registered($user));
 
-        return response()->json(['message' => 'Usuario registrado exitosamente', 'user' => $user], 201);
+        return response()->json(['message' => 'Tu cuenta está en espera por el superadmin. Te avisaremos al correo cuando sea aprobada.', 'user' => $user], 201);
     }
 
     public function login(Request $request)
@@ -199,6 +203,14 @@ class AuthController extends Controller
 
         if (!$user || !Hash::check($credentials['user_password'], $user->user_password)) {
             return response()->json(['message' => 'Credenciales incorrectas'], 401);
+        }
+
+        // Aprobación pendiente: la cuenta existe pero el superadmin aún no la autoriza.
+        if (($user->estado_cuenta ?? 'aprobada') === 'pendiente') {
+            return response()->json(['message' => 'Tu cuenta está en espera por el superadmin. Te avisaremos al correo cuando sea aprobada.'], 403);
+        }
+        if (($user->estado_cuenta ?? '') === 'rechazada') {
+            return response()->json(['message' => 'Tu solicitud de cuenta fue rechazada. Contacta al administrador del centro.'], 403);
         }
 
         // Verificación en dos pasos: solo si está activa Y el dispositivo no es
@@ -232,12 +244,12 @@ class AuthController extends Controller
         ]);
     }
 
+    // Cierra la sesión sin tocar el historial: la Salida SOLO se marca con
+    // el QR de salida de portería (o PIN de excusa). Cerrar la app o el
+    // navegador nunca genera salidas.
     public function logout(Request $request)
     {
         $user = $request->user();
-
-        // Registrar salida
-        $this->registrarMovimiento($user->id_usuario, 'Salida');
 
         /** @var \Laravel\Sanctum\PersonalAccessToken $token */
         $token = $user->currentAccessToken();
@@ -245,59 +257,6 @@ class AuthController extends Controller
             $token->delete();
         }
         return response()->json(['message' => 'Sesión cerrada']);
-    }
-
-    /**
-     * Registra la Salida cuando el usuario cierra la app/pestaña sin pasar por logout.
-     * El frontend la invoca con fetch keepalive en el evento pagehide (solo al cerrar
-     * la última pestaña). Con dedup: si el último movimiento ya es Salida, no duplica.
-     * Guarda el id de la Salida en cache 90s para poder revertirla si era un refresh.
-     */
-    public function sessionExit(Request $request)
-    {
-        $user = $request->user();
-
-        $ultimo = Ingreso::where('fk_id_user', $user->id_usuario)
-            ->orderByDesc('id_ingreso')
-            ->first();
-
-        if ($ultimo && $ultimo->ingreso_type === 'Salida') {
-            return response()->json(['message' => 'La salida ya estaba registrada'], 200);
-        }
-
-        $salida = $this->registrarMovimiento($user->id_usuario, 'Salida');
-
-        Cache::put("session_exit_pendiente:{$user->id_usuario}", $salida->id_ingreso, now()->addSeconds(90));
-
-        return response()->json(['message' => 'Salida registrada'], 201);
-    }
-
-    /**
-     * Revierte la Salida registrada por un cierre si resultó ser un refresh (F5):
-     * el frontend la llama al cargar la SPA cuando navigation.type === 'reload'.
-     */
-    public function cancelSessionExit(Request $request)
-    {
-        $user = $request->user();
-        $key = "session_exit_pendiente:{$user->id_usuario}";
-        $idSalida = Cache::get($key);
-
-        if (!$idSalida) {
-            return response()->json(['message' => 'No hay salida pendiente de revertir'], 200);
-        }
-
-        $ultimo = Ingreso::where('fk_id_user', $user->id_usuario)
-            ->orderByDesc('id_ingreso')
-            ->first();
-
-        // Solo se revierte si sigue siendo el último movimiento del usuario.
-        if ($ultimo && $ultimo->id_ingreso === (int) $idSalida && $ultimo->ingreso_type === 'Salida') {
-            Ingreso::where('id_ingreso', $idSalida)->delete();
-        }
-
-        Cache::forget($key);
-
-        return response()->json(['message' => 'Salida revertida'], 200);
     }
 
     public function forgotPassword(Request $request)

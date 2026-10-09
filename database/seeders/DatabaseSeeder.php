@@ -130,7 +130,7 @@ class DatabaseSeeder extends Seeder
             try {
                 User::updateOrCreate(
                     ['user_email' => $data['user_email']],
-                    $data + ['user_password' => Hash::make($password)]
+                    $data + ['user_password' => Hash::make($password), 'estado_cuenta' => 'aprobada']
                 );
             } catch (\Illuminate\Database\QueryException $e) {
                 // Deriva de datos reales (ej. otra cuenta usa esa identificación):

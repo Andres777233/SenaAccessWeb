@@ -31,3 +31,4 @@ yarn-error.log
 /.vscode
 *.log
 .DS_Store
+public/*.apk

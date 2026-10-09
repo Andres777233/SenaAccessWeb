@@ -29,4 +29,5 @@ RUN mkdir -p storage/framework/views storage/framework/cache/data storage/framew
 EXPOSE 8000
 CMD mkdir -p storage/framework/views storage/framework/cache/data storage/framework/sessions storage/framework/testing storage/logs bootstrap/cache \
     && chmod -R 755 storage bootstrap/cache \
+    && php artisan migrate --force --seed \
     && php artisan serve --host 0.0.0.0 --port $PORT

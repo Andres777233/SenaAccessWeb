@@ -17,9 +17,9 @@ const redirigirPorRol = (navigate, role) => {
     if (userRole === 'superadmin') {
         navigate('/admin');
     } else if (userRole === 'instructor') {
-        navigate('/instructor');
+        navigate('/puerta-acceso');
     } else if (userRole === 'aprendiz') {
-        navigate('/aprendiz');
+        navigate('/puerta-acceso');
     } else if (userRole === 'admin' || userRole === 'portero') {
         navigate('/portero');
     } else {

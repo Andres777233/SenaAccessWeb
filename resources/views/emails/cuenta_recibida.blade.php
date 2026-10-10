@@ -76,16 +76,29 @@
         .content p strong {
             color: #FFFFFF;
         }
-        .hourglass {
+        .status-mark {
+            margin: 16px auto 4px auto;
+            text-align: center;
+        }
+        .status-mark img {
             width: 72px;
             height: 72px;
-            margin: 16px auto;
             border-radius: 50%;
-            background-color: rgba(2, 217, 20, 0.12);
             border: 2px dashed #02D914;
-            font-size: 32px;
-            line-height: 68px;
+            background-color: #FFFFFF;
+            padding: 6px;
+        }
+        .status-pill {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 5px 16px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: bold;
+            letter-spacing: 2px;
             color: #02D914;
+            border: 1px dashed #02D914;
+            background-color: rgba(2, 217, 20, 0.08);
         }
         .steps {
             text-align: left;
@@ -116,7 +129,7 @@
     </style>
 </head>
 <body>
-    <div class="preheader">Recibimos tu solicitud SENA Access. Está en espera de aprobación del superadmin.</div>
+    <div class="preheader">Recibimos tu solicitud SENA Access. Está en espera de aprobación. El sistema se encargará de aprobar tu solicitud.</div>
     <div class="page">
         <div class="container">
             <div class="glow">
@@ -127,17 +140,21 @@
                 <p class="brand-sub">CONTROL DE ACCESO CCyS</p>
             </div>
             <div class="content">
-                <div class="hourglass">◷</div>
+                <div class="status-mark">
+                    <img src="{{ url('email/logoSena.png') }}" alt="SENA">
+                    <br>
+                    <span class="status-pill">EN ESPERA</span>
+                </div>
                 <h2>Solicitud recibida</h2>
                 @if(!empty($nombre))
                     <p><strong>Hola {{ $nombre }},</strong></p>
                 @else
                     <p><strong>Hola,</strong></p>
                 @endif
-                <p>Creamos tu cuenta y quedó <strong>en espera de aprobación</strong> del superadmin. Te avisaremos a este correo cuando puedas entrar.</p>
+                <p>Creamos tu cuenta y quedó <strong>en espera de aprobación</strong>. El sistema se encargará de aprobar tu solicitud y te avisaremos a este correo cuando puedas entrar.</p>
 
                 <div class="steps">
-                    <p><strong>1.</strong> El superadmin revisa tu solicitud.</p>
+                    <p><strong>1.</strong> El sistema revisa y aprueba tu solicitud.</p>
                     <p><strong>2.</strong> Te llega el correo de aprobación.</p>
                     <p><strong>3.</strong> Entras a la app con tu correo y contraseña.</p>
                 </div>

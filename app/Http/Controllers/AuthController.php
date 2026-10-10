@@ -203,7 +203,7 @@ class AuthController extends Controller
             Log::error('No se pudo enviar correo de solicitud a ' . $user->user_email . ': ' . $e->getMessage());
         }
 
-        return response()->json(['message' => 'Tu cuenta está en espera por el superadmin. Te avisaremos al correo cuando sea aprobada.', 'user' => $user], 201);
+        return response()->json(['message' => 'Tu cuenta está en espera. El sistema se encargará de aprobar tu solicitud y te avisaremos al correo.', 'user' => $user], 201);
     }
 
     public function login(Request $request)
@@ -228,7 +228,7 @@ class AuthController extends Controller
 
         // Aprobación pendiente: la cuenta existe pero el superadmin aún no la autoriza.
         if (($user->estado_cuenta ?? 'aprobada') === 'pendiente') {
-            return response()->json(['message' => 'Tu cuenta está en espera por el superadmin. Te avisaremos al correo cuando sea aprobada.'], 403);
+            return response()->json(['message' => 'Tu cuenta está en espera. El sistema se encargará de aprobar tu solicitud y te avisaremos al correo.'], 403);
         }
         if (($user->estado_cuenta ?? '') === 'rechazada') {
             return response()->json(['message' => 'Tu solicitud de cuenta fue rechazada. Contacta al administrador del centro.'], 403);
@@ -246,9 +246,8 @@ class AuthController extends Controller
             }
         }
 
-        // Crear registro de ingreso
-        $this->registrarMovimiento($user->id_usuario, 'Entrada');
-
+        // La Entrada NO se registra aquí: el usuario la marca escaneando el QR
+        // de portería (puerta de entrada). Sin eso no hay "presentes" falsos.
         $token = $user->createToken('auth_token')->plainTextToken;
 
         // email_verified_at indica en la respuesta si el correo fue verificado;

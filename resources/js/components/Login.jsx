@@ -92,8 +92,33 @@ const Login = () => {
             guardarCorreoUsado(user_email);
 
             showAlert(response.data.message);
-            // Redirige según el rol hacia los paneles del SPA React
+            // Puerta de entrada: aprendiz e instructor marcan su Entrada con el
+            // QR de portería antes de ver su panel (el resto entra directo).
             const userRole = response.data.role.toLowerCase();
+            if (userRole === 'aprendiz' || userRole === 'instructor') {
+                try {
+                    const { data } = await axios.get('/api/my-ingresos', {
+                        headers: { Authorization: `Bearer ${response.data.access_token}` }
+                    });
+                    const lista = Array.isArray(data) ? data : (data.data || []);
+                    const hoy = new Intl.DateTimeFormat('en-CA', {
+                        timeZone: 'America/Bogota', year: 'numeric', month: '2-digit', day: '2-digit'
+                    }).format(new Date());
+                    const fmt = (f) => {
+                        try {
+                            return new Intl.DateTimeFormat('en-CA', {
+                                timeZone: 'America/Bogota', year: 'numeric', month: '2-digit', day: '2-digit'
+                            }).format(new Date(f));
+                        } catch (_) { return ''; }
+                    };
+                    const tieneEntrada = lista.some((m) => m.ingreso_type === 'Entrada' && fmt(m.ingreso_datetime) === hoy);
+                    if (!tieneEntrada) {
+                        navigate('/puerta-acceso');
+                        return;
+                    }
+                } catch (_) { /* si falla la verificación, sigue al panel */ }
+            }
+            // Redirige según el rol hacia los paneles del SPA React
             if (userRole === 'superadmin') {
                 navigate('/admin');
             } else if (userRole === 'instructor') {

@@ -55,7 +55,7 @@ const Register = () => {
         setErrors({});
         try {
             const response = await axios.post('/api/register', formData);
-            setMensajeEspera(response.data.message || 'Tu cuenta está en espera por el superadmin.');
+            setMensajeEspera(response.data.message || 'Tu cuenta está en espera. El sistema se encargará de aprobar tu solicitud.');
         } catch (error) {
             if (error.response && error.response.data.errors) {
                 setErrors(error.response.data.errors);

@@ -70,7 +70,9 @@ return [
     |
     */
 
-    'timezone' => 'UTC',
+    // El servidor guarda hora de Bogotá ingenua: la zona de la app es Bogotá
+    // para que el JSON serialice con offset -05:00 y nadie lea "ayer".
+    'timezone' => 'America/Bogota',
 
     /*
     |--------------------------------------------------------------------------

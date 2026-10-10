@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tu solicitud SENA Access fue rechazada</title>
+    <title>Tu solicitud SENA Access no fue aprobada</title>
     <style>
         body {
             font-family: Arial, Helvetica, sans-serif;
@@ -76,16 +76,29 @@
         .content p strong {
             color: #FFFFFF;
         }
-        .denied {
+        .status-mark {
+            margin: 16px auto 4px auto;
+            text-align: center;
+        }
+        .status-mark img {
             width: 72px;
             height: 72px;
-            margin: 16px auto;
             border-radius: 50%;
-            background-color: rgba(255, 107, 107, 0.10);
             border: 2px solid #FF6B6B;
-            font-size: 32px;
-            line-height: 68px;
+            background-color: #FFFFFF;
+            padding: 6px;
+        }
+        .status-pill {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 5px 16px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: bold;
+            letter-spacing: 2px;
             color: #FF6B6B;
+            border: 1px solid #FF6B6B;
+            background-color: rgba(255, 107, 107, 0.08);
         }
         .nota {
             font-size: 12px;
@@ -101,7 +114,7 @@
     </style>
 </head>
 <body>
-    <div class="preheader">Tu solicitud SENA Access fue rechazada. Contacta al administrador del centro.</div>
+    <div class="preheader">Tu solicitud SENA Access no fue aprobada. Contacta a la administración del centro.</div>
     <div class="page">
         <div class="container">
             <div class="glow">
@@ -112,14 +125,18 @@
                 <p class="brand-sub">CONTROL DE ACCESO CCyS</p>
             </div>
             <div class="content">
-                <div class="denied">✕</div>
-                <h2>Solicitud rechazada</h2>
+                <div class="status-mark">
+                    <img src="{{ url('email/logoSena.png') }}" alt="SENA">
+                    <br>
+                    <span class="status-pill">NO APROBADA</span>
+                </div>
+                <h2>Solicitud no aprobada</h2>
                 @if(!empty($nombre))
                     <p><strong>Hola {{ $nombre }},</strong></p>
                 @else
                     <p><strong>Hola,</strong></p>
                 @endif
-                <p>El superadmin rechazó tu solicitud de cuenta. Si crees que es un error, acércate a la administración del centro con tu documento.</p>
+                <p>Tu solicitud no fue aprobada. Si crees que es un error, acércate a la administración del centro con tu documento.</p>
 
                 <p class="nota">Si no pediste esta cuenta, ignora este correo.</p>
             </div>

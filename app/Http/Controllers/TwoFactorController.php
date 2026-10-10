@@ -404,13 +404,7 @@ class TwoFactorController extends Controller
         if (!$reto->access_token) {
             $token = $user->createToken('auth_token')->plainTextToken;
             $reto->forceFill(['access_token' => $token])->save();
-            // Registra la Entrada solo cuando el acceso se completa con éxito,
-            // para no inflar "presentes" con intentos no resueltos.
-            try {
-                app(AuthController::class)->registrarMovimiento($user->id_usuario, 'Entrada');
-            } catch (\Throwable $e) {
-                // Registro de ingreso best-effort: no rompe el login.
-            }
+            // Sin Entrada automática: la marca el QR de portería (puerta de entrada).
         }
 
         $user->refresh();

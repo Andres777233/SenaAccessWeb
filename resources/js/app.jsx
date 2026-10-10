@@ -14,6 +14,7 @@ import Loading from './components/Loading';
 import LandingPage from './components/LandingPage';
 import CustomAlert from './components/CustomAlert';
 import ChatbotWidget from './components/ChatbotWidget';
+import PuertaAcceso from './components/PuertaAcceso';
 // Paneles pesados por rol: lazy para que la primera carga solo baje el chunk
 // de la ruta visitada (antes las 12 rutas viajaban en un solo app-*.js).
 const Admin = lazy(() => import('./components/Admin'));
@@ -118,6 +119,7 @@ const App = () => {
                     <Route path="/password-recovery" element={<PasswordRecovery />} />
                     <Route path="/reset-password" element={<ResetPassword />} />
                     <Route path="/loading" element={<Loading />} />
+                    <Route path="/puerta-acceso" element={localStorage.getItem('access_token') ? <PuertaAcceso /> : <Navigate to="/login" replace />} />
                     <Route path="/admin" element={<ProtectedRoute expectedRole="superadmin"><Admin /></ProtectedRoute>} />
                     <Route path="/aprendiz" element={<ProtectedRoute expectedRole="aprendiz"><Aprendiz /></ProtectedRoute>} />
                     <Route path="/instructor" element={<ProtectedRoute expectedRole="instructor"><Instructor /></ProtectedRoute>} />

@@ -76,16 +76,29 @@
         .content p strong {
             color: #FFFFFF;
         }
-        .check {
+        .status-mark {
+            margin: 16px auto 4px auto;
+            text-align: center;
+        }
+        .status-mark img {
             width: 72px;
             height: 72px;
-            margin: 16px auto;
             border-radius: 50%;
-            background-color: rgba(2, 217, 20, 0.12);
             border: 2px solid #02D914;
-            font-size: 36px;
-            line-height: 68px;
-            color: #02D914;
+            background-color: #FFFFFF;
+            padding: 6px;
+            box-shadow: 0 0 24px rgba(2, 217, 20, 0.35);
+        }
+        .status-pill {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 5px 16px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            color: #000000;
+            background-color: #02D914;
         }
         .btn {
             display: block;
@@ -127,14 +140,18 @@
                 <p class="brand-sub">CONTROL DE ACCESO CCyS</p>
             </div>
             <div class="content">
-                <div class="check">✓</div>
+                <div class="status-mark">
+                    <img src="{{ url('email/logoSena.png') }}" alt="SENA">
+                    <br>
+                    <span class="status-pill">APROBADA</span>
+                </div>
                 <h2>Cuenta aprobada</h2>
                 @if(!empty($nombre))
                     <p><strong>Hola {{ $nombre }},</strong></p>
                 @else
                     <p><strong>Hola,</strong></p>
                 @endif
-                <p>El superadmin aprobó tu solicitud. Ya puedes iniciar sesión en la app SENA Access con tu correo y contraseña.</p>
+                <p>Tu solicitud fue aprobada. Ya puedes iniciar sesión en la app SENA Access con tu correo y contraseña.</p>
 
                 <a href="{{ url('/login') }}" class="btn">INICIAR SESIÓN</a>
 

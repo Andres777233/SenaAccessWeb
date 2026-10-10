@@ -2167,3 +2167,140 @@ body.light-mode .carnet-qr-box {
         box-shadow: 0 0 45px var(--primary-color);
     }
 }
+
+/* =========================================
+   VERIFICACIÓN EN DOS PASOS (rediseño)
+   ========================================= */
+.eyebrow-2fa {
+    margin: 0;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--primary-color);
+}
+.code-input-2fa {
+    width: 100%;
+    max-width: 320px;
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
+    background-color: #07090D;
+    border: 2px dashed var(--primary-color);
+    border-radius: 16px;
+    padding: 16px 12px;
+    font-size: 38px;
+    font-weight: 700;
+    letter-spacing: 8px;
+    text-align: center;
+    color: var(--primary-color);
+    outline: none;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.code-input-2fa:focus {
+    box-shadow: 0 0 18px rgba(2, 217, 20, 0.35);
+}
+.code-input-2fa::placeholder {
+    color: rgba(255, 255, 255, 0.25);
+    letter-spacing: 8px;
+}
+.code-input-2fa.is-invalid {
+    border-color: #dc3545;
+    color: #dc3545;
+}
+.divider-2fa {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 20px 0 8px 0;
+    color: var(--text-color);
+    opacity: 0.55;
+    font-size: 11px;
+    letter-spacing: 2px;
+}
+.divider-2fa::before, .divider-2fa::after {
+    content: "";
+    flex: 1;
+    border-top: 1px solid rgba(255, 255, 255, 0.14);
+}
+.pulse-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: var(--primary-color);
+    animation: pulseDot 1.6s ease-out infinite;
+    vertical-align: baseline;
+}
+@keyframes pulseDot {
+    0%, 100% { opacity: 0.35; transform: scale(0.85); }
+    50% { opacity: 1; transform: scale(1.1); }
+}
+/* Press con propósito: confirma que la interfaz escuchó (Emil, 120-160ms). */
+.btn-press {
+    border-radius: 16px;
+    transition: transform 140ms ease-out;
+}
+.btn-press:active {
+    transform: scale(0.97);
+}
+@media (prefers-reduced-motion: reduce) {
+    .pulse-dot { animation: none; opacity: 1; }
+    .btn-press { transition: none; }
+    .btn-press:active { transform: none; }
+}
+
+/* Tarjeta "¿Eres tú?" + botones SÍ/NO (rediseño 2FA). */
+.icon-badge-2fa {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(2, 217, 20, 0.14);
+    color: var(--primary-color);
+    font-size: 20px;
+}
+.pendiente-2fa {
+    padding: 16px;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 193, 7, 0.4);
+    background: rgba(255, 193, 7, 0.07);
+}
+.pendiente-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    opacity: 0.85;
+    margin-bottom: 4px;
+}
+.pendiente-meta .material-symbols-outlined {
+    font-size: 16px;
+    opacity: 0.6;
+}
+.btn-approve-2fa {
+    background-color: var(--primary-color);
+    color: #000;
+    font-weight: 700;
+    border: none;
+    border-radius: 16px;
+    padding: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+.btn-deny-2fa {
+    background-color: transparent;
+    color: #FF6B6B;
+    font-weight: 700;
+    border: 1px solid #FF6B6B;
+    border-radius: 16px;
+    padding: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}

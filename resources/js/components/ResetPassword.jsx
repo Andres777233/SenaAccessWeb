@@ -7,6 +7,7 @@ const ResetPassword = () => {
     const [code, setCode] = useState('');
     const [password, setPassword] = useState('');
     const [password_confirmation, setPasswordConfirmation] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');
@@ -55,55 +56,70 @@ const ResetPassword = () => {
     };
 
     return (
-        <div className="d-flex flex-column justify-content-center align-items-center vh-100">
-            <div className="glass-box password p-4 p-md-5 mx-3" style={{ maxWidth: '400px', width: '100%' }}>
-                <div className="text-center mb-4">
-                    <h2 className="fw-bold">SENA</h2>
-                    <h4 className="mb-3">Bienvenido al CCyS</h4>
-                    <img src="/Icons/logoSena.png" className="logosena mb-3" alt="Logo SENA" />
-                    <h5 className="fw-light text-warning">Nueva Contraseña</h5>
-                </div>
+        <div className="d-flex flex-column justify-content-center align-items-center vh-100 fade-in-up">
+            <div className="glass-box password p-4 p-md-5 mx-3 text-center" style={{ maxWidth: '480px', width: '100%' }}>
+                <img src="/Icons/logoSena.png" className="logosena mb-3" alt="Logo SENA" style={{ width: '72px' }} />
+                <p className="eyebrow-2fa">Paso 2 de 2</p>
+                <h2 className="fw-bold mb-1">Nueva contraseña</h2>
+                <p className="mt-2 small opacity-75">Escribe el código que llegó a tu correo y crea tu clave nueva.</p>
 
-                {message && <div className="alert alert-success">{message}</div>}
-                {error && <div className="alert alert-danger">{error}</div>}
+                {message && <div className="alert alert-success mt-3">{message}</div>}
+                {error && <div className="alert alert-danger mt-3">{error}</div>}
 
                 <form onSubmit={handleSubmit}>
-                    <div className="user-box">
-                        <input
-                            type="text"
-                            name="code"
-                            required
-                            value={code}
-                            onChange={(e) => setCode(e.target.value.toUpperCase())}
-                            maxLength={10}
-                        />
-                        <label>Código de Recuperación</label>
-                    </div>
+                    <input
+                        type="text"
+                        name="code"
+                        required
+                        value={code}
+                        onChange={(e) => setCode(e.target.value.toUpperCase())}
+                        maxLength={10}
+                        placeholder="········"
+                        autoComplete="one-time-code"
+                        className="code-input-2fa mt-2"
+                        aria-label="Código de recuperación"
+                        style={{ fontSize: '30px', letterSpacing: '4px' }}
+                    />
 
-                    <div className="user-box">
+                    <div className="user-box mt-3 text-start">
                         <input
-                            type="password"
+                            type={showPassword ? 'text' : 'password'}
                             name="password"
                             required
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
+                            autoComplete="new-password"
                         />
                         <label>Nueva Contraseña</label>
                     </div>
 
-                    <div className="user-box">
+                    <div className="user-box text-start">
                         <input
-                            type="password"
+                            type={showPassword ? 'text' : 'password'}
                             name="password_confirmation"
                             required
                             value={password_confirmation}
                             onChange={(e) => setPasswordConfirmation(e.target.value)}
+                            autoComplete="new-password"
                         />
                         <label>Confirmar Contraseña</label>
                     </div>
 
+                    <div className="form-check text-start mb-3">
+                        <input
+                            type="checkbox"
+                            className="form-check-input"
+                            id="mostrarClaveReset"
+                            checked={showPassword}
+                            onChange={(e) => setShowPassword(e.target.checked)}
+                        />
+                        <label className="form-check-label small opacity-75" htmlFor="mostrarClaveReset">
+                            Mostrar contraseñas
+                        </label>
+                    </div>
+
                     <div className="d-grid gap-2">
-                        <button className="btn btn-glow w-100 fw-bold" type="submit" disabled={loading}>
+                        <button className="btn btn-glow btn-primary-login w-100 fw-bold py-3 btn-press" type="submit" disabled={loading}>
                             {loading ? 'Procesando...' : 'Cambiar Contraseña'}
                         </button>
                     </div>

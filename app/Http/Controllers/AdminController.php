@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 use App\Mail\CuentaAprobadaMail;
+use App\Mail\CuentaRechazadaMail;
 
 use App\Models\Ingreso;
 use App\Models\Novedad;
@@ -464,13 +465,20 @@ class AdminController extends Controller
         return response()->json(['message' => 'Cuenta aprobada. Se avisó al correo del usuario.', 'user' => $user->load('role')]);
     }
 
-    // Rechaza una cuenta pendiente: marca rechazada (el login la bloquea con aviso).
+    // Rechaza una cuenta pendiente: marca rechazada (el login la bloquea con aviso)
+    // y avisa al correo. El envío nunca rompe la petición.
     public function rechazarCuenta(Request $request, $id)
     {
         $user = User::findOrFail($id);
         $user->estado_cuenta = 'rechazada';
         $user->save();
-        return response()->json(['message' => 'Solicitud rechazada.', 'user' => $user->load('role')]);
+        try {
+            $nombre = trim(($user->user_name ?? '') . ' ' . ($user->user_lastname ?? ''));
+            Mail::to($user->user_email)->send(new CuentaRechazadaMail($nombre));
+        } catch (\Throwable $e) {
+            Log::error('No se pudo enviar correo de rechazo a ' . $user->user_email . ': ' . $e->getMessage());
+        }
+        return response()->json(['message' => 'Solicitud rechazada. Se avisó al correo del usuario.', 'user' => $user->load('role')]);
     }
 
     public function deleteUser(Request $request, $id) //FUNCION PARA ELIMINAR USUARIO POR ID (borrado total: primero su rastro, luego el usuario)

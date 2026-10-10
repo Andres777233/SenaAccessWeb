@@ -20,6 +20,9 @@ use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use App\Mail\RecoveryCodeMail;
+use App\Mail\CuentaRecibidaMail;
+use App\Services\NotificacionService;
+use Illuminate\Support\Facades\Log;
 
 class AuthController extends Controller
 {
@@ -181,6 +184,24 @@ class AuthController extends Controller
         // Dispara el evento Registered -> SendEmailVerificationNotification:
         // al usuario se le envía el enlace de verificación de correo.
         event(new Registered($user));
+
+        // Aviso in-app a los superadmins (bandeja Pendientes) + correo de
+        // "solicitud recibida" al aprendiz. Nada de esto rompe el registro.
+        $nombre = trim(($user->user_name ?? '') . ' ' . ($user->user_lastname ?? ''));
+        try {
+            app(NotificacionService::class)->notificarAdmins(
+                'Nueva solicitud de cuenta',
+                "{$nombre} ({$user->user_email}, doc. {$user->user_identification}, ficha {$user->user_coursenumber}) espera tu aprobación.",
+                'cuenta_pendiente'
+            );
+        } catch (\Throwable $e) {
+            Log::error('No se pudo notificar solicitud de cuenta: ' . $e->getMessage());
+        }
+        try {
+            Mail::to($user->user_email)->send(new CuentaRecibidaMail($nombre));
+        } catch (\Throwable $e) {
+            Log::error('No se pudo enviar correo de solicitud a ' . $user->user_email . ': ' . $e->getMessage());
+        }
 
         return response()->json(['message' => 'Tu cuenta está en espera por el superadmin. Te avisaremos al correo cuando sea aprobada.', 'user' => $user], 201);
     }

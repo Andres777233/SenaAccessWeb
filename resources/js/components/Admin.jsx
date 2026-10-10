@@ -11,7 +11,6 @@ import Excusas from './Excusas';
 import Presentes from './Presentes';
 import QrInvitado from './QrInvitado';
 import QrScannerModal from './QrScannerModal';
-import AccesoQr from './AccesoQr';
 import DosPasos from './DosPasos';
 import RecorteFoto from './RecorteFoto';
 import { showAlert, showConfirm } from './CustomAlert';
@@ -42,6 +41,7 @@ const Admin = () => {
     const [usuariosTotal, setUsuariosTotal] = useState(0);
     const [usuariosUltima, setUsuariosUltima] = useState(1);
     const [usuariosPag, setUsuariosPag] = useState(1);
+    const [pendientesCount, setPendientesCount] = useState(0); // Badge de la bandeja Pendientes
     const [usuariosCargando, setUsuariosCargando] = useState(false);
     const [usersSearchDeb, setUsersSearchDeb] = useState(''); // Búsqueda con debounce
     const usuariosPagRef = useRef(1); // Página vigente para refrescos (evita closures viejos)
@@ -119,7 +119,7 @@ const Admin = () => {
     };
 
     // Escáner de carnet digital (paridad Sebastián): el QR trae JSON SENA_ACCESS;
-    // se busca por identificación y se filtra el listado de usuarios.
+    // se busca por identificación y se filtra el listado por identificación.
     const handleQrScan = (rawData) => {
         setIsQrScannerOpen(false);
         try {
@@ -148,8 +148,17 @@ const Admin = () => {
         }
     };
 
+    // Badge de pendientes: cuenta solicitudes sin entrar a la bandeja.
+    const fetchPendientesCount = async () => {
+        try {
+            const { data } = await axios.get('/api/admin/users?estado=pendiente&per_page=1');
+            setPendientesCount(data.total || 0);
+        } catch (_) { /* el badge se queda en 0 */ }
+    };
+
     useEffect(() => {
         refreshViewData();
+        if (view === 'users') fetchPendientesCount();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [view]);
 
@@ -534,6 +543,7 @@ const handleCancelEdit = () => {
             const { data } = await axios.post(`/api/admin/users/${id}/aprobar`);
             showAlert(data.message || 'Cuenta aprobada');
             fetchUsers();
+            fetchPendientesCount();
         } catch (error) {
             showAlert(error.response?.data?.message || 'Error al aprobar', 'error');
         }
@@ -546,6 +556,7 @@ const handleCancelEdit = () => {
             const { data } = await axios.post(`/api/admin/users/${id}/rechazar`);
             showAlert(data.message || 'Solicitud rechazada');
             fetchUsers();
+            fetchPendientesCount();
         } catch (error) {
             showAlert(error.response?.data?.message || 'Error al rechazar', 'error');
         }
@@ -749,6 +760,9 @@ const handleCancelEdit = () => {
                                                     onClick={() => { setUserFilter(f.key); setUsuariosPag(1); usuariosPagRef.current = 1; }}
                                                 >
                                                     {f.label}
+                                                    {f.key === 'pendientes' && pendientesCount > 0 && (
+                                                        <span className="badge rounded-pill bg-warning text-dark ms-1">{pendientesCount}</span>
+                                                    )}
                                                 </button>
                                             ))}
                                         </div>
@@ -1001,8 +1015,6 @@ const handleCancelEdit = () => {
                 return <Presentes />;
             case 'validar_qr':
                 return <QrInvitado />;
-            case 'acceso_qr':
-                return <AccesoQr />;
             case 'escanear_carnet':
                 return (
                     <div className="fade-in-up">
@@ -1361,8 +1373,7 @@ const handleCancelEdit = () => {
         { label: 'NOVEDADES', icon: 'report_problem', view: 'novedad_historial' },
         { label: 'USUARIOS', icon: 'group', view: 'users', filter: 'all' },
         { label: 'AMBIENTES', icon: 'meeting_room', view: 'ambientes' },
-        { label: 'ESCANEAR CARNET', icon: 'qr_code_scanner', view: 'escanear_carnet' },
-        { label: 'ACCESO QR', icon: 'qr_code_2', view: 'acceso_qr' }
+        { label: 'ESCANEAR CARNET', icon: 'qr_code_scanner', view: 'escanear_carnet' }
     ];
 
     return (

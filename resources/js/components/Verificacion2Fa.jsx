@@ -82,8 +82,9 @@ const Verificacion2Fa = () => {
     if (!challengeId) {
         return (
             <div className="d-flex flex-column justify-content-center align-items-center vh-90 fade-in-up">
-                <div className="glass-box p-4 p-md-5 mx-3 text-center">
-                    <h4 className="fw-bold">Sin verificación pendiente</h4>
+                <div className="glass-box p-4 p-md-5 mx-3 text-center" style={{ maxWidth: '520px' }}>
+                    <span className="material-symbols-outlined text-warning" style={{ fontSize: '48px' }}>lock_open</span>
+                    <h4 className="fw-bold mt-2">Sin verificación pendiente</h4>
                     <p className="mt-3 small opacity-75">Inicia sesión para generar un código de verificación.</p>
                     <div className="d-grid mt-4">
                         <Link to="/login" className="btn btn-glow btn-primary-login w-100 fw-bold py-3">
@@ -135,54 +136,55 @@ const Verificacion2Fa = () => {
 
     return (
         <div className="d-flex flex-column justify-content-center align-items-center vh-90 fade-in-up">
-            <div className="glass-box p-4 p-md-5 mx-3">
-                <div className="text-center mb-4">
-                    <img src="/Icons/logoSena.png" className="logosena mb-3" alt="Logo SENA" />
-                    <h2 className="landing-title fw-bold mb-0">Verificación en <span className="neon-text">dos pasos</span></h2>
-                    <hr className="border-success opacity-25" />
-                    <p className="mt-3 small opacity-75">Revisa tu correo e ingresa el código de 6 dígitos. Si aprobaste el acceso desde otro dispositivo, entrarás automáticamente.</p>
-                </div>
+            <div className="glass-box p-4 p-md-5 mx-3 text-center" style={{ maxWidth: '520px' }}>
+                <img src="/Icons/logoSena.png" className="logosena mb-3" alt="Logo SENA" style={{ width: '72px' }} />
+                <p className="eyebrow-2fa">Segundo paso</p>
+                <h2 className="fw-bold mb-1">Verificación en dos pasos</h2>
+                <p className="mt-2 small opacity-75">Te enviamos un código de 6 dígitos a tu correo.</p>
 
                 {generalError && (
-                    <div className="alert alert-danger" role="alert">{generalError}</div>
+                    <div className="alert alert-danger mt-3" role="alert">{generalError}</div>
                 )}
 
                 {!resuelto ? (
                     <form onSubmit={handleSubmit}>
-                        <div className="user-box">
-                            <input
-                                type="text"
-                                name="code"
-                                required
-                                placeholder=" "
-                                inputMode="numeric"
-                                maxLength="6"
-                                value={code}
-                                onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                                className={codeErrors ? 'is-invalid' : ''}
-                            />
-                            <label>Código de 6 dígitos</label>
-                            {codeErrors && <div className="invalid-feedback d-block">{codeErrors}</div>}
-                        </div>
+                        <input
+                            type="text"
+                            name="code"
+                            required
+                            placeholder="······"
+                            autoComplete="one-time-code"
+                            inputMode="numeric"
+                            maxLength="6"
+                            value={code}
+                            onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                            className={`code-input-2fa mt-2 ${codeErrors ? 'is-invalid' : ''}`}
+                            aria-label="Código de 6 dígitos"
+                        />
+                        {codeErrors && <div className="text-danger small mt-2">{codeErrors}</div>}
 
-                        <div className="d-grid gap-3 mt-4">
-                            <button className="btn btn-glow btn-primary-login w-100 fw-bold py-3" type="submit" disabled={loading}>
-                                {loading ? 'VERIFICANDO...' : 'VERIFICAR'}
-                            </button>
-                            <button
-                                type="button"
-                                className="btn btn-glow w-100"
-                                onClick={volverAlLogin}
-                            >
-                                VOLVER AL LOGIN
-                            </button>
-                        </div>
+                        <button className="btn btn-glow btn-primary-login w-100 fw-bold py-3 mt-4 btn-press" type="submit" disabled={loading || code.length !== 6}>
+                            {loading ? 'VERIFICANDO...' : 'VERIFICAR'}
+                        </button>
+                        <button
+                            type="button"
+                            className="btn btn-outline-success w-100 mt-2 btn-press"
+                            onClick={volverAlLogin}
+                        >
+                            VOLVER AL LOGIN
+                        </button>
+
+                        <div className="divider-2fa"><span>O ENTRA SIN CÓDIGO</span></div>
+                        <p className="small opacity-75 mb-0">
+                            <span className="pulse-dot" aria-hidden="true"></span>
+                            {' '}Si apruebas el acceso desde otro dispositivo o tu correo, entrarás automáticamente.
+                        </p>
                     </form>
                 ) : (
                     <div className="d-grid gap-3 mt-4">
                         <button
                             type="button"
-                            className="btn btn-glow btn-primary-login w-100 fw-bold py-3"
+                            className="btn btn-glow btn-primary-login w-100 fw-bold py-3 btn-press"
                             onClick={volverAlLogin}
                         >
                             VOLVER AL LOGIN

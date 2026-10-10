@@ -45,10 +45,11 @@ class NotificacionService
     }
 
     /**
-     * Notifica a todos los administradores (conveniente para acciones de audit).
+     * Notifica a todos los superadmins (conveniente para acciones de audit,
+     * como solicitudes de cuenta pendientes de aprobación).
      */
     public function notificarAdmins(string $titulo, string $cuerpo, string $tipo = 'sistema'): int
     {
-        return $this->notificarRol('Admin', $titulo, $cuerpo, $tipo);
+        return $this->notificarRol('Superadmin', $titulo, $cuerpo, $tipo);
     }
 }

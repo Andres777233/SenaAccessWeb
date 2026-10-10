@@ -43,19 +43,17 @@ const PasswordRecovery = () => {
     };
 
     return (
-        <div className="d-flex flex-column justify-content-center align-items-center vh-100">
-            <div className="glass-box password p-4 p-md-5 mx-3">
-                <div className="text-center mb-4">
-                    <h2 className="fw-bold">SENA</h2>
-                    <h4 className="mb-3">Bienvenido al CCyS</h4>
-                    <img src="/Icons/logoSena.png" className="logosena mb-3" alt="Logo SENA" />
-                    <h5 className="fw-light text-warning">Recuperar Contraseña</h5>
-                </div>
+        <div className="d-flex flex-column justify-content-center align-items-center vh-100 fade-in-up">
+            <div className="glass-box password p-4 p-md-5 mx-3 text-center" style={{ maxWidth: '480px', width: '100%' }}>
+                <img src="/Icons/logoSena.png" className="logosena mb-3" alt="Logo SENA" style={{ width: '72px' }} />
+                <p className="eyebrow-2fa">Paso 1 de 2</p>
+                <h2 className="fw-bold mb-1">Recuperar contraseña</h2>
+                <p className="mt-2 small opacity-75">Escribe tu correo y te enviamos un código para crear una clave nueva.</p>
 
-                {message && <div className="alert alert-success">{message}</div>}
-                {error && <div className="alert alert-danger">{error}</div>}
+                {message && <div className="alert alert-success mt-3">{message}</div>}
+                {error && <div className="alert alert-danger mt-3">{error}</div>}
 
-                <form onSubmit={handleSubmit}>
+                <form onSubmit={handleSubmit} className="text-start">
                     <div className="user-box">
                         <input
                             type="email"
@@ -63,11 +61,12 @@ const PasswordRecovery = () => {
                             required
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
+                            autoComplete="email"
                         />
                         <label>Correo Electrónico</label>
                     </div>
                     <div className="d-grid gap-2">
-                        <button className="btn btn-glow w-100 fw-bold" type="submit" disabled={loading}>
+                        <button className="btn btn-glow btn-primary-login w-100 fw-bold py-3 btn-press" type="submit" disabled={loading}>
                             {loading ? 'Enviando...' : 'Enviar Código'}
                         </button>
                     </div>

@@ -12,6 +12,7 @@ use App\Http\Controllers\NotificacionController;
 use App\Http\Controllers\TwoFactorController;
 use App\Http\Controllers\ChatbotController;
 use App\Http\Controllers\AccesoQrController;
+use App\Http\Controllers\PrediccionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -148,6 +149,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Gestión de ambientes (solo admin).
     Route::middleware('admin')->group(function () {
+        Route::get('/admin/prediccion', [PrediccionController::class, 'indice']);
         Route::post('/admin/ambientes', [AmbienteController::class, 'store']);
         Route::put('/admin/ambientes/{id}', [AmbienteController::class, 'update']);
         Route::delete('/admin/ambientes/{id}', [AmbienteController::class, 'destroy']);

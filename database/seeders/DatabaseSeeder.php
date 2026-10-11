@@ -143,5 +143,8 @@ class DatabaseSeeder extends Seeder
 
         // Ambientes por sede + asignaciones (sin ingresos demo: el historial queda limpio).
         $this->call(DemoDataSeeder::class);
+
+        // Festivos de Colombia: feature es_festivo del predictivo de accesos.
+        $this->call(FestivoSeeder::class);
     }
 }

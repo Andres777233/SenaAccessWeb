@@ -19,6 +19,12 @@ class Ingreso extends Model
         'fk_id_user',
     ];
 
+    // Fechas con zona: el JSON sale ISO con offset (-05:00) y la app
+    // deja de asumir UTC (ese -5h rompía la puerta 00:00-04:59).
+    protected $casts = [
+        'ingreso_datetime' => 'datetime',
+    ];
+
     public function user()
     {
         return $this->belongsTo(User::class, 'fk_id_user', 'id_usuario');

@@ -139,6 +139,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // QR rotativo de portería: mostrar (admin/superadmin) y validar (cualquiera).
     Route::get('/acceso/qr/{tipo}', [AccesoQrController::class, 'mostrar'])->middleware('admin_or_portero');
     Route::post('/acceso/validar', [AccesoQrController::class, 'validar']);
+    // PIN corto de acceso: portería lo genera y el aprendiz lo digita sin cámara.
+    Route::post('/admin/pines-acceso', [AccesoQrController::class, 'generarPin'])->middleware('admin_or_portero');
+    Route::post('/acceso/validar-pin', [AccesoQrController::class, 'validarPin']);
 
     // Ambientes (admin crea, instructor gestiona sus ambientes/aprendices).
     Route::get('/ambientes', [AmbienteController::class, 'index']);

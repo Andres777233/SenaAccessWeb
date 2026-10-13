@@ -10,6 +10,18 @@ const AccesoQr = () => {
     const [qrUrl, setQrUrl] = useState('');
     const [segundos, setSegundos] = useState(30);
     const [error, setError] = useState('');
+    const [pin, setPin] = useState(null); // PIN corto dictado sin cámara.
+    const [pinError, setPinError] = useState('');
+
+    const generarPin = async () => {
+        try {
+            const { data } = await axios.post('/api/admin/pines-acceso', { tipo });
+            setPin(data);
+            setPinError('');
+        } catch (e) {
+            setPinError(e.response?.data?.message || 'No se pudo generar el PIN.');
+        }
+    };
 
     const cargar = async (t) => {
         try {
@@ -69,6 +81,19 @@ const AccesoQr = () => {
                             </span>
                         </p>
                         <p className="opacity-50 small mt-2">El aprendiz o instructor lo escanea desde su app y queda en el historial.</p>
+                        <hr />
+                        <p className="opacity-50 small mb-2">¿Sin cámara? Dicta este PIN (5 min, un solo uso):</p>
+                        <button type="button" className="btn btn-outline-warning mb-2" onClick={generarPin}>
+                            Generar PIN de {tipo}
+                        </button>
+                        {pinError && <p className="text-danger">{pinError}</p>}
+                        {pin && (
+                            <p className="mb-0">
+                                <span className="badge px-4 py-3 fs-4 text-warning border border-warning" style={{ letterSpacing: '6px' }}>
+                                    {pin.pin}
+                                </span>
+                            </p>
+                        )}
                     </>
                 ) : (
                     <div className="spinner-border text-success" role="status">

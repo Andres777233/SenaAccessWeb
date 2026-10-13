@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Ingreso;
+use App\Models\PinAcceso;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -77,8 +78,17 @@ class AccesoQrController extends Controller
         $ultimoTipo = $ultimo?->ingreso_type;
 
         if ($json['acceso'] === 'entrada') {
-            if ($ultimoTipo === 'Entrada') {
-                return response()->json(['message' => 'Ya estás dentro del centro.', 'duplicado' => true]);
+            // Regla de permanencia: la puerta deja entrar si el ÚLTIMO
+            // movimiento es Entrada (aunque sea de otro día); solo exige QR
+            // tras una Salida. Aquí basta con no duplicar la Entrada de hoy:
+            // si ayer quedó abierta, hoy se registra normal.
+            $hoy = Carbon::now('America/Bogota')->toDateString();
+            $entradaHoy = Ingreso::where('fk_id_user', $user->id_usuario)
+                ->where('ingreso_type', 'Entrada')
+                ->whereDate('ingreso_datetime', $hoy)
+                ->exists();
+            if ($entradaHoy) {
+                return response()->json(['message' => 'Ya registraste tu entrada de hoy.', 'duplicado' => true]);
             }
             $ingreso = Ingreso::create([
                 'ingreso_datetime' => Carbon::now('America/Bogota'),
@@ -95,6 +105,84 @@ class AccesoQrController extends Controller
         $ingreso = Ingreso::create([
             'ingreso_datetime' => Carbon::now('America/Bogota'),
             'ingreso_place' => $json['sede'] ?? 'CCyS',
+            'ingreso_type' => 'Salida',
+            'fk_id_user' => $user->id_usuario,
+        ]);
+        return response()->json(['message' => 'Salida registrada. ¡Hasta pronto!', 'ingreso' => $ingreso], 201);
+    }
+
+    // PIN corto de acceso (admin/portero lo dicta cuando no hay cámara):
+    // 6 dígitos, 5 minutos, un solo uso, amarrado a entrada o salida.
+    public function generarPin(Request $request)
+    {
+        $data = $request->validate(['tipo' => 'required|in:entrada,salida']);
+        $codigo = null;
+        for ($i = 0; $i < 20; $i++) {
+            $candidato = (string) random_int(100000, 999999);
+            if (!PinAcceso::where('codigo', $candidato)->whereNull('usado_en')->exists()) {
+                $codigo = $candidato;
+                break;
+            }
+        }
+        if (!$codigo) {
+            return response()->json(['message' => 'No se pudo generar el PIN. Intenta de nuevo.'], 500);
+        }
+        $pin = PinAcceso::create([
+            'codigo' => $codigo,
+            'tipo' => $data['tipo'],
+            'expira_en' => Carbon::now('America/Bogota')->addMinutes(5),
+            'fk_creado_por' => $request->user()->id_usuario,
+        ]);
+        return response()->json([
+            'pin' => $pin->codigo,
+            'tipo' => $pin->tipo,
+            'expira_en' => $pin->expira_en,
+        ], 201);
+    }
+
+    // Valida el PIN dictado en portería y registra Entrada/Salida.
+    // Misma regla de permanencia del QR: sin duplicar la Entrada de hoy.
+    public function validarPin(Request $request)
+    {
+        $data = $request->validate(['pin' => 'required|string|max:10']);
+        $pin = PinAcceso::where('codigo', trim($data['pin']))->first();
+        if (!$pin) {
+            return response()->json(['message' => 'PIN incorrecto. Pide en portería uno nuevo.'], 404);
+        }
+        if ($pin->usado_en) {
+            return response()->json(['message' => 'PIN ya utilizado. Pide uno nuevo.'], 400);
+        }
+        if ($pin->expira_en->isPast()) {
+            return response()->json(['message' => 'PIN vencido. Pide uno nuevo.'], 400);
+        }
+        $pin->update(['usado_en' => Carbon::now('America/Bogota')]);
+        $user = $request->user();
+
+        if ($pin->tipo === 'entrada') {
+            $hoy = Carbon::now('America/Bogota')->toDateString();
+            $entradaHoy = Ingreso::where('fk_id_user', $user->id_usuario)
+                ->where('ingreso_type', 'Entrada')
+                ->whereDate('ingreso_datetime', $hoy)
+                ->exists();
+            if ($entradaHoy) {
+                return response()->json(['message' => 'Ya registraste tu entrada de hoy.', 'duplicado' => true]);
+            }
+            $ingreso = Ingreso::create([
+                'ingreso_datetime' => Carbon::now('America/Bogota'),
+                'ingreso_place' => 'CCyS',
+                'ingreso_type' => 'Entrada',
+                'fk_id_user' => $user->id_usuario,
+            ]);
+            return response()->json(['message' => 'Entrada registrada. ¡Bienvenido!', 'ingreso' => $ingreso], 201);
+        }
+
+        $ultimo = Ingreso::where('fk_id_user', $user->id_usuario)->orderByDesc('id_ingreso')->first();
+        if (($ultimo?->ingreso_type) !== 'Entrada') {
+            return response()->json(['message' => 'No tienes una entrada registrada para marcar salida.'], 422);
+        }
+        $ingreso = Ingreso::create([
+            'ingreso_datetime' => Carbon::now('America/Bogota'),
+            'ingreso_place' => 'CCyS',
             'ingreso_type' => 'Salida',
             'fk_id_user' => $user->id_usuario,
         ]);

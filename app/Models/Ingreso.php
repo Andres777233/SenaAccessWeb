@@ -25,6 +25,13 @@ class Ingreso extends Model
         'ingreso_datetime' => 'datetime',
     ];
 
+    // toJSON pega "Z" sin convertir: se normaliza a UTC real para que el
+    // instante sea el correcto en móvil y web.
+    protected function serializeDate(\DateTimeInterface $date): string
+    {
+        return (clone $date)->setTimezone('UTC')->format('Y-m-d\TH:i:s.u\Z');
+    }
+
     public function user()
     {
         return $this->belongsTo(User::class, 'fk_id_user', 'id_usuario');

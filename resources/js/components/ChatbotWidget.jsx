@@ -40,6 +40,17 @@ const FRASES_SIN_RESPUESTA = [
     'no lo se',
     'no sé la respuesta',
     'no se la respuesta',
+    'no tengo acceso',
+    'no estoy autorizado',
+    'no está permitido',
+    'no esta permitido',
+    'no me está permitido',
+    'no me esta permitido',
+    'no debo',
+    'no revelo',
+    'no comparto',
+    'no proporciono',
+    'confidencial',
 ];
 
 // El chat cambia de paleta con Bonzi: morado del personaje en lugar del verde.
@@ -96,7 +107,18 @@ const ChatbotWidget = () => {
             const img = new Image();
             img.src = src;
         });
-    }, [bonzi]);
+    }, [bonzi, isOpen]);
+
+    // Precarga diferida al entrar al panel, sin bloquear la carga inicial.
+    useEffect(() => {
+        const t = setTimeout(() => {
+            [bonziNormal, bonziPensando, bonziRespondiendo, bonziLlorando].forEach((src) => {
+                const img = new Image();
+                img.src = src;
+            });
+        }, 1500);
+        return () => clearTimeout(t);
+    }, []);
 
     // Auto-scroll al último mensaje
     useEffect(() => {
@@ -124,6 +146,14 @@ const ChatbotWidget = () => {
         timerMono.current = setTimeout(() => setEstadoMono('normal'), BONZI_MS_FINAL);
     };
 
+    // Pide contraseñas, tokens o credenciales de otra persona.
+    const pideSensible = (texto) => {
+        const t = (texto || '').toLowerCase();
+        const secreto = /contrase(ñ|n)a|password|token|credencial/.test(t);
+        const ajeno = /otro|otra|otros|otras|usuario|aprendiz|instructor|admin|superadmin/.test(t);
+        return secreto && ajeno;
+    };
+
     const sendMessage = async (text) => {
         const userText = (text || input).trim();
         if (!userText || isLoading) return;
@@ -148,6 +178,7 @@ const ChatbotWidget = () => {
 
         setInput('');
         setShowSuggestions(false);
+        const peticionSensible = pideSensible(userText);
 
         // Agrega mensaje del usuario
         const updatedMessages = [...messages, { role: 'user', text: userText }];
@@ -178,7 +209,7 @@ const ChatbotWidget = () => {
                 ...prev,
                 { role: 'model', text: respuesta },
             ]);
-            setEstadoMono(esSinRespuesta(respuesta) ? 'llorando' : 'respondiendo');
+            setEstadoMono((peticionSensible || esSinRespuesta(respuesta)) ? 'llorando' : 'respondiendo');
             volverANormal();
         } catch (err) {
             setMessages((prev) => [
@@ -259,11 +290,11 @@ const ChatbotWidget = () => {
                     {bonzi ? (
                         <img
                             src={imagenMono}
-                            key={estadoVisual}
                             alt="Bonzi"
                             draggable={false}
                             className="bonzi-img"
                             style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                            onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = bonziNormal; }}
                         />
                     ) : (
                         <span className="material-symbols-outlined" style={{ color: '#fff', fontSize: '28px' }}>
@@ -516,10 +547,11 @@ const ChatbotWidget = () => {
                     <div className="bonzi-companion" aria-hidden="true">
                         <img
                             src={imagenMono}
-                            key={estadoVisual}
                             alt=""
                             draggable={false}
                             className="bonzi-img"
+                            style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                            onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = bonziNormal; }}
                         />
                         {isLoading && (
                             <div className="bonzi-hablando">

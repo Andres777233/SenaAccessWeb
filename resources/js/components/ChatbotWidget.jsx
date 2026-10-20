@@ -16,7 +16,7 @@ const QUICK_SUGGESTIONS = [
 const BONZI_KEY = 'chatbot_bonzi';
 const BONZI_ON  = '¡Listo! Ahora soy **Bonzi**, el asistente de SenaAccess. Escribe `/bonzi` de nuevo para volver al icono original.';
 const BONZI_OFF = 'Volví al icono original del asistente. Escribe `/bonzi` cuando quieras traer a Bonzi de nuevo.';
-const BONZI_MS_FINAL = 6000;
+const BONZI_MS_FINAL = 4000;
 
 // Cada estado del mono usa su propia imagen (todas alineadas al mismo lienzo).
 const IMAGENES_BONZI = {
@@ -88,6 +88,15 @@ const ChatbotWidget = () => {
 
     // Limpia el temporizador del estado del mono al desmontar.
     useEffect(() => () => clearTimeout(timerMono.current), []);
+
+    // Precarga las poses para que el cambio de imagen sea instantaneo.
+    useEffect(() => {
+        if (!bonzi) return;
+        [bonziNormal, bonziPensando, bonziRespondiendo, bonziLlorando].forEach((src) => {
+            const img = new Image();
+            img.src = src;
+        });
+    }, [bonzi]);
 
     // Auto-scroll al último mensaje
     useEffect(() => {
@@ -216,7 +225,9 @@ const ChatbotWidget = () => {
     // Con Bonzi activo el personaje se muestra completo (sin circulo) y,
     // con el chat abierto, pasa al lado del cuadro.
     const tema = bonzi ? TEMA_BONZI : TEMA_SENA;
-    const imagenMono = IMAGENES_BONZI[estadoMono] || bonziNormal;
+    // Mientras isLoading siempre se ve pensando; el resto lo decide estadoMono.
+    const estadoVisual = isLoading ? 'pensando' : estadoMono;
+    const imagenMono = IMAGENES_BONZI[estadoVisual] || bonziNormal;
 
     return (
         <>
@@ -248,6 +259,7 @@ const ChatbotWidget = () => {
                     {bonzi ? (
                         <img
                             src={imagenMono}
+                            key={estadoVisual}
                             alt="Bonzi"
                             draggable={false}
                             className="bonzi-img"
@@ -504,6 +516,7 @@ const ChatbotWidget = () => {
                     <div className="bonzi-companion" aria-hidden="true">
                         <img
                             src={imagenMono}
+                            key={estadoVisual}
                             alt=""
                             draggable={false}
                             className="bonzi-img"
@@ -544,8 +557,9 @@ const ChatbotWidget = () => {
                 .bonzi-companion .bonzi-img { width: 100%; height: 100%; object-fit: contain; }
                 .bonzi-hablando {
                     position: absolute;
-                    top: -4px;
-                    left: -10px;
+                    top: -24px;
+                    left: 50%;
+                    transform: translateX(-30%);
                     background: #2e1065;
                     border: 1px solid rgba(168,85,247,0.55);
                     border-radius: 14px 14px 14px 4px;
@@ -554,6 +568,29 @@ const ChatbotWidget = () => {
                     gap: 4px;
                     align-items: center;
                     box-shadow: 0 6px 16px rgba(0,0,0,0.35);
+                }
+                .bonzi-hablando::before {
+                    content: '';
+                    position: absolute;
+                    left: 34%;
+                    bottom: -12px;
+                    width: 5px;
+                    height: 5px;
+                    border-radius: 50%;
+                    background: #2e1065;
+                    border: 1px solid rgba(168,85,247,0.5);
+                }
+                .bonzi-hablando::after {
+                    content: '';
+                    position: absolute;
+                    left: 50%;
+                    bottom: -6px;
+                    width: 7px;
+                    height: 7px;
+                    margin-left: -3px;
+                    border-radius: 50%;
+                    background: #2e1065;
+                    border: 1px solid rgba(168,85,247,0.55);
                 }
                 .bonzi-hablando span {
                     width: 6px; height: 6px; border-radius: 50%;
@@ -574,10 +611,17 @@ const ChatbotWidget = () => {
                         height: 88px;
                     }
                     .bonzi-hablando {
-                        top: 0;
+                        top: 2px;
                         left: auto;
-                        right: -6px;
+                        right: -10px;
+                        transform: none;
                         padding: 5px 7px;
+                    }
+                    .bonzi-hablando::before { display: none; }
+                    .bonzi-hablando::after {
+                        left: -4px;
+                        bottom: 8px;
+                        margin-left: 0;
                     }
                     .bonzi-hablando span { width: 5px; height: 5px; }
                 }

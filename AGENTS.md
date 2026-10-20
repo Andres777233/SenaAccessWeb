@@ -87,3 +87,4 @@ Agentes en `.opencode/agent/`, skills en `.opencode/skill/*/SKILL.md`.
 - 2026-10-19 — Bonzi estático con 4 poses alineadas: normal, pensando (mientras espera), respondiendo (6 s tras la respuesta) y llorando (error o respuesta sin información); sin puntos en el chat, globo estático pegado a la cabeza y animaciones del mono eliminadas.
 - 2026-10-19 — Ajuste Bonzi: la pose de pensamiento se fuerza mientras carga (derivada de isLoading + precarga + key), globo de pensamiento pegado sobre la cabeza y duración de responder/llorar a 4 s.
 - 2026-10-19 — Fix mono invisible al pensar: fuera el remount por key, precarga de poses, fallback onError y PNG a 384 px; llanto al pedir contraseñas/tokens ajenos o cuando la respuesta es una negación.
+- 2026-10-19 — Bonzi final: código sincronizado al repo limpio SenaAccessWebDef1 (commit "Bonzi"), sin archivos de opencode; poses estáticas, pensando/respondiendo/llorando y llanto en negaciones.

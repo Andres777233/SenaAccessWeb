@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
-import bonziImg from '../assets/bonzi-sena.jpeg';
+import bonziImg from '../assets/bonzi-sena.png';
 
 // ─── Sugerencias rápidas de preguntas frecuentes ────────────────────────────
 const QUICK_SUGGESTIONS = [
@@ -11,7 +11,7 @@ const QUICK_SUGGESTIONS = [
 ];
 
 const BONZI_KEY = 'chatbot_bonzi';
-const BONZI_ON  = '¡Listo! Ahora soy **Bonzi**, el asistente de SenaAccess. Escribe `/bonzi reset` para volver al icono original.';
+const BONZI_ON  = '¡Listo! Ahora soy **Bonzi**, el asistente de SenaAccess. Escribe `/bonzi` de nuevo para volver al icono original.';
 const BONZI_OFF = 'Volví al icono original del asistente. Escribe `/bonzi` cuando quieras traer a Bonzi de nuevo.';
 
 const ChatbotWidget = () => {
@@ -47,10 +47,10 @@ const ChatbotWidget = () => {
         const userText = (text || input).trim();
         if (!userText || isLoading) return;
 
-        // Comando local: /bonzi cambia el icono del asistente sin llamar a la IA.
+        // Comando local: /bonzi alterna el icono sin llamar a la IA.
         const comando = userText.toLowerCase();
         if (comando === '/bonzi' || comando === '/bonzi reset') {
-            const activar = comando === '/bonzi';
+            const activar = comando === '/bonzi' ? !bonzi : false;
             setInput('');
             setShowSuggestions(false);
             setBonzi(activar);
@@ -129,37 +129,42 @@ const ChatbotWidget = () => {
         );
     };
 
+    // Con Bonzi activo y el chat cerrado se muestra el personaje completo,
+    // sin el circulo verde ni el recorte redondo.
+    const bonziVisible = bonzi && !isOpen;
+
     return (
         <>
             {/* ── Burbuja flotante ──────────────────────────────────────── */}
             <button
                 id="chatbot-bubble"
                 onClick={() => setIsOpen((o) => !o)}
-                title="Asistente SenaAccess"
+                title={bonziVisible ? 'Bonzi — asistente SenaAccess' : 'Asistente SenaAccess'}
                 style={{
                     position: 'fixed',
-                    bottom: '28px',
-                    right: '28px',
-                    width: '60px',
-                    height: '60px',
-                    borderRadius: '50%',
-                    background: 'linear-gradient(135deg, #39a900 0%, #2d8a00 100%)',
+                    bottom: bonziVisible ? '20px' : '28px',
+                    right: bonziVisible ? '20px' : '28px',
+                    width: bonziVisible ? '88px' : '60px',
+                    height: bonziVisible ? '88px' : '60px',
+                    borderRadius: bonziVisible ? '0' : '50%',
+                    background: bonziVisible ? 'transparent' : 'linear-gradient(135deg, #39a900 0%, #2d8a00 100%)',
                     border: 'none',
-                    boxShadow: '0 4px 20px rgba(57,169,0,0.45)',
+                    boxShadow: bonziVisible ? 'none' : '0 4px 20px rgba(57,169,0,0.45)',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
+                    padding: 0,
                     zIndex: 9999,
                     transition: 'transform 0.2s, box-shadow 0.2s',
                 }}
                 onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'scale(1.1)';
-                    e.currentTarget.style.boxShadow = '0 6px 28px rgba(57,169,0,0.6)';
+                    e.currentTarget.style.transform = 'scale(1.08)';
+                    if (!bonziVisible) e.currentTarget.style.boxShadow = '0 6px 28px rgba(57,169,0,0.6)';
                 }}
                 onMouseLeave={(e) => {
                     e.currentTarget.style.transform = 'scale(1)';
-                    e.currentTarget.style.boxShadow = '0 4px 20px rgba(57,169,0,0.45)';
+                    e.currentTarget.style.boxShadow = bonziVisible ? 'none' : '0 4px 20px rgba(57,169,0,0.45)';
                 }}
             >
                 {isOpen ? (
@@ -170,7 +175,13 @@ const ChatbotWidget = () => {
                     <img
                         src={bonziImg}
                         alt="Bonzi"
-                        style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
+                        draggable={false}
+                        style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'contain',
+                            filter: 'drop-shadow(0 6px 14px rgba(0,0,0,0.55)) drop-shadow(0 0 10px rgba(57,169,0,0.35))',
+                        }}
                     />
                 ) : (
                     <span className="material-symbols-outlined" style={{ color: '#fff', fontSize: '28px' }}>
@@ -212,12 +223,12 @@ const ChatbotWidget = () => {
                             <img
                                 src={bonziImg}
                                 alt="Bonzi"
+                                draggable={false}
                                 style={{
-                                    width: '28px',
-                                    height: '28px',
-                                    objectFit: 'cover',
-                                    borderRadius: '50%',
-                                    border: '1.5px solid rgba(255,255,255,0.7)',
+                                    width: '34px',
+                                    height: '34px',
+                                    objectFit: 'contain',
+                                    filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.45))',
                                 }}
                             />
                         ) : (

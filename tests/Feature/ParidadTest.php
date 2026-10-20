@@ -351,8 +351,29 @@ class ParidadTest extends TestCase
             ->assertJsonPath('reply', 'Consulté las cifras del sistema.');
     }
 
-    public function test_chatbot_sin_api_key_responde_503(): void
+    public function test_chatbot_reintenta_sin_herramientas_si_el_modelo_las_rechaza(): void
     {
+        $user = $this->crearUsuario('Aprendiz');
+        Sanctum::actingAs($user);
+        config(['services.gemini.api_key' => 'clave-de-prueba']);
+
+        Http::fakeSequence()
+            ->push(['error' => ['message' => 'Esquema inválido']], 400)
+            ->push([
+                'candidates' => [[
+                    'content' => [
+                        'role' => 'model',
+                        'parts' => [['text' => 'Respondo sin herramientas.']],
+                    ],
+                ]],
+            ], 200);
+
+        $this->postJson('/api/chatbot', ['message' => 'Hola'])
+            ->assertOk()
+            ->assertJsonPath('reply', 'Respondo sin herramientas.');
+    }
+
+    public function test_chatbot_sin_api_key_responde_503(): void    {
         $user = $this->crearUsuario('Aprendiz');
         Sanctum::actingAs($user);
         config(['services.gemini.api_key' => null]);

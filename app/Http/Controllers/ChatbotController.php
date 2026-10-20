@@ -48,6 +48,7 @@ class ChatbotController extends Controller
 
         foreach (self::MODELOS as $model) {
             $contenido = $contents;
+            $conHerramientas = true;
             $endpoint = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent";
 
             for ($ronda = 0; $ronda < self::MAX_RONDAS_HERRAMIENTAS; $ronda++) {
@@ -56,12 +57,14 @@ class ChatbotController extends Controller
                         'parts' => [['text' => $this->instruccionSistema()]],
                     ],
                     'contents' => $contenido,
-                    'tools' => [$herramientas],
                     'generationConfig' => [
                         'temperature' => 0.5,
                         'maxOutputTokens' => 1200,
                     ],
                 ];
+                if ($conHerramientas) {
+                    $payload['tools'] = [$herramientas];
+                }
 
                 $response = Http::timeout(25)
                     ->retry(3, 500, function ($exception) {
@@ -70,6 +73,17 @@ class ChatbotController extends Controller
                     ->post("{$endpoint}?key={$apiKey}", $payload);
 
                 if (!$response->successful()) {
+                    // Si el modelo rechaza el esquema de herramientas, se reintenta
+                    // sin ellas para no tumbar el asistente.
+                    if ($conHerramientas && in_array($response->status(), [400, 422], true)) {
+                        Log::warning("Gemini rechazó las herramientas en {$model}; reintento sin ellas", [
+                            'status' => $response->status(),
+                        ]);
+                        $conHerramientas = false;
+                        $contenido = $contents;
+                        continue;
+                    }
+
                     $lastError = $response->json('error.message', 'Error desconocido');
                     Log::warning("Fallo en modelo Gemini {$model}", [
                         'status' => $response->status(),

@@ -14,6 +14,33 @@ const BONZI_KEY = 'chatbot_bonzi';
 const BONZI_ON  = '¡Listo! Ahora soy **Bonzi**, el asistente de SenaAccess. Escribe `/bonzi` de nuevo para volver al icono original.';
 const BONZI_OFF = 'Volví al icono original del asistente. Escribe `/bonzi` cuando quieras traer a Bonzi de nuevo.';
 
+// El chat cambia de paleta con Bonzi: morado del personaje en lugar del verde.
+const TEMA_SENA = {
+    header: 'linear-gradient(135deg, #39a900 0%, #2d8a00 100%)',
+    border: 'rgba(57,169,0,0.25)',
+    shadow: '0 12px 40px rgba(0,0,0,0.5)',
+    accent: '#39a900',
+    accentSoft: 'rgba(57,169,0,0.12)',
+    accentBorder: 'rgba(57,169,0,0.3)',
+    accentHover: 'rgba(57,169,0,0.25)',
+    accentText: '#7dd56f',
+    userBubble: 'linear-gradient(135deg, #39a900, #2d8a00)',
+    send: 'linear-gradient(135deg, #39a900, #2d8a00)',
+};
+
+const TEMA_BONZI = {
+    header: 'linear-gradient(135deg, #4c1d95 0%, #2e1065 100%)',
+    border: 'rgba(168,85,247,0.35)',
+    shadow: '0 12px 40px rgba(46,16,101,0.55)',
+    accent: '#a855f7',
+    accentSoft: 'rgba(168,85,247,0.14)',
+    accentBorder: 'rgba(168,85,247,0.4)',
+    accentHover: 'rgba(168,85,247,0.26)',
+    accentText: '#d8b4fe',
+    userBubble: 'linear-gradient(135deg, #7c3aed, #5b21b6)',
+    send: 'linear-gradient(135deg, #a855f7, #7c3aed)',
+};
+
 const ChatbotWidget = () => {
     const [isOpen, setIsOpen]       = useState(false);
     const [messages, setMessages]   = useState([
@@ -129,119 +156,101 @@ const ChatbotWidget = () => {
         );
     };
 
-    // Con Bonzi activo y el chat cerrado se muestra el personaje completo,
-    // sin el circulo verde ni el recorte redondo.
-    const bonziVisible = bonzi && !isOpen;
+    // Con Bonzi activo el personaje se muestra completo (sin circulo) y,
+    // con el chat abierto, pasa al lado del cuadro.
+    const tema = bonzi ? TEMA_BONZI : TEMA_SENA;
 
     return (
         <>
-            {/* ── Burbuja flotante ──────────────────────────────────────── */}
-            <button
-                id="chatbot-bubble"
-                onClick={() => setIsOpen((o) => !o)}
-                title={bonziVisible ? 'Bonzi — asistente SenaAccess' : 'Asistente SenaAccess'}
-                style={{
-                    position: 'fixed',
-                    bottom: bonziVisible ? '20px' : '28px',
-                    right: bonziVisible ? '20px' : '28px',
-                    width: bonziVisible ? '88px' : '60px',
-                    height: bonziVisible ? '88px' : '60px',
-                    borderRadius: bonziVisible ? '0' : '50%',
-                    background: bonziVisible ? 'transparent' : 'linear-gradient(135deg, #39a900 0%, #2d8a00 100%)',
-                    border: 'none',
-                    boxShadow: bonziVisible ? 'none' : '0 4px 20px rgba(57,169,0,0.45)',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: 0,
-                    zIndex: 9999,
-                    transition: 'transform 0.2s, box-shadow 0.2s',
-                }}
-                onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'scale(1.08)';
-                    if (!bonziVisible) e.currentTarget.style.boxShadow = '0 6px 28px rgba(57,169,0,0.6)';
-                }}
-                onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'scale(1)';
-                    e.currentTarget.style.boxShadow = bonziVisible ? 'none' : '0 4px 20px rgba(57,169,0,0.45)';
-                }}
-            >
-                {isOpen ? (
-                    <span className="material-symbols-outlined" style={{ color: '#fff', fontSize: '28px' }}>
-                        close
-                    </span>
-                ) : bonzi ? (
-                    <img
-                        src={bonziImg}
-                        alt="Bonzi"
-                        draggable={false}
-                        style={{
-                            width: '100%',
-                            height: '100%',
-                            objectFit: 'contain',
-                            filter: 'drop-shadow(0 6px 14px rgba(0,0,0,0.55)) drop-shadow(0 0 10px rgba(57,169,0,0.35))',
-                        }}
-                    />
-                ) : (
-                    <span className="material-symbols-outlined" style={{ color: '#fff', fontSize: '28px' }}>
-                        smart_toy
-                    </span>
-                )}
-            </button>
+            {/* ── Burbuja flotante (solo con el chat cerrado) ───────────── */}
+            {!isOpen && (
+                <button
+                    id="chatbot-bubble"
+                    className={bonzi ? 'chatbot-bubble chatbot-bubble-bonzi' : 'chatbot-bubble'}
+                    onClick={() => setIsOpen(true)}
+                    title={bonzi ? 'Bonzi — asistente SenaAccess' : 'Asistente SenaAccess'}
+                    style={{
+                        position: 'fixed',
+                        bottom: bonzi ? '22px' : '28px',
+                        right: bonzi ? '22px' : '28px',
+                        width: bonzi ? '144px' : '60px',
+                        height: bonzi ? '144px' : '60px',
+                        borderRadius: bonzi ? '0' : '50%',
+                        background: bonzi ? 'transparent' : 'linear-gradient(135deg, #39a900 0%, #2d8a00 100%)',
+                        border: 'none',
+                        boxShadow: bonzi ? 'none' : '0 4px 20px rgba(57,169,0,0.45)',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: 0,
+                        zIndex: 9999,
+                        transition: 'transform 0.2s, box-shadow 0.2s',
+                    }}
+                    onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'scale(1.06)';
+                        if (!bonzi) e.currentTarget.style.boxShadow = '0 6px 28px rgba(57,169,0,0.6)';
+                    }}
+                    onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'scale(1)';
+                        e.currentTarget.style.boxShadow = bonzi ? 'none' : '0 4px 20px rgba(57,169,0,0.45)';
+                    }}
+                >
+                    {bonzi ? (
+                        <img
+                            src={bonziImg}
+                            alt="Bonzi"
+                            draggable={false}
+                            className="bonzi-img"
+                            style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                        />
+                    ) : (
+                        <span className="material-symbols-outlined" style={{ color: '#fff', fontSize: '28px' }}>
+                            smart_toy
+                        </span>
+                    )}
+                </button>
+            )}
 
             {/* ── Ventana del chat ─────────────────────────────────────── */}
             {isOpen && (
+                <>
                 <div
                     id="chatbot-window"
+                    className={bonzi ? 'chatbot-window chatbot-window-bonzi' : 'chatbot-window'}
                     style={{
                         position: 'fixed',
-                        bottom: '100px',
+                        bottom: bonzi ? '26px' : '100px',
                         right: '28px',
                         width: '370px',
+                        maxWidth: 'calc(100vw - 24px)',
                         maxHeight: '540px',
                         borderRadius: '20px',
                         background: '#0d1117',
-                        border: '1px solid rgba(57,169,0,0.25)',
-                        boxShadow: '0 12px 40px rgba(0,0,0,0.5)',
+                        border: `1px solid ${tema.border}`,
+                        boxShadow: tema.shadow,
                         display: 'flex',
                         flexDirection: 'column',
                         overflow: 'hidden',
                         zIndex: 9998,
                         animation: 'chatSlideUp 0.25s ease-out',
+                        '--bot-accent': tema.accent,
                     }}
                 >
                     {/* Header */}
                     <div style={{
-                        background: 'linear-gradient(135deg, #39a900 0%, #2d8a00 100%)',
+                        background: tema.header,
                         padding: '14px 18px',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '10px',
                     }}>
-                        {bonzi ? (
-                            <img
-                                src={bonziImg}
-                                alt="Bonzi"
-                                draggable={false}
-                                style={{
-                                    width: '34px',
-                                    height: '34px',
-                                    objectFit: 'contain',
-                                    filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.45))',
-                                }}
-                            />
-                        ) : (
-                            <span className="material-symbols-outlined" style={{ color: '#fff', fontSize: '22px' }}>
-                                smart_toy
-                            </span>
-                        )}
                         <div style={{ flex: 1 }}>
                             <div style={{ color: '#fff', fontWeight: 700, fontSize: '14px', lineHeight: 1.2 }}>
-                                Asistente SenaAccess
+                                {bonzi ? 'Bonzi' : 'Asistente SenaAccess'}
                             </div>
                             <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '11px' }}>
-                                Impulsado por Gemini AI
+                                {bonzi ? 'Asistente SenaAccess · Gemini AI' : 'Impulsado por Gemini AI'}
                             </div>
                         </div>
                         <button
@@ -259,6 +268,28 @@ const ChatbotWidget = () => {
                         >
                             Limpiar
                         </button>
+                        <button
+                            onClick={() => setIsOpen(false)}
+                            title="Cerrar chat"
+                            aria-label="Cerrar chat"
+                            style={{
+                                background: 'rgba(255,255,255,0.15)',
+                                border: 'none',
+                                borderRadius: '8px',
+                                width: '26px',
+                                height: '26px',
+                                cursor: 'pointer',
+                                color: '#fff',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                padding: 0,
+                            }}
+                        >
+                            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
+                                close
+                            </span>
+                        </button>
                     </div>
 
                     {/* Mensajes */}
@@ -270,7 +301,7 @@ const ChatbotWidget = () => {
                         flexDirection: 'column',
                         gap: '10px',
                         scrollbarWidth: 'thin',
-                        scrollbarColor: '#39a900 transparent',
+                        scrollbarColor: `${tema.accent} transparent`,
                     }}>
                         {messages.map((msg, idx) => (
                             <div
@@ -287,7 +318,7 @@ const ChatbotWidget = () => {
                                         ? '18px 18px 4px 18px'
                                         : '18px 18px 18px 4px',
                                     background: msg.role === 'user'
-                                        ? 'linear-gradient(135deg, #39a900, #2d8a00)'
+                                        ? tema.userBubble
                                         : 'rgba(255,255,255,0.07)',
                                     color: '#f0f0f0',
                                     fontSize: '13px',
@@ -317,7 +348,7 @@ const ChatbotWidget = () => {
                                             width: '7px',
                                             height: '7px',
                                             borderRadius: '50%',
-                                            background: '#39a900',
+                                            background: tema.accent,
                                             animation: `chatDot 1.2s ease-in-out ${i * 0.2}s infinite`,
                                         }} />
                                     ))}
@@ -333,17 +364,17 @@ const ChatbotWidget = () => {
                                         key={i}
                                         onClick={() => sendMessage(s)}
                                         style={{
-                                            background: 'rgba(57,169,0,0.12)',
-                                            border: '1px solid rgba(57,169,0,0.3)',
+                                            background: tema.accentSoft,
+                                            border: `1px solid ${tema.accentBorder}`,
                                             borderRadius: '20px',
-                                            color: '#7dd56f',
+                                            color: tema.accentText,
                                             fontSize: '11px',
                                             padding: '5px 10px',
                                             cursor: 'pointer',
                                             transition: 'background 0.2s',
                                         }}
-                                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(57,169,0,0.25)'}
-                                        onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(57,169,0,0.12)'}
+                                        onMouseEnter={(e) => e.currentTarget.style.background = tema.accentHover}
+                                        onMouseLeave={(e) => e.currentTarget.style.background = tema.accentSoft}
                                     >
                                         {s}
                                     </button>
@@ -375,7 +406,7 @@ const ChatbotWidget = () => {
                             style={{
                                 flex: 1,
                                 background: 'rgba(255,255,255,0.07)',
-                                border: '1px solid rgba(57,169,0,0.25)',
+                                border: `1px solid ${tema.accentBorder}`,
                                 borderRadius: '12px',
                                 color: '#f0f0f0',
                                 padding: '9px 13px',
@@ -386,8 +417,8 @@ const ChatbotWidget = () => {
                                 maxHeight: '80px',
                                 overflowY: 'auto',
                             }}
-                            onFocus={(e) => e.target.style.borderColor = '#39a900'}
-                            onBlur={(e) => e.target.style.borderColor = 'rgba(57,169,0,0.25)'}
+                            onFocus={(e) => e.target.style.borderColor = tema.accent}
+                            onBlur={(e) => e.target.style.borderColor = tema.accentBorder}
                         />
                         <button
                             id="chatbot-send-btn"
@@ -399,7 +430,7 @@ const ChatbotWidget = () => {
                                 height: '40px',
                                 borderRadius: '12px',
                                 background: input.trim() && !isLoading
-                                    ? 'linear-gradient(135deg, #39a900, #2d8a00)'
+                                    ? tema.send
                                     : 'rgba(255,255,255,0.08)',
                                 border: 'none',
                                 cursor: input.trim() && !isLoading ? 'pointer' : 'not-allowed',
@@ -419,6 +450,23 @@ const ChatbotWidget = () => {
                         </button>
                     </div>
                 </div>
+
+                {bonzi && (
+                    <div className="bonzi-companion" aria-hidden="true">
+                        <img
+                            src={bonziImg}
+                            alt=""
+                            draggable={false}
+                            className={isLoading ? 'bonzi-img talking' : 'bonzi-img'}
+                        />
+                        {isLoading && (
+                            <div className="bonzi-hablando">
+                                <span /><span /><span />
+                            </div>
+                        )}
+                    </div>
+                )}
+                </>
             )}
 
             {/* ── Keyframes CSS ────────────────────────────────────────── */}
@@ -431,8 +479,83 @@ const ChatbotWidget = () => {
                     0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
                     40%           { transform: scale(1);   opacity: 1;   }
                 }
+                @keyframes bonziFloat {
+                    0%, 100% { transform: translateY(0)    rotate(0deg);  }
+                    50%      { transform: translateY(-7px) rotate(1.2deg);}
+                }
+                @keyframes bonziTalk {
+                    0%, 100% { transform: translateY(0)   rotate(0deg)  scale(1);   }
+                    20%      { transform: translateY(-3px) rotate(-2deg) scale(1.01);}
+                    45%      { transform: translateY(0)   rotate(2deg)  scale(1.02);}
+                    70%      { transform: translateY(-2px) rotate(-1deg) scale(1.01);}
+                }
+                @keyframes bonziEnter {
+                    from { opacity: 0; transform: translateY(20px) scale(0.9); }
+                    to   { opacity: 1; transform: translateY(0)    scale(1);   }
+                }
+                @keyframes hablandoDot {
+                    0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+                    40%           { transform: scale(1);   opacity: 1;   }
+                }
+                .bonzi-img {
+                    display: block;
+                    filter: drop-shadow(0 10px 16px rgba(0,0,0,0.55));
+                    transform-origin: 50% 90%;
+                    animation: bonziFloat 4.6s ease-in-out infinite;
+                    will-change: transform;
+                }
+                .bonzi-img.talking { animation: bonziTalk 0.9s ease-in-out infinite; }
+                .bonzi-companion {
+                    position: fixed;
+                    right: 420px;
+                    bottom: 26px;
+                    width: 200px;
+                    height: 200px;
+                    z-index: 9997;
+                    pointer-events: none;
+                    animation: bonziEnter 0.45s cubic-bezier(.2,.8,.2,1) both;
+                }
+                .bonzi-companion .bonzi-img { width: 100%; height: 100%; object-fit: contain; }
+                .bonzi-hablando {
+                    position: absolute;
+                    top: -6px;
+                    right: -6px;
+                    background: #2e1065;
+                    border: 1px solid rgba(168,85,247,0.55);
+                    border-radius: 14px 14px 14px 4px;
+                    padding: 7px 9px;
+                    display: flex;
+                    gap: 4px;
+                    align-items: center;
+                    box-shadow: 0 6px 16px rgba(0,0,0,0.35);
+                }
+                .bonzi-hablando span {
+                    width: 6px; height: 6px; border-radius: 50%;
+                    background: #c084fc;
+                    animation: hablandoDot 1.1s ease-in-out infinite;
+                }
+                .bonzi-hablando span:nth-child(2) { animation-delay: .18s; }
+                .bonzi-hablando span:nth-child(3) { animation-delay: .36s; }
+                @media (max-width: 820px) {
+                    .chatbot-window-bonzi {
+                        bottom: 104px !important;
+                        right: 8px !important;
+                        width: calc(100vw - 16px) !important;
+                        max-height: calc(100vh - 120px) !important;
+                    }
+                    .bonzi-companion {
+                        right: auto;
+                        left: 10px;
+                        bottom: 8px;
+                        width: 88px;
+                        height: 88px;
+                    }
+                }
+                @media (max-width: 480px) {
+                    .chatbot-bubble-bonzi { width: 112px !important; height: 112px !important; }
+                }
                 #chatbot-window::-webkit-scrollbar { width: 4px; }
-                #chatbot-window::-webkit-scrollbar-thumb { background: #39a900; border-radius: 4px; }
+                #chatbot-window::-webkit-scrollbar-thumb { background: var(--bot-accent, #39a900); border-radius: 4px; }
             `}</style>
         </>
     );

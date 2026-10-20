@@ -1,6 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
-import bonziImg from '../assets/bonzi-sena.png';
+import bonziNormal from '../assets/bonzi-sena.png';
+import bonziPensando from '../assets/bonzi-pensando.png';
+import bonziRespondiendo from '../assets/bonzi-respondiendo.png';
+import bonziLlorando from '../assets/bonzi-llorando.png';
 
 // ─── Sugerencias rápidas de preguntas frecuentes ────────────────────────────
 const QUICK_SUGGESTIONS = [
@@ -13,6 +16,31 @@ const QUICK_SUGGESTIONS = [
 const BONZI_KEY = 'chatbot_bonzi';
 const BONZI_ON  = '¡Listo! Ahora soy **Bonzi**, el asistente de SenaAccess. Escribe `/bonzi` de nuevo para volver al icono original.';
 const BONZI_OFF = 'Volví al icono original del asistente. Escribe `/bonzi` cuando quieras traer a Bonzi de nuevo.';
+const BONZI_MS_FINAL = 6000;
+
+// Cada estado del mono usa su propia imagen (todas alineadas al mismo lienzo).
+const IMAGENES_BONZI = {
+    normal: bonziNormal,
+    pensando: bonziPensando,
+    respondiendo: bonziRespondiendo,
+    llorando: bonziLlorando,
+};
+
+// Frases con las que el asistente admite que no puede responder.
+const FRASES_SIN_RESPUESTA = [
+    'no pude',
+    'no puedo',
+    'no tengo informaci',
+    'no encontr',
+    'no cuento con',
+    'sin informaci',
+    'no está en',
+    'no esta en',
+    'no lo sé',
+    'no lo se',
+    'no sé la respuesta',
+    'no se la respuesta',
+];
 
 // El chat cambia de paleta con Bonzi: morado del personaje en lugar del verde.
 const TEMA_SENA = {
@@ -53,8 +81,13 @@ const ChatbotWidget = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [showSuggestions, setShowSuggestions] = useState(true);
     const [bonzi, setBonzi]         = useState(() => localStorage.getItem(BONZI_KEY) === '1');
+    const [estadoMono, setEstadoMono] = useState('normal');
     const messagesEndRef            = useRef(null);
     const inputRef                  = useRef(null);
+    const timerMono                 = useRef(null);
+
+    // Limpia el temporizador del estado del mono al desmontar.
+    useEffect(() => () => clearTimeout(timerMono.current), []);
 
     // Auto-scroll al último mensaje
     useEffect(() => {
@@ -70,6 +103,18 @@ const ChatbotWidget = () => {
         }
     }, [isOpen]);
 
+    // Si la respuesta es un "no puedo/no sé", el mono llora en lugar de celebrar.
+    const esSinRespuesta = (texto) => {
+        const t = (texto || '').toLowerCase();
+        return FRASES_SIN_RESPUESTA.some((frase) => t.includes(frase));
+    };
+
+    // Vuelve a la pose normal despues de mostrar la respuesta o el llanto.
+    const volverANormal = () => {
+        clearTimeout(timerMono.current);
+        timerMono.current = setTimeout(() => setEstadoMono('normal'), BONZI_MS_FINAL);
+    };
+
     const sendMessage = async (text) => {
         const userText = (text || input).trim();
         if (!userText || isLoading) return;
@@ -78,6 +123,8 @@ const ChatbotWidget = () => {
         const comando = userText.toLowerCase();
         if (comando === '/bonzi' || comando === '/bonzi reset') {
             const activar = comando === '/bonzi' ? !bonzi : false;
+            clearTimeout(timerMono.current);
+            setEstadoMono('normal');
             setInput('');
             setShowSuggestions(false);
             setBonzi(activar);
@@ -97,6 +144,8 @@ const ChatbotWidget = () => {
         const updatedMessages = [...messages, { role: 'user', text: userText }];
         setMessages(updatedMessages);
         setIsLoading(true);
+        clearTimeout(timerMono.current);
+        setEstadoMono('pensando');
 
         // Historial para enviar al backend (excluye el mensaje del sistema inicial)
         const history = updatedMessages.slice(1, -1).map((m) => ({
@@ -112,10 +161,16 @@ const ChatbotWidget = () => {
                 { headers: { Authorization: `Bearer ${token}` } }
             );
 
+            const respuesta = (data && typeof data.reply === 'string' && data.reply.trim())
+                ? data.reply
+                : 'No pude generar una respuesta. Intenta de nuevo.';
+
             setMessages((prev) => [
                 ...prev,
-                { role: 'model', text: data.reply },
+                { role: 'model', text: respuesta },
             ]);
+            setEstadoMono(esSinRespuesta(respuesta) ? 'llorando' : 'respondiendo');
+            volverANormal();
         } catch (err) {
             setMessages((prev) => [
                 ...prev,
@@ -124,6 +179,8 @@ const ChatbotWidget = () => {
                     text: '❌ Hubo un error al contactar el asistente. Verifica tu conexión e intenta de nuevo.',
                 },
             ]);
+            setEstadoMono('llorando');
+            volverANormal();
         } finally {
             setIsLoading(false);
         }
@@ -159,6 +216,7 @@ const ChatbotWidget = () => {
     // Con Bonzi activo el personaje se muestra completo (sin circulo) y,
     // con el chat abierto, pasa al lado del cuadro.
     const tema = bonzi ? TEMA_BONZI : TEMA_SENA;
+    const imagenMono = IMAGENES_BONZI[estadoMono] || bonziNormal;
 
     return (
         <>
@@ -185,20 +243,11 @@ const ChatbotWidget = () => {
                         justifyContent: 'center',
                         padding: 0,
                         zIndex: 9999,
-                        transition: 'transform 0.2s, box-shadow 0.2s',
-                    }}
-                    onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'scale(1.06)';
-                        if (!bonzi) e.currentTarget.style.boxShadow = '0 6px 28px rgba(57,169,0,0.6)';
-                    }}
-                    onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = 'scale(1)';
-                        e.currentTarget.style.boxShadow = bonzi ? 'none' : '0 4px 20px rgba(57,169,0,0.45)';
                     }}
                 >
                     {bonzi ? (
                         <img
-                            src={bonziImg}
+                            src={imagenMono}
                             alt="Bonzi"
                             draggable={false}
                             className="bonzi-img"
@@ -331,8 +380,8 @@ const ChatbotWidget = () => {
                             </div>
                         ))}
 
-                        {/* Indicador de carga */}
-                        {isLoading && (
+                        {/* Indicador de carga (solo sin Bonzi; con Bonzi piensa el mono) */}
+                        {isLoading && !bonzi && (
                             <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
                                 <div style={{
                                     padding: '10px 16px',
@@ -454,10 +503,10 @@ const ChatbotWidget = () => {
                 {bonzi && (
                     <div className="bonzi-companion" aria-hidden="true">
                         <img
-                            src={bonziImg}
+                            src={imagenMono}
                             alt=""
                             draggable={false}
-                            className={isLoading ? 'bonzi-img talking' : 'bonzi-img'}
+                            className="bonzi-img"
                         />
                         {isLoading && (
                             <div className="bonzi-hablando">
@@ -479,32 +528,10 @@ const ChatbotWidget = () => {
                     0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
                     40%           { transform: scale(1);   opacity: 1;   }
                 }
-                @keyframes bonziFloat {
-                    0%, 100% { transform: translateY(0)    rotate(0deg);  }
-                    50%      { transform: translateY(-7px) rotate(1.2deg);}
-                }
-                @keyframes bonziTalk {
-                    0%, 100% { transform: translateY(0)   rotate(0deg)  scale(1);   }
-                    20%      { transform: translateY(-3px) rotate(-2deg) scale(1.01);}
-                    45%      { transform: translateY(0)   rotate(2deg)  scale(1.02);}
-                    70%      { transform: translateY(-2px) rotate(-1deg) scale(1.01);}
-                }
-                @keyframes bonziEnter {
-                    from { opacity: 0; transform: translateY(20px) scale(0.9); }
-                    to   { opacity: 1; transform: translateY(0)    scale(1);   }
-                }
-                @keyframes hablandoDot {
-                    0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
-                    40%           { transform: scale(1);   opacity: 1;   }
-                }
                 .bonzi-img {
                     display: block;
                     filter: drop-shadow(0 10px 16px rgba(0,0,0,0.55));
-                    transform-origin: 50% 90%;
-                    animation: bonziFloat 4.6s ease-in-out infinite;
-                    will-change: transform;
                 }
-                .bonzi-img.talking { animation: bonziTalk 0.9s ease-in-out infinite; }
                 .bonzi-companion {
                     position: fixed;
                     right: 420px;
@@ -513,13 +540,12 @@ const ChatbotWidget = () => {
                     height: 200px;
                     z-index: 9997;
                     pointer-events: none;
-                    animation: bonziEnter 0.45s cubic-bezier(.2,.8,.2,1) both;
                 }
                 .bonzi-companion .bonzi-img { width: 100%; height: 100%; object-fit: contain; }
                 .bonzi-hablando {
                     position: absolute;
-                    top: -6px;
-                    right: -6px;
+                    top: -4px;
+                    left: -10px;
                     background: #2e1065;
                     border: 1px solid rgba(168,85,247,0.55);
                     border-radius: 14px 14px 14px 4px;
@@ -532,10 +558,7 @@ const ChatbotWidget = () => {
                 .bonzi-hablando span {
                     width: 6px; height: 6px; border-radius: 50%;
                     background: #c084fc;
-                    animation: hablandoDot 1.1s ease-in-out infinite;
                 }
-                .bonzi-hablando span:nth-child(2) { animation-delay: .18s; }
-                .bonzi-hablando span:nth-child(3) { animation-delay: .36s; }
                 @media (max-width: 820px) {
                     .chatbot-window-bonzi {
                         bottom: 104px !important;
@@ -550,6 +573,13 @@ const ChatbotWidget = () => {
                         width: 88px;
                         height: 88px;
                     }
+                    .bonzi-hablando {
+                        top: 0;
+                        left: auto;
+                        right: -6px;
+                        padding: 5px 7px;
+                    }
+                    .bonzi-hablando span { width: 5px; height: 5px; }
                 }
                 @media (max-width: 480px) {
                     .chatbot-bubble-bonzi { width: 112px !important; height: 112px !important; }

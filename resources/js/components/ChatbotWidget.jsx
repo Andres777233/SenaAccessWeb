@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
+import bonziImg from '../assets/bonzi-sena.jpeg';
 
 // ─── Sugerencias rápidas de preguntas frecuentes ────────────────────────────
 const QUICK_SUGGESTIONS = [
@@ -8,6 +9,10 @@ const QUICK_SUGGESTIONS = [
     '¿Cómo descargo mi carnet QR?',
     '¿Qué roles existen en el sistema?',
 ];
+
+const BONZI_KEY = 'chatbot_bonzi';
+const BONZI_ON  = '¡Listo! Ahora soy **Bonzi**, el asistente de SenaAccess. Escribe `/bonzi reset` para volver al icono original.';
+const BONZI_OFF = 'Volví al icono original del asistente. Escribe `/bonzi` cuando quieras traer a Bonzi de nuevo.';
 
 const ChatbotWidget = () => {
     const [isOpen, setIsOpen]       = useState(false);
@@ -20,6 +25,7 @@ const ChatbotWidget = () => {
     const [input, setInput]         = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [showSuggestions, setShowSuggestions] = useState(true);
+    const [bonzi, setBonzi]         = useState(() => localStorage.getItem(BONZI_KEY) === '1');
     const messagesEndRef            = useRef(null);
     const inputRef                  = useRef(null);
 
@@ -40,6 +46,22 @@ const ChatbotWidget = () => {
     const sendMessage = async (text) => {
         const userText = (text || input).trim();
         if (!userText || isLoading) return;
+
+        // Comando local: /bonzi cambia el icono del asistente sin llamar a la IA.
+        const comando = userText.toLowerCase();
+        if (comando === '/bonzi' || comando === '/bonzi reset') {
+            const activar = comando === '/bonzi';
+            setInput('');
+            setShowSuggestions(false);
+            setBonzi(activar);
+            localStorage.setItem(BONZI_KEY, activar ? '1' : '0');
+            setMessages((prev) => [
+                ...prev,
+                { role: 'user', text: userText },
+                { role: 'model', text: activar ? BONZI_ON : BONZI_OFF },
+            ]);
+            return;
+        }
 
         setInput('');
         setShowSuggestions(false);
@@ -140,9 +162,21 @@ const ChatbotWidget = () => {
                     e.currentTarget.style.boxShadow = '0 4px 20px rgba(57,169,0,0.45)';
                 }}
             >
-                <span className="material-symbols-outlined" style={{ color: '#fff', fontSize: '28px' }}>
-                    {isOpen ? 'close' : 'smart_toy'}
-                </span>
+                {isOpen ? (
+                    <span className="material-symbols-outlined" style={{ color: '#fff', fontSize: '28px' }}>
+                        close
+                    </span>
+                ) : bonzi ? (
+                    <img
+                        src={bonziImg}
+                        alt="Bonzi"
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
+                    />
+                ) : (
+                    <span className="material-symbols-outlined" style={{ color: '#fff', fontSize: '28px' }}>
+                        smart_toy
+                    </span>
+                )}
             </button>
 
             {/* ── Ventana del chat ─────────────────────────────────────── */}
@@ -174,9 +208,23 @@ const ChatbotWidget = () => {
                         alignItems: 'center',
                         gap: '10px',
                     }}>
-                        <span className="material-symbols-outlined" style={{ color: '#fff', fontSize: '22px' }}>
-                            smart_toy
-                        </span>
+                        {bonzi ? (
+                            <img
+                                src={bonziImg}
+                                alt="Bonzi"
+                                style={{
+                                    width: '28px',
+                                    height: '28px',
+                                    objectFit: 'cover',
+                                    borderRadius: '50%',
+                                    border: '1.5px solid rgba(255,255,255,0.7)',
+                                }}
+                            />
+                        ) : (
+                            <span className="material-symbols-outlined" style={{ color: '#fff', fontSize: '22px' }}>
+                                smart_toy
+                            </span>
+                        )}
                         <div style={{ flex: 1 }}>
                             <div style={{ color: '#fff', fontWeight: 700, fontSize: '14px', lineHeight: 1.2 }}>
                                 Asistente SenaAccess

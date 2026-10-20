@@ -176,4 +176,23 @@ class ExcusaController extends Controller
             ->get();
         return response()->json($excusas);
     }
+
+    // Aprendiz borra una excusa ya cerrada de su historial (no permisos vigentes).
+    public function eliminarMisExcusa(Request $request, $id)
+    {
+        $this->expirarVencidas();
+        $user = $request->user();
+        $excusa = Excusa::find($id);
+        if (!$excusa) {
+            return response()->json(['message' => 'Excusa no encontrada'], 404);
+        }
+        if ($excusa->fk_id_aprendiz !== $user->id_usuario) {
+            return response()->json(['message' => 'No autorizado'], 403);
+        }
+        if ($excusa->estado === 'pendiente') {
+            return response()->json(['message' => 'No puedes borrar un permiso vigente'], 422);
+        }
+        $excusa->delete();
+        return response()->json(['message' => 'Excusa eliminada']);
+    }
 }

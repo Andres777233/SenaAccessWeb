@@ -167,6 +167,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/instructor/excusas', [ExcusaController::class, 'misComoInstructor']);
     Route::delete('/instructor/excusas/{id}', [ExcusaController::class, 'anular']);
     Route::get('/mis-excusas', [ExcusaController::class, 'misExcusas']);
+    // El aprendiz limpia su historial: solo excusas ya cerradas (usada/expirada/anulada).
+    Route::delete('/mis-excusas/{id}', [ExcusaController::class, 'eliminarMisExcusa']);
     Route::post('/excusas/validar', [ExcusaController::class, 'validar'])->middleware('throttle:pin');
     Route::middleware('admin_or_portero')->group(function () {
         Route::get('/admin/excusas', [ExcusaController::class, 'indexAdmin']);

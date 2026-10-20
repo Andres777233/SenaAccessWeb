@@ -6,6 +6,7 @@ use App\Models\Role;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -240,6 +241,125 @@ class ParidadTest extends TestCase
             $ambiente->instructores()->detach();
             $ambiente->delete();
         }
+    }
+
+    public function test_aprendiz_borra_solo_sus_excusas_cerradas(): void
+    {
+        $instructor = $this->crearUsuario('Instructor');
+        $dueno = $this->crearUsuario('Aprendiz');
+        $ajeno = $this->crearUsuario('Aprendiz');
+        $ambiente = \App\Models\Ambiente::create(['ambiente_nombre' => 'Limpieza ' . uniqid()]);
+        $ambiente->instructores()->sync([$instructor->id_usuario]);
+
+        $base = [
+            'fk_id_ambiente' => $ambiente->id_ambiente,
+            'fk_id_instructor' => $instructor->id_usuario,
+            'motivo' => 'Historial',
+            'pin' => (string) random_int(1000, 9999),
+        ];
+        $usada = \App\Models\Excusa::create($base + [
+            'fk_id_aprendiz' => $dueno->id_usuario,
+            'estado' => 'usada',
+            'expira_en' => now()->subMinute(),
+        ]);
+        $pendiente = \App\Models\Excusa::create([
+            'fk_id_aprendiz' => $dueno->id_usuario,
+            'fk_id_ambiente' => $ambiente->id_ambiente,
+            'fk_id_instructor' => $instructor->id_usuario,
+            'motivo' => 'Permiso vigente',
+            'pin' => (string) random_int(1000, 9999),
+            'estado' => 'pendiente',
+            'expira_en' => now()->addMinutes(10),
+        ]);
+
+        try {
+            Sanctum::actingAs($ajeno);
+            $this->deleteJson('/api/mis-excusas/' . $usada->id_excusa)->assertStatus(403);
+
+            Sanctum::actingAs($dueno);
+            $this->deleteJson('/api/mis-excusas/' . $pendiente->id_excusa)->assertStatus(422);
+            $this->deleteJson('/api/mis-excusas/' . $usada->id_excusa)
+                ->assertOk()
+                ->assertJsonPath('message', 'Excusa eliminada');
+            $this->assertNull(\App\Models\Excusa::find($usada->id_excusa));
+        } finally {
+            \App\Models\Excusa::where('fk_id_instructor', $instructor->id_usuario)->delete();
+            $ambiente->instructores()->detach();
+            $ambiente->delete();
+        }
+    }
+
+    public function test_chatbot_responde_texto_general(): void
+    {
+        $user = $this->crearUsuario('Instructor');
+        Sanctum::actingAs($user);
+        config(['services.gemini.api_key' => 'clave-de-prueba']);
+
+        Http::fake([
+            'generativelanguage.googleapis.com/*' => Http::response([
+                'candidates' => [[
+                    'content' => [
+                        'role' => 'model',
+                        'parts' => [['text' => 'Dos más dos es cuatro.']],
+                    ],
+                ]],
+            ]),
+        ]);
+
+        $this->postJson('/api/chatbot', ['message' => '¿Cuánto es 2 + 2?'])
+            ->assertOk()
+            ->assertJsonPath('reply', 'Dos más dos es cuatro.');
+
+        // El prompt debe permitir preguntas generales y llevar contexto real + herramientas.
+        Http::assertSent(function ($request) {
+            $texto = $request['systemInstruction']['parts'][0]['text'] ?? '';
+            return str_contains($texto, 'CONTEXTO DEL PROYECTO')
+                && str_contains($texto, 'PREGUNTAS GENERALES')
+                && !str_contains($texto, 'solo puedes ayudar con temas del sistema')
+                && !empty($request['tools'][0]['functionDeclarations']);
+        });
+    }
+
+    public function test_chatbot_ejecuta_herramienta_y_responde(): void
+    {
+        $user = $this->crearUsuario('Instructor');
+        Sanctum::actingAs($user);
+        config(['services.gemini.api_key' => 'clave-de-prueba']);
+
+        Http::fakeSequence()
+            ->push([
+                'candidates' => [[
+                    'content' => [
+                        'role' => 'model',
+                        'parts' => [[
+                            'functionCall' => ['name' => 'resumen_sistema', 'args' => new \stdClass()],
+                        ]],
+                    ],
+                ]],
+            ], 200)
+            ->push([
+                'candidates' => [[
+                    'content' => [
+                        'role' => 'model',
+                        'parts' => [['text' => 'Consulté las cifras del sistema.']],
+                    ],
+                ]],
+            ], 200);
+
+        $this->postJson('/api/chatbot', ['message' => '¿Cuántos usuarios hay?'])
+            ->assertOk()
+            ->assertJsonPath('reply', 'Consulté las cifras del sistema.');
+    }
+
+    public function test_chatbot_sin_api_key_responde_503(): void
+    {
+        $user = $this->crearUsuario('Aprendiz');
+        Sanctum::actingAs($user);
+        config(['services.gemini.api_key' => null]);
+
+        $this->postJson('/api/chatbot', ['message' => 'Hola'])
+            ->assertStatus(503)
+            ->assertJsonPath('error', 'Servicio de IA no configurado.');
     }
 
     public function test_my_profile_no_permite_escalar_rol(): void

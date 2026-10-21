@@ -1,32 +1,150 @@
-# AGENTS.md — SenaAccess-Repo2 ("SenaAccess WEB")
+# AGENTS.md — SenaAccess WEB (Laravel + React)
 
-Backend Laravel 10 + MySQL + SPA React 19 (Vite, Bootstrap 5.3 CDN) de SennAccess. Ruta: `/home/andres/Escritorio/SenaAccess-Repo2-master./SenaAccess-Repo2-master` (la carpeta padre termina en punto; citar siempre entre comillas).
+Backend del proyecto SenaAccess: API REST que consume la app Android **y** panel web SPA (React) para superadmin, instructor, aprendiz y portería.
+
+> **Este archivo es el contexto completo del proyecto.** No dependas de memoria global ni de archivos fuera de este repo: rutas, comandos, arquitectura, convenciones, estado y pendientes están aquí.
+> **Cómo leerlo**: todo lo que va hasta `## Historial` es el contexto operativo (léelo siempre). `## Historial` es el diario acumulado del proyecto (léelo solo si necesitas el pasado; las entradas más recientes van al final).
+
+## Cómo ubicarte en el repo (portable)
+
+- La **raíz** del proyecto es la carpeta donde vive este `AGENTS.md`. Confírmala con `git rev-parse --show-toplevel`.
+- **Todas** las rutas de este documento son relativas a la raíz.
+- **Nunca** asumas una ruta absoluta ni una carpeta concreta de otra máquina: este repo se clona y se despliega en equipos distintos.
+- Si la sesión arranca en otra carpeta, `cd` a la raíz antes de leer o escribir.
+- La app Android **no** está en este repo (ver "Repos hermanos"); para tocar el móvil hay que clonar `SenaAccessMovil` y abrir opencode allí.
+
+## Identidad del proyecto
+
+| Dato | Valor |
+|---|---|
+| Backend | Laravel **10** (`laravel/framework ^10.10`), PHP `^8.1` (el build de Railway fija **PHP 8.3** en `nixpacks.toml`) |
+| Frontend | SPA **React 19.2** + `react-router-dom 7.13` + **Vite 6** + Bootstrap **5.3.2** (CDN) + FontAwesome 5.10 + Material Symbols |
+| Auth | Laravel **Sanctum** (Bearer) + 2FA propio (código de 6 dígitos + enlace firmado SÍ/NO por correo) |
+| Extras | dompdf (comprobante de equipo), phpspreadsheet (export Excel), cloudinary-laravel (fotos de perfil), resend-laravel (correo) |
+| Tamaño | **80** rutas API, **12** controllers, **14** models, **42** migraciones, **3** seeders, **32** componentes `.jsx` |
+| Deploy | Railway: `railway.json` (builder `dockerfile` + `releaseCommand` = `migrate --force --seed` + healthcheck `/api/health`) |
+| Repo | `https://github.com/Andres777233/SenaAccessWeb` — rama `main` (push = deploy) |
+
+## Mapa del repo
+
+| Ruta | Qué contiene |
+|---|---|
+| `routes/api.php` | **80 rutas** = contrato con el móvil (fuente de verdad del backend) |
+| `routes/web.php` | catch-all del SPA (`welcome.blade.php`) + descargas de APK (`SenaAccessV3.0/3.7/4.1.apk`) |
+| `app/Http/Controllers/` | `AuthController`, `AdminController`, `AmbienteController`, `ExcusaController`, `EquipmentController`, `NovedadController`, `NotificacionController`, `TwoFactorController`, `AccesoQrController`, `ChatbotController`, `PrediccionController` |
+| `app/Http/Middleware/` | `CheckAdminRole` (superadmin), `CheckAdminOrInstructor`, `CheckAdminOrPortero` (superadmin \| admin) |
+| `app/Models/` | `User`, `Role`, `Ingreso`, `IngresoEquipo`, `Ambiente`, `Excusa`, `Novedad`, `Notificacion`, `TokenRecovery`, `TwoFactorChallenge`, `PinAcceso`, `PrediccionModelo`, `Festivo`, `AccesoDiario` |
+| `database/migrations/` | **42** migraciones (esquema completo) |
+| `database/seeders/` | `DatabaseSeeder` (roles + 9 cuentas), `DemoDataSeeder` (datos demo, idempotente), `FestivoSeeder` (festivos, cálculo propio de Pascua) |
+| `resources/js/` | SPA: `app.jsx` (rutas y guardas) + `components/` (32 `.jsx`) + `assets/` + `utils/` |
+| `resources/views/` | `welcome.blade.php` (cáscara del SPA), `emails/` (5 plantillas), `comprobantes/`, `exports/` |
+| `public/` | APKs descargables (`SenaAccessV9.0.apk` es el actual), `avatars/`, `email/` (logo del correo), `build/` (bundle de Vite), `static-html-backup/` |
+| raíz | `railway.json`, `nixpacks.toml`, `Dockerfile`, `.railwayignore`, `.dockerignore`, `iniciar-servidor.sh`, `documentacion/`, `AGENTS.md` |
 
 ## Comandos y entorno
-- Servidor: `php artisan serve --host 0.0.0.0 --port 8000` (o `bash iniciar-servidor.sh`). OJO: artisan serve sirve estáticos de `public/` ANTES que el router; los paneles legacy viven en `public/static-html-backup/` para que `/admin`, `/instructor`, `/aprendiz` caigan en el SPA React.
-- BD: MariaDB servicio `mariadb`, base `senaaccess` (root sin password, en `.env`). Migrar: `php artisan migrate`. Seed: `php artisan db:seed --force`.
-- Entorno: PHP 8.5.4 (+pdo_mysql, mbstring, curl, xml, gd, zip), Composer en `~/.local/bin/composer`, Node v24. Build SPA: `npm run build`.
-- Credenciales (idénticas local y Railway, ver `DatabaseSeeder.php`): `admin@sena.edu.co` con `12345678`; instructores: `juan.pablo@sena.edu.co` (`12345678`), `alejandro/gustavo/raul@sena.edu.co` (`123456`); aprendices: `andres.vargas/laura.medina@sena.edu.co` (`12345678`), `katherin/sebastian/camilo@sena.edu.co` (`123456`). NO existen `instructor@` ni `aprendiz@sena.edu.co`.
 
-## Convenciones
-- PKs propias (`id_ambiente`, `id_novedad`, ...) y prefijos de columna (`user_*`, `novedad_*`, `equipo_*`, `ambiente_*`, `sugerencia_*`).
-- `roles.rol_name`: mezcla mayúsculas (`admin` minúscula, `Instructor`/`Aprendiz` capitalizados); comparar caso exacto.
-- Fechas de ingresos en `America/Bogota`; errores de validación por campo con estado `*Errors` + clase `is-invalid`; toda tabla nueva del SPA lleva `table-cards` + `data-label` en sus `<td>`.
-- Rutas backend en `routes/api.php`; SPA en `resources/js/`.
+- **Servidor local**: `php artisan serve --host 0.0.0.0 --port 8000` (o `bash iniciar-servidor.sh`, que además consulta el watcher `adb reverse`).
+- **SPA**: `npm install` → `npm run dev` (Vite, desarrollo) / `npm run build` (bundle a `public/build`).
+- **Base de datos**: `php artisan migrate` · `php artisan db:seed --force` · `php artisan migrate:status` · tests: `php artisan test`.
+- **Deploy**: `git push origin main` → Railway construye y corre `migrate --force --seed`. Si una migración quedó pendiente: `railway ssh "php artisan migrate --force"`.
+- **OJO — extensiones de PHP en Railway**: `nixpacks.toml` solo trae `gmp, sodium, intl, bcmath, gd, zip, dom, xml, mbstring, ctype, json, tokenizer, openssl, curl, fileinfo`. **No uses `easter_date()` ni nada de ext-calendar**: tumbó el deploy con 502 el 2026-10-11 (por eso `FestivoSeeder` calcula la Pascua a mano).
+- **Regla del proyecto**: commit + push al final de cada tarea.
+
+## Roles y permisos
+
+`roles.rol_name`: `Superadmin`, `Admin` (operativa de portería), `Instructor`, `Aprendiz`, `Invitado` (migración `2026_10_09_000001_rename_roles_admin_portero`).
+
+| Middleware | Quién entra | Dónde |
+|---|---|---|
+| `admin` | solo `superadmin` | `/admin/*` (usuarios, ambientes, predicción) |
+| `admin_or_portero` | `superadmin` \| `admin` | equipos, historial de accesos, validación de excusas, PIN de acceso |
+| `admin_or_instructor` | lectura admin/instructor | ambientes y listados de solo lectura |
+
+SPA (`resources/js/app.jsx`): `/admin` → superadmin, `/portero` → admin, `/instructor`, `/aprendiz`, más `/puerta-acceso`, `/verificacion-2fa`, `/register`, `/password-recovery`, `/reset-password`.
+
+## Contrato con el móvil
+
+- **Base pública**: `https://senaaccessweb-production-4c6e.up.railway.app/api/`.
+- El móvil declara **73** endpoints (`datos/red/ServicioApi.kt`) frente a **80** rutas aquí: **el backend manda**. Si cambias una ruta, actualiza también el cliente Android.
+- **Login**: `POST /api/login` → `{two_factor_required, two_factor_id}` **o** `{access_token, user, role}`. Envía `device_id` para que el 2FA solo rete fuera del dispositivo confiable.
+- **2FA**: `/2fa/activar|desactivar|estado-config|pendientes|aprobar|validar-codigo|estado/{id}` y `GET /2fa/decidir?challenge_id&dec&sig` (enlace firmado del correo, SÍ/NO).
+- **Correo**: transporte **HTTPS propio** (`BrevoTransport`), porque Railway bloquea todo SMTP saliente → `MAIL_MAILER=brevo`, remitente verificado `mandarinakachivache@gmail.com`. Plantillas en `resources/views/emails/`.
+- **Fotos de perfil**: Cloudinary (`CLOUDINARY_URL` + `CLOUDINARY_UPLOAD_PRESET` en Railway; **sin estas el upload devuelve 500**).
+- **Errores**: JSON con `message`; el móvil los muestra con `detalleHttp` (código + mensaje real).
+
+## Credenciales de prueba (las crea `DatabaseSeeder`)
+
+| Correo | Clave | Rol |
+|---|---|---|
+| `admin@sena.edu.co` | `12345678` | Superadmin |
+| `andres.vargas@sena.edu.co`, `laura.medina@sena.edu.co` | `12345678` | Aprendiz |
+| `sebastian@`, `camilo@`, `katherin@sena.edu.co` | `123456` | Aprendiz |
+| `juan.pablo@sena.edu.co` | `12345678` | Instructor |
+| `alejandro@`, `gustavo@`, `raul@sena.edu.co` | `123456` | Instructor |
+
+- **NO** existen `instructor@sena.edu.co` ni `aprendiz@sena.edu.co`.
+- El seeder crea el rol `Admin` (portería) pero **no** una cuenta con ese rol: hay que asignarlo a mano con `PUT /api/admin/users/{id}` y **cuerpo completo** (el PUT solo con `fk_id_rol` devuelve 422). Si una cuenta queda en `fk_id_rol=4` (Invitado) no entra a ningún panel y no aparece en listados: es el bug recurrente ya documentado en el AGENTS.md del móvil.
+
+## Estado actual y pendientes
+
+- Último commit: `b9921c7` (2026-10-19) "Bonzi" — chatbot con herramientas reales, tema morado y animaciones.
+- Verificado en vivo el 2026-10-21: `GET /api/health` → `{"status":"ok"}` y `GET /SenaAccessV9.0.apk` → **200** (`application/vnd.android.package-archive`, 45.955.227 bytes).
+- Ojo: `GET /api/admin/roles` **sin token** devuelve 500 HTML de Laravel; no es caída del backend.
+- 2026-10-13: puerta sin loop (entrada por día + PIN corto de acceso) y fechas UTC reales (`serializeDate`).
+- Pendientes: (1) `public/` acumula APKs viejos (V2 → V4.1) y solo V3.0/V3.7/V4.1 tienen ruta de descarga explícita; (2) la cuenta de rol `Admin` (portería) hay que crearla/asignarla a mano.
+
+## Esta máquina (verificar antes de usar)
+
+- **PHP local** 8.5.4 (el build de Railway usa 8.3), **Node** v24, Composer en `~/.local/bin/composer`.
+- **`.env` local**: existe (BD `senaaccess` en 127.0.0.1, usuario `root`) pero **no** trae `MAIL_*` ni `CLOUDINARY_*`: el correo y las fotos solo funcionan con las variables de Railway. `.env` no está versionado; en otra máquina: copiar `.env.example` + `php artisan key:generate`.
+- **adb del watcher**: `/home/andres/android-sdk/platform-tools/adb` (ver `iniciar-servidor.sh`).
+- **Railway**: el servicio en vivo pertenece a la cuenta del dueño; el proyecto CLI `superb-peace` (mandarinakachivache) solo tiene la BD `MySQL-DK1Y` y un web viejo, así que `railway logs` **no** muestra el servicio en vivo.
+
+## Checklist de verificación al abrir el proyecto
+
+1. `git rev-parse --show-toplevel` → raíz; `git status -sb` → rama `main` y sin cambios sin commitear.
+2. `php artisan --version` → 10.x.
+3. `grep -c "Route::" routes/api.php` → **80**.
+4. `ls app/Http/Controllers | wc -l` → **12**; `ls app/Models | wc -l` → **14**.
+5. `ls database/migrations | wc -l` → **42**.
+6. `grep -rn "easter_date" app database | grep -v "//"` → **0 resultados** (ext-calendar no existe en el build).
+7. `php artisan migrate:status` → sin migraciones pendientes.
+8. `npm run build` → bundle en `public/build` sin errores.
+9. `curl -s https://senaaccessweb-production-4c6e.up.railway.app/api/health` → `{"status":"ok"}`.
+10. `grep -rn "MAIL_MAILER\|CLOUDINARY_URL" .env` → en local **no** aparecen (se inyectan en Railway).
+
+Si algo no cuadra, **corrige este `AGENTS.md`** (es la fuente de verdad) y anótalo en el historial.
+
+## Repos hermanos (por URL, sin rutas locales)
+
+| Repo | Qué es |
+|---|---|
+| `https://github.com/Andres777233/SenaAccessMovil` | App Android (Kotlin + Compose) que consume esta API. |
+| `https://github.com/Andres777233/SenaAccessWebDef1` | Copia de este backend para entrega a terceros (historial limpio, sin rastros de opencode). |
+| `https://github.com/Andres777233/QR-MOVIL` | Distribución del APK + página de descarga con QR. |
+
+**Regla**: la app no está en este repo. Para tocar el móvil, clonar `SenaAccessMovil` y abrir opencode en esa carpeta.
 
 ## Retomar trabajo (IMPORTANTE)
+
 - Este proyecto = **"SenaAccess WEB"**.
-- En "continuemos"/"retomemos"/"seguimos": NO leas archivos extra y NO re-explores el repo con grep/glob — el estado completo y todo el historial están AQUÍ MISMO (sección `## Historial`, entradas más recientes al final).
+- Palabra clave: **"continuemos con Sena access web"** (o "continuemos"/"retomemos"/"seguimos"). En ese caso NO leas archivos extra y NO re-explores el repo con grep/glob — el estado completo y todo el historial están AQUÍ MISMO (sección `## Historial`, entradas más recientes al final).
 
 ## Autoguardar historial (OBLIGATORIO)
-Al terminar cada tarea/sesión, agrega al FINAL de `## Historial` una entrada fechada `- YYYY-MM-DD — <qué cambiaste y por qué>`: MUY concreta, directa y clara (1-2 líneas máximo). Nunca borres ni reescribas entradas anteriores.
+
+Al terminar cada tarea/sesión, agrega al FINAL de la sección `## Historial` **de este mismo archivo** una entrada fechada `- YYYY-MM-DD — <qué cambiaste y por qué>`: MUY concreta, directa y clara (1-2 líneas máximo). Nunca borres ni reescribas entradas anteriores. El historial vive dentro del proyecto (este archivo versionado en git).
 
 ## Agentes y skills (ruteo obligatorio)
-Agentes en `.opencode/agent/`, skills en `.opencode/skill/*/SKILL.md`.
+
+Agentes en `.opencode/agent/`, skills en `.opencode/skill/*/SKILL.md` (todo versionado: `git clone` los restaura).
 - `login|auth|2fa|api|controller|middleware|migracion` → agent `backend-laravel` + skill `laravel-secure-api`.
 - `pantalla web|tabla|rol admin|chart|app.jsx|Register.jsx|Admin.jsx` → agent `frontend-react` + skill `react-roles-ui`.
 - `test|hueco|seguridad|vulnerabilidad|revisar|pentest|403|401` → agent `qa-seguridad` + skills `pentest-sena` + `testing-flujos`.
 - Funcionalidad nueva end-to-end → `backend-laravel` + `frontend-react`, cierra `qa-seguridad`.
+
+## Palabra clave: PARIDAD TOTAL
+
+- Si el dueño dice **PARIDAD TOTAL**, significa replicar aquí todo el rediseño de la app Android + el panel de portería. Al decirla en la sesión del WEB, la primera palabra debe ser **Mandarina** y se arranca por la Fase 0 (tokens/componentes). La app Android tampoco está en este repo: para cambios de UI del móvil hay que abrir opencode en el clone de `SenaAccessMovil`.
 
 ## Historial
 - 2026-08-22 — Fotos perfil: copié a `public/avatars/` (admin/aprendiz/instructor) y seteé `profile_photo_path` relativo vía tinker (ids 1, 12, 17); sin tocar código; Cloudinary solo para subidas reales.
@@ -88,3 +206,15 @@ Agentes en `.opencode/agent/`, skills en `.opencode/skill/*/SKILL.md`.
 - 2026-10-19 — Ajuste Bonzi: la pose de pensamiento se fuerza mientras carga (derivada de isLoading + precarga + key), globo de pensamiento pegado sobre la cabeza y duración de responder/llorar a 4 s.
 - 2026-10-19 — Fix mono invisible al pensar: fuera el remount por key, precarga de poses, fallback onError y PNG a 384 px; llanto al pedir contraseñas/tokens ajenos o cuando la respuesta es una negación.
 - 2026-10-19 — Bonzi final: código sincronizado al repo limpio SenaAccessWebDef1 (commit "Bonzi"), sin archivos de opencode; poses estáticas, pensando/respondiendo/llorando y llanto en negaciones.
+- 2026-10-02 — v5.0 (API): rol de portería en el backend (migración + seeder crean el rol `Admin`); el móvil ya soportaba el rol pero sin backend no entraba nadie. Quedaron como requisito del API: `user_jornada`/`user_jornada_sabado` y notificaciones por acción.
+- 2026-10-03 — WEB listo para Portero (commit local 55e7c82): migración + seeder crean el rol, middleware nuevo `admin_or_portero` (equipos, historial, excusas de admin) y permisos en `EquipmentController`/`ExcusaController` + lectura en `admin_or_instructor`.
+- 2026-10-03 — Push del WEB con token del dueño: rebase limpio sobre `4a3ee61` y push `4a3ee61..1297364` a `SenaAccessWeb/main` (incluye `55e7c82`). Hasta conectar el repo, Railway no auto-desplegaba: luego `GET /api/admin/roles` ya devolvió `Portero(id 5)` y la cuenta 13 quedó con ese rol.
+- 2026-10-03 — Espejo funcional móvil→WEB (opción B): admin sin MÁS (4 primarios), instructor sin Validar QR + salones 2º, aprendiz reordenado + equipos simple, portero sin Presentes + botón Registrar interno con Volver, Usuarios con Porteros/Invitados, login que recuerda correos. Build vite OK, ParidadTest 25 passed, push `ba0d4f0`, Railway desplegado.
+- 2026-10-10 — Rediseño 2FA + recuperación + avisos de cuenta (WEB): `Verificacion2Fa`, `DosPasos`, `Recovery`, `Reset` + CSS propio de 2FA; plantillas `CuentaRecibida`/`CuentaRechazadaMail`; aviso in-app al superadmin con badge; el QR de acceso quedó solo en el panel operativo.
+- 2026-10-10 — 2FA por dispositivo real: migración `trusted_device_id` + `device_id`; el login salta el reto en el teléfono confiable y lo confía al aprobar por código/in-app/correo; el cambio de clave en el perfil exige código del correo (caché de 10 min).
+- 2026-10-10 — FIX "Application not found": el APK apuntaba a un dominio Railway muerto (`...-05d4`); se volvió al vivo (`...-4c6e`) y se verificaron registro y aviso de cuenta.
+- 2026-10-10 — Paquete de 7 frentes (WEB): correos con logo SENA y sin la palabra "superadmin"; ambientes sin la palabra "aulas"; buscador multicriterio con LazyRow; puerta QR obligatoria para aprendiz/instructor, con entrada directa si el último movimiento fue Entrada.
+- 2026-10-13 — Puerta sin loop + PIN de acceso: `POST /admin/pines-acceso` (PIN de 6 dígitos, 5 min, un solo uso) y `POST /acceso/validar-pin`; el backend permite Entrada del día aunque ayer quedara abierta; fechas en UTC real (`serializeDate`).
+- 2026-10-13 — Migración a `SenaAccessWebDef1` (copia para entrega a terceros): 77 commits reescritos con git-filter-repo (fuera `.opencode/`, `opencode.json`, `.opencodeignore` y el `AGENTS.md` de toda la historia) y luego limpieza a 63 commits. Este repo (`SenaAccessWeb`) queda como el de desarrollo.
+- 2026-10-19 — Chatbot "Bonzi" (WEB): `ChatbotWidget` con contexto real del proyecto y herramientas (historial, excusas), comando `/bonzi`, reintento si Gemini rechaza el esquema; tema morado, silueta PNG transparente y animaciones de flotación y habla.
+- 2026-10-21 — AGENTS.md autocontenido y portable: reescribí el encabezado (cómo ubicarse sin rutas absolutas, identidad Laravel 10 + React 19 + Railway, mapa del repo, comandos y aviso de ext-calendar, roles y middleware, contrato con el móvil, credenciales, estado, "esta máquina" y checklist de verificación) y porté al historial las entradas del WEB que solo estaban en el AGENTS.md del móvil; las 59 entradas previas quedaron intactas.

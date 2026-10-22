@@ -18,7 +18,7 @@
     --footer-bg: rgba(10, 10, 10, 0.55);
     --input-group-bg: rgba(10, 10, 10, 0.7);
     --input-group-border: #02d914;
-    --input-placeholder: rgba(255, 255, 255, 0.4);
+    --input-placeholder: rgba(255, 255, 255, 0.55);
     
     /* Dropdown Variables */
     --dropdown-bg: rgba(15, 15, 15, 0.95);
@@ -47,7 +47,7 @@ body.light-mode {
     --text-main: #1a1a1a;
     --input-group-bg: rgba(255, 255, 255, 0.95);
     --input-group-border: #16a34a;
-    --input-placeholder: rgba(0, 0, 0, 0.4);
+    --input-placeholder: rgba(0, 0, 0, 0.55);
 
     /* Dropdown Light Mode */
     --dropdown-bg: rgba(255, 255, 255, 0.95);
@@ -244,6 +244,23 @@ body::before {
     -webkit-backdrop-filter: blur(16px);
 }
 
+/* Con la barra de navegacion presente el tema se cambia desde la propia
+   barra: el boton flotante se oculta para no tapar la campana ni el perfil. */
+body:has(.navbar-custom) .theme-toggle-btn {
+    display: none;
+}
+
+.theme-nav-btn {
+    color: var(--primary-color) !important;
+    text-decoration: none;
+    line-height: 1;
+}
+
+.theme-nav-btn:hover {
+    color: var(--primary-color) !important;
+    filter: brightness(1.15);
+}
+
 .theme-toggle-btn:hover {
     transform: rotate(45deg) scale(1.12);
     box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2), 0 0 25px rgba(2, 217, 20, 0.45);
@@ -342,6 +359,106 @@ body::before {
 /* El registro necesita un poco más de ancho */
 .glass-box.register-box {
     max-width: 800px;
+}
+
+/* =========================================
+   PAGINAS PUBLICAS (acceso, registro, recuperacion, 2FA)
+   Una sola retícula para todas: la tarjeta nunca se sale de la pantalla,
+   el pie queda siempre debajo (sin montarse encima) y el botón de tema
+   flotante tiene su propia zona reservada.
+   ========================================= */
+.auth-page {
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Zona que centra la tarjeta y crece para separar el pie */
+.auth-main {
+    flex: 1 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+    width: 100%;
+}
+
+/* La tarjeta respira y no queda pegada al borde ni al pie */
+.auth-main .glass-box {
+    margin: 0 auto;
+    width: 100%;
+    padding: 28px 22px;
+    /* Para que el boton de tema se ubique en la esquina de la tarjeta */
+    position: relative;
+}
+
+/* Boton de tema dentro de la tarjeta de acceso (no flota sobre el contenido) */
+.auth-theme-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: 1.5px solid var(--primary-color);
+    background: var(--glass-bg);
+    color: var(--primary-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 2;
+    transition: all 0.3s ease;
+}
+
+.auth-theme-btn:hover {
+    background: rgba(2, 217, 20, 0.12);
+    transform: rotate(45deg);
+}
+
+@media (min-width: 768px) {
+    .auth-main .glass-box {
+        padding: 40px 44px;
+    }
+}
+
+/* El pie nunca se superpone a la tarjeta */
+.auth-page .footer-text {
+    margin-top: auto;
+}
+
+/* En pantallas bajas el botón de tema flota abajo a la derecha: se le
+   reserva ese rincón para que no tape texto ni campos */
+@media (max-width: 991.98px) {
+    .auth-main {
+        padding-bottom: 24px;
+        align-items: flex-start;
+    }
+
+    /* En las páginas públicas el tema se cambia desde la propia tarjeta */
+    body:has(.auth-page) .theme-toggle-btn {
+        display: none;
+    }
+}
+
+/* Pantallas de poca altura: se aprieta el aire para que la tarjeta entre
+   completa sin obligar a desplazar */
+@media (max-height: 940px) {
+    .auth-main {
+        padding-top: 12px;
+        padding-bottom: 12px;
+    }
+
+    .auth-main .glass-box {
+        padding-top: 26px;
+        padding-bottom: 26px;
+    }
+
+    .auth-page .footer-text {
+        padding-top: 10px;
+        padding-bottom: 10px;
+    }
 }
 
 /* =========================================
@@ -462,6 +579,70 @@ body::before {
 
 .user-box input:focus {
     border-bottom: 2px solid var(--primary-color) !important;
+}
+
+/* El campo de clave deja sitio al boton del ojo: el texto no passa debajo */
+.user-box input[type="password"],
+.user-box input[name="user_password"] {
+    padding-right: 46px;
+}
+
+/* Select dentro de una caja flotante: mismo lenguaje visual que los inputs.
+   El <select> no puede usar la etiqueta flotante (los selectores ~ label son
+   de <input>), asi que su etiqueta va en flujo, encima del control, y jamas
+   se monta sobre el. */
+.user-box.select-box {
+    margin-bottom: 26px;
+}
+
+.user-box.select-box label {
+    position: static;
+    display: block;
+    padding: 0;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--input-label);
+    margin-bottom: 6px;
+}
+
+.user-box select {
+    width: 100%;
+    padding: 10px 28px 10px 0;
+    font-size: 16px;
+    border: none;
+    color: var(--input-text);
+    border-bottom: 1.5px solid var(--input-label);
+    outline: none;
+    background: transparent;
+    appearance: none;
+    -webkit-appearance: none;
+    border-radius: 0;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.user-box select option,
+.user-box select optgroup {
+    background: var(--dropdown-bg);
+    color: var(--text-color);
+}
+
+.user-box select:focus {
+    border-bottom: 2px solid var(--primary-color) !important;
+}
+
+/* Flecha propia (la nativa se pierde con appearance: none) */
+.user-box.select-box::after {
+    content: '';
+    position: absolute;
+    right: 4px;
+    bottom: 22px;
+    width: 9px;
+    height: 9px;
+    border-right: 2px solid var(--primary-color);
+    border-bottom: 2px solid var(--primary-color);
+    transform: rotate(45deg);
+    pointer-events: none;
 }
 
 /* Password Toggle Style */
@@ -629,66 +810,6 @@ h2 { margin-bottom: 2rem; color: var(--primary-color); }
     0% { top: 0%; opacity: 0; }
     50% { opacity: 1; }
     100% { top: 100%; opacity: 0; }
-}
-
-.scan-container {
-    position: relative;
-    display: inline-block;
-    padding: 10px;
-    border-radius: 15px;
-    background: rgba(2, 217, 20, 0.05);
-    margin-bottom: 1.5rem;
-}
-
-.scan-line {
-    position: absolute;
-    width: 100%;
-    height: 3px;
-    background: var(--primary-color);
-    box-shadow: 0 0 15px var(--primary-color);
-    left: 0;
-    z-index: 2;
-    animation: scan-line 2s linear infinite;
-    display: none;
-}
-
-.scanning .scan-line {
-    display: block;
-}
-
-.fingerprint-card {
-    background: var(--glass-bg);
-    border: 1px solid rgba(2, 217, 20, 0.2);
-    border-radius: 20px;
-    padding: 2.5rem 1.5rem;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    flex: 1;
-    min-width: 280px;
-}
-
-.fingerprint-card:hover {
-    transform: translateY(-10px);
-    border-color: var(--primary-color);
-    box-shadow: 0 15px 35px rgba(2, 217, 20, 0.2);
-}
-
-.fingerprint-card.captured {
-    border-color: var(--success-color);
-    background: rgba(22, 163, 74, 0.05);
-}
-
-.fingerprint-icon {
-    font-size: 100px !important;
-    color: var(--primary-color);
-    transition: all 0.3s ease;
-}
-
-.captured .fingerprint-icon {
-    color: var(--success-color);
-    filter: drop-shadow(0 0 10px rgba(22, 163, 74, 0.5));
 }
 
 .btn-registrar {
@@ -1097,8 +1218,22 @@ h2 { margin-bottom: 2rem; color: var(--primary-color); }
 }
 
 .navbar-brand-wrap {
-    flex: 1 1 0;
+    /* La marca conserva su ancho natural: si se encoge, el texto "SENA ACCESS"
+       se montaba encima del primer enlace del menu. */
+    flex: 0 0 auto;
     min-width: 0;
+}
+
+/* Los enlaces se reparten en varias lineas antes de montarse sobre la marca */
+.navbar-custom .navbar-nav {
+    flex-wrap: wrap;
+    min-width: 0;
+    row-gap: 0.25rem;
+}
+
+.navbar-custom .navbar-collapse {
+    flex-wrap: wrap;
+    row-gap: 0.5rem;
 }
 
 .navbar-center {
@@ -2184,6 +2319,8 @@ body.light-mode .carnet-qr-box {
     max-width: 320px;
     margin-left: auto;
     margin-right: auto;
+    /* Espacio para que la etiqueta flotante de abajo no se monte encima */
+    margin-bottom: 28px;
     display: block;
     background-color: #07090D;
     border: 2px dashed var(--primary-color);

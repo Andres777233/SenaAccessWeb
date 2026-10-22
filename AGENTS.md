@@ -21,7 +21,7 @@ Backend del proyecto SenaAccess: API REST que consume la app Android **y** panel
 | Frontend | SPA **React 19.2** + `react-router-dom 7.13` + **Vite 6** + Bootstrap **5.3.2** (CDN) + FontAwesome 5.10 + Material Symbols |
 | Auth | Laravel **Sanctum** (Bearer) + 2FA propio (código de 6 dígitos + enlace firmado SÍ/NO por correo) |
 | Extras | dompdf (comprobante de equipo), phpspreadsheet (export Excel), cloudinary-laravel (fotos de perfil), resend-laravel (correo) |
-| Tamaño | **80** rutas API, **12** controllers, **14** models, **42** migraciones, **3** seeders, **32** componentes `.jsx` |
+| Tamaño | **83** rutas API, **13** controllers, **16** models, **43** migraciones, **3** seeders, **31** componentes `.jsx` |
 | Deploy | Railway: `railway.json` (builder `dockerfile` + `releaseCommand` = `migrate --force --seed` + healthcheck `/api/health`) |
 | Repo | `https://github.com/Andres777233/SenaAccessWeb` — rama `main` (push = deploy) |
 
@@ -29,14 +29,14 @@ Backend del proyecto SenaAccess: API REST que consume la app Android **y** panel
 
 | Ruta | Qué contiene |
 |---|---|
-| `routes/api.php` | **80 rutas** = contrato con el móvil (fuente de verdad del backend) |
+| `routes/api.php` | **83 rutas** = contrato con el móvil (fuente de verdad del backend) |
 | `routes/web.php` | catch-all del SPA (`welcome.blade.php`) + descargas de APK (`SenaAccessV3.0/3.7/4.1.apk`) |
-| `app/Http/Controllers/` | `AuthController`, `AdminController`, `AmbienteController`, `ExcusaController`, `EquipmentController`, `NovedadController`, `NotificacionController`, `TwoFactorController`, `AccesoQrController`, `ChatbotController`, `PrediccionController` |
+| `app/Http/Controllers/` | `AuthController`, `AdminController`, `AmbienteController`, `ExcusaController`, `EquipmentController`, `NovedadController`, `NotificacionController`, `TwoFactorController`, `AccesoQrController`, `ChatbotController`, `PrediccionController`, **`PasskeyController`** (huella WebAuthn) |
 | `app/Http/Middleware/` | `CheckAdminRole` (superadmin), `CheckAdminOrInstructor`, `CheckAdminOrPortero` (superadmin \| admin) |
-| `app/Models/` | `User`, `Role`, `Ingreso`, `IngresoEquipo`, `Ambiente`, `Excusa`, `Novedad`, `Notificacion`, `TokenRecovery`, `TwoFactorChallenge`, `PinAcceso`, `PrediccionModelo`, `Festivo`, `AccesoDiario` |
-| `database/migrations/` | **42** migraciones (esquema completo) |
+| `app/Models/` | `User`, `Role`, `Ingreso`, `IngresoEquipo`, `Ambiente`, `Excusa`, `Novedad`, `Notificacion`, `TokenRecovery`, `TwoFactorChallenge`, `PinAcceso`, `PrediccionModelo`, `Festivo`, `AccesoDiario`, **`Passkey`**, **`WebauthnChallenge`** |
+| `database/migrations/` | **43** migraciones (esquema completo) |
 | `database/seeders/` | `DatabaseSeeder` (roles + 9 cuentas), `DemoDataSeeder` (datos demo, idempotente), `FestivoSeeder` (festivos, cálculo propio de Pascua) |
-| `resources/js/` | SPA: `app.jsx` (rutas y guardas) + `components/` (32 `.jsx`) + `assets/` + `utils/` |
+| `resources/js/` | SPA: `app.jsx` (rutas y guardas) + `components/` (31 `.jsx`) + `assets/` + `utils/` (`webauthn.js`, `mensajes.js`, `comprobante.js`) |
 | `resources/views/` | `welcome.blade.php` (cáscara del SPA), `emails/` (5 plantillas), `comprobantes/`, `exports/` |
 | `public/` | APKs descargables (`SenaAccessV9.0.apk` es el actual), `avatars/`, `email/` (logo del correo), `build/` (bundle de Vite), `static-html-backup/` |
 | raíz | `railway.json`, `nixpacks.toml`, `Dockerfile`, `.railwayignore`, `.dockerignore`, `iniciar-servidor.sh`, `documentacion/`, `AGENTS.md` |
@@ -70,7 +70,8 @@ SPA (`resources/js/app.jsx`): `/admin` → superadmin, `/portero` → admin, `/i
 - **2FA**: `/2fa/activar|desactivar|estado-config|pendientes|aprobar|validar-codigo|estado/{id}` y `GET /2fa/decidir?challenge_id&dec&sig` (enlace firmado del correo, SÍ/NO).
 - **Correo**: transporte **HTTPS propio** (`BrevoTransport`), porque Railway bloquea todo SMTP saliente → `MAIL_MAILER=brevo`, remitente verificado `mandarinakachivache@gmail.com`. Plantillas en `resources/views/emails/`.
 - **Fotos de perfil**: Cloudinary (`CLOUDINARY_URL` + `CLOUDINARY_UPLOAD_PRESET` en Railway; **sin estas el upload devuelve 500**).
-- **Errores**: JSON con `message`; el móvil los muestra con `detalleHttp` (código + mensaje real).
+- **Errores**: JSON con `message`; el móvil los muestra con `detalleHttp` (código + mensaje real). Toda ruta `/api/*` inexistente responde **404 JSON** (no el HTML del SPA) y sin token responde **401 JSON** (nunca 500).
+- **Huella digital en la web (WebAuthn)**: `POST /api/huellas/registro/opciones|registro`, `POST /api/huellas/login/opciones|login`, `GET/DELETE /api/huellas/{id}`. La clave privada vive en el autenticador del dispositivo; el servidor guarda solo la clave pública. En producción define `WEBAUTHN_RP_ID` y `WEBAUTHN_ALLOWED_ORIGINS` (por defecto usa el dominio de la petición).
 
 ## Credenciales de prueba (las crea `DatabaseSeeder`)
 
@@ -218,3 +219,4 @@ Agentes en `.opencode/agent/`, skills en `.opencode/skill/*/SKILL.md` (todo vers
 - 2026-10-13 — Migración a `SenaAccessWebDef1` (copia para entrega a terceros): 77 commits reescritos con git-filter-repo (fuera `.opencode/`, `opencode.json`, `.opencodeignore` y el `AGENTS.md` de toda la historia) y luego limpieza a 63 commits. Este repo (`SenaAccessWeb`) queda como el de desarrollo.
 - 2026-10-19 — Chatbot "Bonzi" (WEB): `ChatbotWidget` con contexto real del proyecto y herramientas (historial, excusas), comando `/bonzi`, reintento si Gemini rechaza el esquema; tema morado, silueta PNG transparente y animaciones de flotación y habla.
 - 2026-10-21 — AGENTS.md autocontenido y portable: reescribí el encabezado (cómo ubicarse sin rutas absolutas, identidad Laravel 10 + React 19 + Railway, mapa del repo, comandos y aviso de ext-calendar, roles y middleware, contrato con el móvil, credenciales, estado, "esta máquina" y checklist de verificación) y porté al historial las entradas del WEB que solo estaban en el AGENTS.md del móvil; las 59 entradas previas quedaron intactas.
+- 2026-10-21 — Auditoría integral web+móvil: corregí el solape del `<select>` sobre su etiqueta en el registro, el desborde de las páginas públicas (el pie montaba sobre la tarjeta) y la marca de la navbar sobre el menú; `/api/*` inexistente ya responde 404 JSON y sin token 401 (antes 500 HTML); el perfil se guardaba con el correo del centro (`@sena.edu.co`) porque el dominio se validaba aunque no cambiara; implementé **huella digital real (WebAuthn)** con `PasskeyService`/`PasskeyController` y la sección "Mi huella" en los 4 perfiles (las dos páginas simuladas que existían están eliminadas); el throttling responde en español y los paneles avisan el error real del servidor; en el móvil añadí la bandeja de **solicitudes pendientes** (aprobar/rechazar) y borré el código muerto de sugerencias y horarios. Informe completo en `AUDIT_REPORT.md` (52 tests, 0 solapes en 9 superficies × 6 anchos). Commits locales, sin push.

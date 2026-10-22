@@ -12,9 +12,11 @@ import Presentes from './Presentes';
 import QrInvitado from './QrInvitado';
 import QrScannerModal from './QrScannerModal';
 import DosPasos from './DosPasos';
+import MiHuella from './MiHuella';
 import RecorteFoto from './RecorteFoto';
 import { showAlert, showConfirm } from './CustomAlert';
 import downloadComprobante from '../utils/comprobante';
+import { mensajeDeError } from '../utils/mensajes';
 
 // Columnas disponibles para exportar el historial (mismo orden del backend).
 const EXPORT_COLUMNAS = [
@@ -296,6 +298,10 @@ const Admin = () => {
                     localStorage.removeItem('access_token');
                     localStorage.removeItem('user_role');
                     navigate('/login');
+                } else {
+                    // La API ya explica el problema (por ejemplo, limite de
+                    // intentos): se muestra su mensaje y no un error tecnico.
+                    showAlert(mensajeDeError(error, 'No se pudieron cargar los datos del panel.'), 'error');
                 }
             } finally {
                 setLoading(false);
@@ -1355,6 +1361,7 @@ const handleCancelEdit = () => {
                             </form>
                         </div>
                         <DosPasos />
+                        <MiHuella />
                     </div>
                 );
             case 'novedad_form':

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Footer from './Footer';
+import BotonTema from './BotonTema';
 
 const ResetPassword = () => {
     const navigate = useNavigate();
@@ -56,8 +57,10 @@ const ResetPassword = () => {
     };
 
     return (
-        <div className="d-flex flex-column justify-content-center align-items-center vh-100 fade-in-up">
-            <div className="glass-box password p-4 p-md-5 mx-3 text-center" style={{ maxWidth: '480px', width: '100%' }}>
+        <div className="auth-page fade-in-up">
+            <main className="auth-main">
+            <div className="glass-box password auth-card text-center" style={{ maxWidth: '480px', width: '100%' }}>
+                <BotonTema />
                 <img src="/Icons/logoSena.png" className="logosena mb-3" alt="Logo SENA" style={{ width: '72px' }} />
                 <p className="eyebrow-2fa">Paso 2 de 2</p>
                 <h2 className="fw-bold mb-1">Nueva contraseña</h2>
@@ -128,6 +131,7 @@ const ResetPassword = () => {
                     <Link to="/password-recovery" className="custom-link fw-bold">Volver a solicitar código</Link>
                 </div>
             </div>
+            </main>
             <Footer />
         </div>
     );

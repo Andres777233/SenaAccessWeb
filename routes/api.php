@@ -8,6 +8,7 @@ use App\Http\Controllers\AmbienteController;
 use App\Http\Controllers\EquipmentController;
 use App\Http\Controllers\ExcusaController;
 use App\Http\Controllers\NovedadController;
+use App\Http\Controllers\PasskeyController;
 use App\Http\Controllers\NotificacionController;
 use App\Http\Controllers\TwoFactorController;
 use App\Http\Controllers\ChatbotController;
@@ -65,6 +66,16 @@ Route::get('/2fa/estado/{challengeId}', [TwoFactorController::class, 'estado']);
 // Botones "¿Eres tú?" del correo (tipo Google): público pero con enlace firmado.
 Route::get('/2fa/decidir', [TwoFactorController::class, 'decidir']);
 
+// Huella digital en la web (WebAuthn / passkey):
+// - las opciones y la autenticación son PÚBLICAS (el reto es de un solo uso).
+// - registrar y administrar los dispositivos exige sesión iniciada.
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/huellas/registro/opciones', [PasskeyController::class, 'opcionesRegistro'])->middleware('throttle:20,1');
+    Route::post('/huellas/registro', [PasskeyController::class, 'registrar'])->middleware('throttle:20,1');
+});
+Route::post('/huellas/login/opciones', [PasskeyController::class, 'opcionesAutenticacion'])->middleware('throttle:20,1');
+Route::post('/huellas/login', [PasskeyController::class, 'autenticar'])->middleware('throttle:20,1');
+
 // Salida en tiempo real: ELIMINADA. Cerrar la app o el navegador nunca genera
 // salidas; la Salida solo se marca con el QR de salida o el PIN de excusa.
 
@@ -81,6 +92,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/my-equipment', [EquipmentController::class, 'store']);
     Route::put('/my-profile', [AdminController::class, 'updateMyProfile']);
     Route::post('/my-profile/verificar-password', [AdminController::class, 'verificarPassword']);
+
+    // Huella digital: dispositivos registrados y baja de uno de ellos.
+    Route::get('/huellas', [PasskeyController::class, 'index']);
+    Route::delete('/huellas/{id}', [PasskeyController::class, 'destroy']);
 
     // Rutas compartidas entre Admin e Instructor
     Route::middleware('admin_or_instructor')->prefix('admin')->group(function () {
@@ -179,3 +194,15 @@ Route::middleware('auth:sanctum')->group(function () {
         // Solo el instructor puede ver sus propios comprobantes
     });
 });
+
+// Cualquier ruta /api/* que no exista responde JSON y no el HTML del SPA.
+// Antes caia en el catch-all de routes/web.php y el movil recibia una pagina
+// HTML con estado 200: el error era ilegible en el cliente.
+// Es una ruta normal (no fallback) porque Laravel registra las fallbacks al
+// final de la lista y el catch-all del SPA las gana.
+Route::any('/{rutaApi}', function (Request $request) {
+    return response()->json([
+        'message' => 'Recurso no encontrado.',
+        'ruta' => $request->path(),
+    ], 404);
+})->where('rutaApi', '.*');

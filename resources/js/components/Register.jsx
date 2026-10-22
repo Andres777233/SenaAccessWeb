@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Footer from './Footer';
+import BotonTema from './BotonTema';
 import { showAlert } from './CustomAlert';
 // Componente de registro que permite a los usuarios crear una cuenta, con validación de campos y manejo de errores devueltos por la API
 const Register = () => {
@@ -68,8 +69,10 @@ const Register = () => {
     };
 
     return (
-        <div className="d-flex flex-column align-items-center fade-in-up">
-            <div className="glass-box register-box p-4 p-md-5 mx-3 shadow-lg my-5" style={{ maxWidth: '640px', border: '1px solid rgba(2, 217, 20, 0.2)' }}>
+        <div className="auth-page fade-in-up">
+            <main className="auth-main">
+            <div className="glass-box register-box auth-card shadow-lg" style={{ maxWidth: '640px', border: '1px solid rgba(2, 217, 20, 0.2)' }}>
+                <BotonTema />
                 <div className="text-center mb-5">
                     <img src="/Icons/logoSena.png" className="logosena mb-3" alt="Logo SENA" style={{ width: '80px' }} />
                     <h2 className="fw-bold mb-1" style={{ fontSize: '2rem', letterSpacing: '-1px' }}>Sena<span style={{ color: 'var(--primary-color)' }}>Access</span></h2>
@@ -98,14 +101,20 @@ const Register = () => {
                             <span className="text-uppercase small fw-bold" style={{ letterSpacing: '1px' }}>Información Personal</span>
                         </div>
                         <div className="row g-4">
-                            <div className="col-12 user-box mb-0">
-                                <select name="user_documento_tipo" value={formData.user_documento_tipo} onChange={handleChange} className={errors.user_documento_tipo ? 'border-danger' : ''}>
+                            <div className="col-12 user-box select-box mb-0">
+                                <label htmlFor="tipoDocumento">Tipo de Documento</label>
+                                <select
+                                    id="tipoDocumento"
+                                    name="user_documento_tipo"
+                                    value={formData.user_documento_tipo}
+                                    onChange={handleChange}
+                                    className={errors.user_documento_tipo ? 'is-invalid' : ''}
+                                >
                                     <option value="CC">CC: Cédula de Ciudadanía</option>
                                     <option value="CE">CE: Cédula de Extranjería</option>
                                     <option value="TI">TI: Tarjeta de Identidad</option>
                                     <option value="PAS">PAS: Pasaporte</option>
                                 </select>
-                                <label>Tipo de Documento</label>
                                 {errors.user_documento_tipo && <div className="text-danger mt-1 small d-flex align-items-center gap-1"><span className="material-symbols-outlined small" style={{ fontSize: '14px' }}>error</span> {errors.user_documento_tipo[0]}</div>}
                             </div>
                             <div className="col-12 user-box mb-0">
@@ -227,6 +236,7 @@ const Register = () => {
                 </form>
                 )}
             </div>
+            </main>
 
             <Footer />
         </div>

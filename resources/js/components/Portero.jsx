@@ -11,9 +11,11 @@ import UserQrCarnet from './UserQrCarnet';
 import AccesoQr from './AccesoQr';
 import EquipmentForm from './EquipmentForm';
 import DosPasos from './DosPasos';
+import MiHuella from './MiHuella';
 import RecorteFoto from './RecorteFoto';
 import { showAlert, showConfirm } from './CustomAlert';
 import downloadComprobante from '../utils/comprobante';
+import { mensajeDeError } from '../utils/mensajes';
 
 // Panel de Portería: operación diaria sin gestión de usuarios ni ambientes.
 // Historial y presentes del centro, validar PIN de excusas, inventario de
@@ -88,6 +90,8 @@ const Portero = () => {
                     localStorage.removeItem('access_token');
                     localStorage.removeItem('user_role');
                     navigate('/login');
+                } else {
+                    showAlert(mensajeDeError(error, 'No se pudieron cargar los datos del panel.'), 'error');
                 }
             } finally {
                 setLoading(false);
@@ -593,6 +597,7 @@ const Portero = () => {
                             </button>
                         </div>
                         <DosPasos />
+                        <MiHuella />
                     </div>
                 );
             default: return null;

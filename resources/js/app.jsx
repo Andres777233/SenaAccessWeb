@@ -88,6 +88,14 @@ const App = () => {
         setTheme(prevTheme => prevTheme === 'dark' ? 'light' : 'dark');
     };
 
+    // La navbar tambien cambia el tema: este aviso mantiene los dos botones
+    // sincronizados sin recargar la pagina.
+    useEffect(() => {
+        const alCambiarTema = (evento) => setTheme(evento.detail?.tema || 'dark');
+        window.addEventListener('tema-cambiado', alCambiarTema);
+        return () => window.removeEventListener('tema-cambiado', alCambiarTema);
+    }, []);
+
     return (
         <BrowserRouter>
             <LogoutHandler />

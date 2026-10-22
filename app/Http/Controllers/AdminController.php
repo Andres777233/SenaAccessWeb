@@ -519,7 +519,12 @@ class AdminController extends Controller
             'user_lastname' => 'required',
             'user_email' => [
                 'required', 'email', 'unique:usuarios,user_email,' . $id . ',id_usuario',
-                function ($attribute, $value, $fail) {
+                // El dominio solo se exige si el correo cambia: las cuentas del
+                // centro (@sena.edu.co) se deben poder editar sin tocarlas.
+                function ($attribute, $value, $fail) use ($user) {
+                    if (strcasecmp(trim((string) $value), trim((string) $user->user_email)) === 0) {
+                        return;
+                    }
                     $dominios = ['@gmail.com', '@hotmail.com', '@outlook.com', '@soy.sena.edu.co'];
                     foreach ($dominios as $d) {
                         if (str_ends_with(strtolower($value), $d)) return;
@@ -602,7 +607,12 @@ class AdminController extends Controller
             'user_email' => [
                 'required', 'email', 'unique:usuarios,user_email,' . $user->id_usuario . ',id_usuario',
                 // Mismo whitelist de dominios que el registro y el CRUD admin.
-                function ($attribute, $value, $fail) {
+                // Solo se exige cuando el correo cambia de verdad: las cuentas
+                // del centro (@sena.edu.co) deben poder guardar su perfil.
+                function ($attribute, $value, $fail) use ($user) {
+                    if (strcasecmp(trim((string) $value), trim((string) $user->user_email)) === 0) {
+                        return;
+                    }
                     $dominios = ['@gmail.com', '@hotmail.com', '@outlook.com', '@soy.sena.edu.co'];
                     foreach ($dominios as $d) {
                         if (str_ends_with(strtolower($value), $d)) return;

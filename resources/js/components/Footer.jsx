@@ -11,7 +11,7 @@ const Footer = () => {
                     <div className="col-12 col-md-auto">
                         <p className="mb-0 fw-bold">
                             <span className="text-success">Sena</span>Access
-                            <span className="ms-2 badge rounded-pill bg-success opacity-75" style={{ fontSize: '0.65rem' }}>v0.1.9</span>
+                            <span className="ms-2 badge rounded-pill bg-success opacity-75" style={{ fontSize: '0.65rem' }}>v9.0</span>
                         </p>
                     </div>
                     <div className="col-12 col-md-auto d-none d-md-block">
@@ -19,14 +19,9 @@ const Footer = () => {
                     </div>
                     <div className="col-12 col-md-auto">
                         <p className="mb-0 small opacity-75">
-                            © {currentYear} SENA & SCS. Todos los derechos reservados.
+                            © {currentYear} SENA &amp; SCS. Todos los derechos reservados.
                         </p>
                     </div>
-                </div>
-                <div className="mt-2 d-flex justify-content-center gap-3">
-                    <a href="#" className="custom-link small opacity-75 theme-text hover-opacity-100">Privacidad</a>
-                    <a href="#" className="custom-link small opacity-75 theme-text hover-opacity-100">Términos</a>
-                    <a href="#" className="custom-link small opacity-75 theme-text hover-opacity-100">Soporte</a>
                 </div>
             </div>
         </footer>

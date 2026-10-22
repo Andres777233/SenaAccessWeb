@@ -6,6 +6,17 @@ const Navbar = ({ currentUser, view, setView, userFilter, setUserFilter, links =
     const navigate = useNavigate();
     const [notifications, setNotifications] = useState([]);
     const [unread, setUnread] = useState(0);
+    // Tema claro/oscuro (mismo criterio que el boton flotante global).
+    const [temaClaro, setTemaClaro] = useState(() => document.body.classList.contains('light-mode'));
+
+    const toggleTema = () => {
+        const claro = !document.body.classList.contains('light-mode');
+        document.body.classList.toggle('light-mode', claro);
+        localStorage.setItem('theme', claro ? 'light' : 'dark');
+        setTemaClaro(claro);
+        // Avisa al boton global (paginas publicas) para que no quede desfasado.
+        window.dispatchEvent(new CustomEvent('tema-cambiado', { detail: { tema: claro ? 'light' : 'dark' } }));
+    };
 
     const fetchNotifications = async () => {
         try {
@@ -142,6 +153,19 @@ const Navbar = ({ currentUser, view, setView, userFilter, setUserFilter, links =
 
                     {/* Columna derecha: Perfil y Acciones */}
                     <div className="navbar-actions d-flex align-items-center justify-content-lg-end gap-3 pt-2 pt-lg-0 border-top border-lg-0 border-success border-opacity-10">
+                        {/* Tema claro/oscuro: vive en la barra para no tapar nada */}
+                        <button
+                            className="btn btn-link p-1 text-success theme-nav-btn"
+                            type="button"
+                            onClick={toggleTema}
+                            title={temaClaro ? 'Activar modo oscuro' : 'Activar modo claro'}
+                            aria-label={temaClaro ? 'Activar modo oscuro' : 'Activar modo claro'}
+                        >
+                            <span className="material-symbols-outlined" style={{ fontSize: '24px' }}>
+                                {temaClaro ? 'dark_mode' : 'light_mode'}
+                            </span>
+                        </button>
+
                         {/* Campana de notificaciones */}
                         <div className="dropdown position-relative">
                             <button

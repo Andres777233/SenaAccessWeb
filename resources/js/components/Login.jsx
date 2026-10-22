@@ -3,7 +3,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import QRCode from 'qrcode';
 import Footer from './Footer';
+import BotonTema from './BotonTema';
 import { showAlert } from './CustomAlert';
+import { huellaDisponible, solicitarHuella, mensajeErrorHuella } from '../utils/webauthn';
 
 const Login = () => {
     // HOOK: useNavigate maneja las redirecciones post-login hacia los paneles de control.
@@ -27,6 +29,8 @@ const Login = () => {
     };
     const [user_password, setPassword] = useState(''); // Estado para almacenar contraseña del usuario
     const [showPassword, setShowPassword] = useState(false); // Estado para alternar visibilidad de contraseña
+    const [puedeUsarHuella, setPuedeUsarHuella] = useState(false); // El navegador admite WebAuthn
+    const [ingresandoConHuella, setIngresandoConHuella] = useState(false); // Lectura de la huella en curso
     const [isGuestMode, setIsGuestMode] = useState(false); // Estado para alternar modo invitado
     const [guestData, setGuestData] = useState({ // Estado para almacenar datos de invitado
         user_name: '',
@@ -69,6 +73,79 @@ const Login = () => {
         return id;
     };
 
+    // Cierra el ingreso: guarda el token, aplica la puerta de entrada y
+    // lleva al panel del rol. La usan el login con clave y el login con huella.
+    const finalizarLogin = async (datos, correo = '') => {
+        localStorage.setItem('access_token', datos.access_token);
+        localStorage.setItem('user_role', datos.role);
+        if (correo) guardarCorreoUsado(correo);
+
+        showAlert(datos.message || 'Login exitoso');
+
+        // Puerta de entrada: aprendiz e instructor marcan su Entrada con el
+        // QR de portería antes de ver su panel (el resto entra directo).
+        const userRole = (datos.role || '').toLowerCase();
+        if (userRole === 'aprendiz' || userRole === 'instructor') {
+            try {
+                const { data } = await axios.get('/api/my-ingresos', {
+                    headers: { Authorization: `Bearer ${datos.access_token}` }
+                });
+                const lista = Array.isArray(data) ? data : (data.data || []);
+                const hoy = new Intl.DateTimeFormat('en-CA', {
+                    timeZone: 'America/Bogota', year: 'numeric', month: '2-digit', day: '2-digit'
+                }).format(new Date());
+                const fmt = (f) => {
+                    try {
+                        return new Intl.DateTimeFormat('en-CA', {
+                            timeZone: 'America/Bogota', year: 'numeric', month: '2-digit', day: '2-digit'
+                        }).format(new Date(f));
+                    } catch (_) { return ''; }
+                };
+                const tieneEntrada = lista.some((m) => m.ingreso_type === 'Entrada' && fmt(m.ingreso_datetime) === hoy);
+                if (!tieneEntrada) {
+                    navigate('/puerta-acceso');
+                    return;
+                }
+            } catch (_) { /* si falla la verificación, sigue al panel */ }
+        }
+
+        if (userRole === 'superadmin') {
+            navigate('/admin');
+        } else if (userRole === 'instructor') {
+            navigate('/instructor');
+        } else if (userRole === 'aprendiz') {
+            navigate('/aprendiz');
+        } else if (userRole === 'admin' || userRole === 'portero') {
+            navigate('/portero');
+        } else {
+            navigate('/loading');
+        }
+    };
+
+    // Ingreso con huella (WebAuthn): el navegador pide la biometria del
+    // dispositivo y el servidor devuelve la misma sesion que el login normal.
+    const entrarConHuella = async () => {
+        setIngresandoConHuella(true);
+        try {
+            const opciones = await axios.post('/api/huellas/login/opciones');
+            const credencial = await solicitarHuella(opciones.data.opciones);
+            const respuesta = await axios.post('/api/huellas/login', {
+                reto: opciones.data.reto,
+                ...credencial,
+            });
+            await finalizarLogin(respuesta.data);
+        } catch (error) {
+            const mensaje = error?.response?.data?.message || mensajeErrorHuella(error);
+            showAlert(mensaje, 'error');
+        } finally {
+            setIngresandoConHuella(false);
+        }
+    };
+
+    useEffect(() => {
+        setPuedeUsarHuella(huellaDisponible());
+    }, []);
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
@@ -86,50 +163,7 @@ const Login = () => {
                 return;
             }
 
-            // guardar token y rol en localStorage para uso futuro
-            localStorage.setItem('access_token', response.data.access_token);
-            localStorage.setItem('user_role', response.data.role);
-            guardarCorreoUsado(user_email);
-
-            showAlert(response.data.message);
-            // Puerta de entrada: aprendiz e instructor marcan su Entrada con el
-            // QR de portería antes de ver su panel (el resto entra directo).
-            const userRole = response.data.role.toLowerCase();
-            if (userRole === 'aprendiz' || userRole === 'instructor') {
-                try {
-                    const { data } = await axios.get('/api/my-ingresos', {
-                        headers: { Authorization: `Bearer ${response.data.access_token}` }
-                    });
-                    const lista = Array.isArray(data) ? data : (data.data || []);
-                    const hoy = new Intl.DateTimeFormat('en-CA', {
-                        timeZone: 'America/Bogota', year: 'numeric', month: '2-digit', day: '2-digit'
-                    }).format(new Date());
-                    const fmt = (f) => {
-                        try {
-                            return new Intl.DateTimeFormat('en-CA', {
-                                timeZone: 'America/Bogota', year: 'numeric', month: '2-digit', day: '2-digit'
-                            }).format(new Date(f));
-                        } catch (_) { return ''; }
-                    };
-                    const tieneEntrada = lista.some((m) => m.ingreso_type === 'Entrada' && fmt(m.ingreso_datetime) === hoy);
-                    if (!tieneEntrada) {
-                        navigate('/puerta-acceso');
-                        return;
-                    }
-                } catch (_) { /* si falla la verificación, sigue al panel */ }
-            }
-            // Redirige según el rol hacia los paneles del SPA React
-            if (userRole === 'superadmin') {
-                navigate('/admin');
-            } else if (userRole === 'instructor') {
-                navigate('/instructor');
-            } else if (userRole === 'aprendiz') {
-                navigate('/aprendiz');
-            } else if (userRole === 'admin' || userRole === 'portero') {
-                navigate('/portero');
-            } else {
-                navigate('/loading');
-            }
+            await finalizarLogin(response.data, user_email);
         } catch (error) {
             if (error.response) {
                 showAlert(error.response.data.message || 'Error en el inicio de sesión', 'error');
@@ -194,8 +228,10 @@ const Login = () => {
         // Tras el registro exitoso: QR + vigencia + token copiable (un solo uso, 60 min).
         if (qrInvitado) {
             return (
-                <div className="d-flex flex-column justify-content-center align-items-center vh-90 fade-in-up">
-                    <div className="glass-box p-4 p-md-5 mx-3 text-center" style={{ maxWidth: '440px' }}>
+                <div className="auth-page fade-in-up">
+                    <main className="auth-main">
+                    <div className="glass-box auth-card text-center" style={{ maxWidth: '440px' }}>
+                <BotonTema />
                         <h2 className="fw-bold mb-0">Tu código de ingreso</h2>
                         <h5 className="fw-light text-success">Preséntalo en portería</h5>
                         <hr className="border-success opacity-25" />
@@ -219,13 +255,16 @@ const Login = () => {
                             </button>
                         </div>
                     </div>
+                    </main>
                     <Footer />
                 </div>
             );
         }
         return (
-            <div className="d-flex flex-column justify-content-center align-items-center vh-90 fade-in-up">
-                <div className="glass-box p-4 p-md-5 mx-3">
+            <div className="auth-page fade-in-up">
+                <main className="auth-main">
+                <div className="glass-box auth-card">
+                <BotonTema />
                     <div className="text-center mb-4">
                         <img src="/Icons/logoSena.png" className="logosena mb-3" alt="Logo SENA" />
                         <h2 className="fw-bold mb-0">Invitado</h2>
@@ -298,14 +337,17 @@ const Login = () => {
                         </div>
                     </form>
                 </div>
+                </main>
                 <Footer />
             </div>
         );
     }
 
     return (
-        <div className="d-flex flex-column justify-content-center align-items-center vh-90 fade-in-up">
-            <div className="glass-box p-4 p-md-5 mx-3">
+        <div className="auth-page fade-in-up">
+            <main className="auth-main">
+            <div className="glass-box auth-card">
+                <BotonTema />
                 <div className="text-center mb-4">
                     <img src="/Icons/logoSena.png" className="logosena mb-3" alt="Logo SENA" />
                     <h2 className="landing-title fw-bold mb-0">Sena <span className="neon-text">Access</span></h2>
@@ -378,9 +420,23 @@ const Login = () => {
                             INGRESAR
                         </button>
 
-                        <div className="position-relative text-center my-2">
+                        {puedeUsarHuella && (
+                            <button
+                                type="button"
+                                className="btn btn-outline-success w-100 fw-bold d-flex align-items-center justify-content-center gap-2"
+                                onClick={entrarConHuella}
+                                disabled={ingresandoConHuella}
+                            >
+                                <span className="material-symbols-outlined">fingerprint</span>
+                                {ingresandoConHuella ? 'LEYENDO HUELLA...' : 'INGRESAR CON HUELLA'}
+                            </button>
+                        )}
+
+                        <div className="position-relative text-center my-3">
                             <hr className="border-secondary opacity-25" />
-                            <span className="position-absolute top-50 start-50 translate-middle theme-bg theme-text px-3 small opacity-50">O</span>
+                            <span className="position-absolute top-50 start-50 translate-middle theme-bg theme-text px-2 small opacity-75" style={{ fontSize: '0.72rem', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                                o continúa como invitado
+                            </span>
                         </div>
 
                         <button
@@ -398,6 +454,7 @@ const Login = () => {
                     <p className="mb-4 theme-text opacity-75 small">¿Olvidaste tu contraseña? <Link to="/password-recovery" className="custom-link fw-bold text-success">Recuperar</Link></p>
                 </div>
             </div>
+            </main>
             <Footer />
         </div>
     );

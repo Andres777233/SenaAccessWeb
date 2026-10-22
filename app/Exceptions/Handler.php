@@ -7,6 +7,7 @@ use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -61,6 +62,16 @@ class Handler extends ExceptionHandler
         $this->renderable(function (MethodNotAllowedHttpException $e, Request $request) {
             if ($request->is('api/*')) {
                 return response()->json(['message' => 'Método no permitido para esta ruta.'], 405);
+            }
+        });
+
+        // El limite de intentos (login, PIN, huella) se explica en espanol:
+        // el mensaje por defecto de Laravel venia en ingles.
+        $this->renderable(function (ThrottleRequestsException $e, Request $request) {
+            if ($request->is('api/*')) {
+                return response()->json([
+                    'message' => 'Demasiados intentos. Espera un momento y vuelve a intentarlo.',
+                ], 429);
             }
         });
 

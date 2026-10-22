@@ -11,9 +11,11 @@ import QrInvitado from './QrInvitado';
 import UserQrCarnet from './UserQrCarnet';
 import EscanearAcceso from './EscanearAcceso';
 import DosPasos from './DosPasos';
+import MiHuella from './MiHuella';
 import RecorteFoto from './RecorteFoto';
 import { showAlert } from './CustomAlert';
 import downloadComprobante from '../utils/comprobante';
+import { mensajeDeError } from '../utils/mensajes';
 
 const Instructor = () => {
     const navigate = useNavigate();
@@ -75,6 +77,10 @@ const Instructor = () => {
                     localStorage.removeItem('access_token');
                     localStorage.removeItem('user_role');
                     navigate('/login');
+                } else {
+                    // La API ya explica el problema (por ejemplo, limite de
+                    // intentos): se muestra su mensaje y no un error tecnico.
+                    showAlert(mensajeDeError(error, 'No se pudieron cargar los datos del panel.'), 'error');
                 }
             } finally {
                 setLoading(false);
@@ -442,6 +448,7 @@ const Instructor = () => {
                             </button>
                         </div>
                         <DosPasos />
+                        <MiHuella />
                     </div>
                 );
             default: return null;

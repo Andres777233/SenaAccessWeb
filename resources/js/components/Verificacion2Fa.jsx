@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Footer from './Footer';
+import BotonTema from './BotonTema';
 import { showAlert } from './CustomAlert';
 
 // Guarda la sesión entregada por validar-codigo o por el polling de estado.
@@ -81,8 +82,10 @@ const Verificacion2Fa = () => {
     // Sin challenge no hay nada que verificar: de vuelta al login.
     if (!challengeId) {
         return (
-            <div className="d-flex flex-column justify-content-center align-items-center vh-90 fade-in-up">
-                <div className="glass-box p-4 p-md-5 mx-3 text-center" style={{ maxWidth: '520px' }}>
+            <div className="auth-page fade-in-up">
+                <main className="auth-main">
+                <div className="glass-box auth-card text-center" style={{ maxWidth: '520px' }}>
+                <BotonTema />
                     <span className="material-symbols-outlined text-warning" style={{ fontSize: '48px' }}>lock_open</span>
                     <h4 className="fw-bold mt-2">Sin verificación pendiente</h4>
                     <p className="mt-3 small opacity-75">Inicia sesión para generar un código de verificación.</p>
@@ -92,6 +95,7 @@ const Verificacion2Fa = () => {
                         </Link>
                     </div>
                 </div>
+                </main>
                 <Footer />
             </div>
         );
@@ -135,8 +139,10 @@ const Verificacion2Fa = () => {
     };
 
     return (
-        <div className="d-flex flex-column justify-content-center align-items-center vh-90 fade-in-up">
-            <div className="glass-box p-4 p-md-5 mx-3 text-center" style={{ maxWidth: '520px' }}>
+        <div className="auth-page fade-in-up">
+            <main className="auth-main">
+            <div className="glass-box auth-card text-center" style={{ maxWidth: '520px' }}>
+                <BotonTema />
                 <img src="/Icons/logoSena.png" className="logosena mb-3" alt="Logo SENA" style={{ width: '72px' }} />
                 <p className="eyebrow-2fa">Segundo paso</p>
                 <h2 className="fw-bold mb-1">Verificación en dos pasos</h2>
@@ -192,6 +198,7 @@ const Verificacion2Fa = () => {
                     </div>
                 )}
             </div>
+            </main>
             <Footer />
         </div>
     );

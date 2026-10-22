@@ -6,11 +6,13 @@ import Navbar from './Navbar';
 import StatsDashboard from './StatsDashboard';
 import Excusas from './Excusas';
 import DosPasos from './DosPasos';
+import MiHuella from './MiHuella';
 import UserQrCarnet from './UserQrCarnet';
 import EscanearAcceso from './EscanearAcceso';
 import RecorteFoto from './RecorteFoto';
 import { showAlert } from './CustomAlert';
 import downloadComprobante from '../utils/comprobante';
+import { mensajeDeError } from '../utils/mensajes';
 
 const Aprendiz = () => {
     const navigate = useNavigate();
@@ -71,6 +73,10 @@ const Aprendiz = () => {
                     localStorage.removeItem('access_token');
                     localStorage.removeItem('user_role');
                     navigate('/login');
+                } else {
+                    // La API ya explica el problema (por ejemplo, limite de
+                    // intentos): se muestra su mensaje y no un error tecnico.
+                    showAlert(mensajeDeError(error, 'No se pudieron cargar los datos del panel.'), 'error');
                 }
             } finally { // Finally para asegurar que el estado de carga se actualice correctamente independientemente de si la solicitud fue exitosa o si ocurrió un error, evitando que la interfaz quede en un estado de carga indefinido
                 setLoading(false);
@@ -472,6 +478,7 @@ const Aprendiz = () => {
                             </button>
                         </div>
                         <DosPasos />
+                        <MiHuella />
                     </div>
                 );
             default:

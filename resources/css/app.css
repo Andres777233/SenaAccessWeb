@@ -2590,3 +2590,43 @@ body.light-mode .carnet-qr-box {
 body.light-mode .huella-dedo { background: rgba(0, 0, 0, 0.03); }
 body.light-mode .huella-progreso,
 body.light-mode .huella-barra { background: rgba(0, 0, 0, 0.1); }
+
+/* =========================================
+   CODIGO DE ENTRADA ASISTIDA (QR + PIN)
+   ========================================= */
+.codigo-acceso {
+    margin-top: 1.25rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(2, 217, 20, 0.15);
+}
+.codigo-qr {
+    display: block;
+    width: 220px;
+    max-width: 100%;
+    height: auto;
+    margin: 0.5rem auto;
+    padding: 8px;
+    border-radius: 12px;
+    background: #fff;
+}
+.codigo-pin {
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: 0.35em;
+    color: var(--primary-color);
+    margin: 0.25rem 0 0.5rem;
+}
+body.light-mode .codigo-acceso {
+    border-top-color: rgba(22, 163, 74, 0.2);
+}
+
+/* Fallback de carga de paneles lazy */
+.app-cargando {
+    min-height: 60vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    color: var(--text-color);
+}

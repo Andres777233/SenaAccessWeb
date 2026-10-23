@@ -4,6 +4,7 @@ import axios from 'axios';
 import Footer from './Footer';
 import BotonTema from './BotonTema';
 import EscanearAcceso from './EscanearAcceso';
+import CodigoAcceso from './CodigoAcceso';
 import { showAlert } from './CustomAlert';
 
 // Día actual en Bogotá como YYYY-MM-DD (el servidor guarda hora Bogotá).
@@ -58,6 +59,7 @@ const PuertaAcceso = () => {
                 <div className="glass-box puerta-card">
                     <BotonTema />
                     <EscanearAcceso />
+                    <CodigoAcceso />
                     <button type="button" className="btn btn-glow w-100 fw-bold py-3 mt-3 btn-press" onClick={verificarYEntrar} disabled={verificando}>
                         {verificando ? 'VERIFICANDO...' : 'YA MARQUÉ, ENTRAR'}
                     </button>

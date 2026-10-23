@@ -83,5 +83,17 @@ class AppServiceProvider extends ServiceProvider
             $userId = $request->user()?->id_usuario;
             return Limit::perMinute(12)->by($userId ? 'u:' . $userId : $request->ip());
         });
+
+        // Codigo de entrada asistida: pocas generaciones por usuario y
+        // validaciones limitadas por admin (el PIN es de 6 digitos).
+        RateLimiter::for('acceso-generar', function (Request $request) {
+            $userId = $request->user()?->id_usuario;
+            return Limit::perMinute(5)->by($userId ? 'u:' . $userId : $request->ip());
+        });
+
+        RateLimiter::for('acceso-validar', function (Request $request) {
+            $userId = $request->user()?->id_usuario;
+            return Limit::perMinute(20)->by($userId ? 'u:' . $userId : $request->ip());
+        });
     }
 }

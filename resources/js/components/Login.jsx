@@ -80,10 +80,9 @@ const Login = () => {
         localStorage.setItem('user_role', datos.role);
         if (correo) guardarCorreoUsado(correo);
 
-        showAlert(datos.message || 'Login exitoso');
-
         const ruta = await decidirRutaPorRol(datos.role, datos.access_token);
-        navigate(ruta);
+        // Carga limpia: evita chunks viejos y el estado intermedio del login.
+        window.location.assign(ruta);
     };
 
     const handleSubmit = async (e) => {

@@ -13,6 +13,7 @@ use App\Http\Controllers\NotificacionController;
 use App\Http\Controllers\TwoFactorController;
 use App\Http\Controllers\ChatbotController;
 use App\Http\Controllers\AccesoQrController;
+use App\Http\Controllers\AccesoCodigoController;
 use App\Http\Controllers\PrediccionController;
 
 /*
@@ -158,6 +159,12 @@ Route::middleware('auth:sanctum')->group(function () {
     // PIN corto de acceso: portería lo genera y el aprendiz lo digita sin cámara.
     Route::post('/admin/pines-acceso', [AccesoQrController::class, 'generarPin'])->middleware('admin_or_portero');
     Route::post('/acceso/validar-pin', [AccesoQrController::class, 'validarPin']);
+
+    // Entrada asistida: el usuario genera un QR/PIN en la web y portería lo
+    // escanea o digita desde el móvil para registrar su Entrada.
+    Route::post('/acceso/generar', [AccesoCodigoController::class, 'generar'])->middleware('throttle:acceso-generar');
+    Route::post('/acceso/validar-codigo', [AccesoCodigoController::class, 'validarCodigo'])
+        ->middleware(['admin_or_portero', 'throttle:acceso-validar']);
 
     // Ambientes (admin crea, instructor gestiona sus ambientes/aprendices).
     Route::get('/ambientes', [AmbienteController::class, 'index']);

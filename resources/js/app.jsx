@@ -1,7 +1,7 @@
 import './bootstrap';
 import '../css/app.css';
 
-import React, { Suspense, lazy, useState, useEffect } from 'react';
+import React, { Suspense, lazy, useState, useEffect, Component } from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 
@@ -79,6 +79,50 @@ const ChatbotGate = () => {
     return (!oculto && !!localStorage.getItem('access_token')) ? <ChatbotWidget /> : null;
 };
 
+// Los paneles son lazy: tras un deploy el chunk viejo puede faltar y React
+// deja la pantalla vacia. Si es un error de chunk, recarga una sola vez.
+class ErrorBoundary extends Component {
+    constructor(props) {
+        super(props);
+        this.state = { error: null };
+    }
+
+    static getDerivedStateFromError(error) {
+        return { error };
+    }
+
+    componentDidCatch(error) {
+        const mensaje = String(error?.message || '');
+        if (/ChunkLoadError|Loading chunk|dynamically imported module/i.test(mensaje)) {
+            const clave = 'recarga_chunk:' + window.location.pathname;
+            if (!sessionStorage.getItem(clave)) {
+                sessionStorage.setItem(clave, '1');
+                window.location.reload();
+            }
+        }
+    }
+
+    render() {
+        if (this.state.error) {
+            return (
+                <div className="auth-page">
+                    <main className="auth-main">
+                        <div className="glass-box auth-card text-center" style={{ maxWidth: '440px' }}>
+                            <span className="material-symbols-outlined text-warning" style={{ fontSize: '48px' }}>refresh</span>
+                            <h4 className="fw-bold mt-2">No se pudo cargar la pantalla</h4>
+                            <p className="small opacity-75">Actualiza la página para continuar.</p>
+                            <button type="button" className="btn btn-glow btn-primary-login w-100 fw-bold py-3 mt-3" onClick={() => window.location.reload()}>
+                                RECARGAR
+                            </button>
+                        </div>
+                    </main>
+                </div>
+            );
+        }
+        return this.props.children;
+    }
+}
+
 const App = () => {
     const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
 
@@ -127,7 +171,8 @@ const App = () => {
 
             <div style={{color: 'var(--text-color)', position: 'fixed', bottom: 10, right: 10, background: 'var(--glass-bg)', padding: '5px', zIndex: 9999, borderRadius: '5px', fontSize: '12px'}}>
             </div>
-            <Suspense fallback={<div className="text-white text-center mt-5">Cargando componentes...</div>}>
+            <ErrorBoundary>
+            <Suspense fallback={<div className="app-cargando"><div className="spinner-border text-success" role="status" /><p className="mb-0">Cargando panel...</p></div>}>
                 <Routes>
                     <Route path="/" element={<LandingPage />} />
                     <Route path="/login" element={<Login />} />
@@ -145,6 +190,7 @@ const App = () => {
                     <Route path="*" element={<NotFound />} />
                 </Routes>
             </Suspense>
+            </ErrorBoundary>
         </BrowserRouter>
     );
 };

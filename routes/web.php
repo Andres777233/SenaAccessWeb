@@ -17,15 +17,10 @@ use Illuminate\Support\Facades\Route;
 // (ver /admin, /instructor, /aprendiz en resources/js/app.jsx).
 // Se removieron las rutas estáticas de public/ (legacy).
 
-// Descarga directa de los APK para el QR (antes del catch-all del SPA).
-Route::get('/SenaAccessV3.0.apk', function () {
-    return response()->download(public_path('SenaAccessV3.0.apk'));
-});
-Route::get('/SenaAccessV4.1.apk', function () {
-    return response()->download(public_path('SenaAccessV4.1.apk'));
-});
-Route::get('/SenaAccessV3.7.apk', function () {
-    return response()->download(public_path('SenaAccessV3.7.apk'));
+// Descarga directa del APK actual (antes del catch-all del SPA).
+// Los APK viejos (V2 a V4.1) se retiraron del repo para no acumular egress.
+Route::get('/SenaAccessV9.0.apk', function () {
+    return response()->download(public_path('SenaAccessV9.0.apk'));
 });
 
 // Catch-all: React SPA maneja todas las rutas (incluyendo login y paneles)

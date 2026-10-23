@@ -10,34 +10,40 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('webauthn_credentials', function (Blueprint $table) {
-            $table->id();
-            $table->unsignedBigInteger('fk_id_usuario');
-            $table->foreign('fk_id_usuario')->references('id_usuario')->on('usuarios')->cascadeOnDelete();
-            $table->text('credential_id'); // id de la credencial en base64url
-            $table->longText('credencial'); // credencial completa (clave publica, contador, aaguid)
-            $table->unsignedBigInteger('contador')->default(0);
-            $table->string('nombre_dispositivo', 120)->default('Este dispositivo');
-            $table->string('transportes', 120)->nullable();
-            $table->dateTime('ultimo_uso_en')->nullable();
-            $table->timestamps();
+        // Idempotente: en produccion la tabla puede haber quedado creada por un
+        // intento anterior de esta misma migracion que fallo despues (1050).
+        if (!Schema::hasTable('webauthn_credentials')) {
+            Schema::create('webauthn_credentials', function (Blueprint $table) {
+                $table->id();
+                $table->unsignedBigInteger('fk_id_usuario');
+                $table->foreign('fk_id_usuario')->references('id_usuario')->on('usuarios')->cascadeOnDelete();
+                $table->text('credential_id'); // id de la credencial en base64url
+                $table->longText('credencial'); // credencial completa (clave publica, contador, aaguid)
+                $table->unsignedBigInteger('contador')->default(0);
+                $table->string('nombre_dispositivo', 120)->default('Este dispositivo');
+                $table->string('transportes', 120)->nullable();
+                $table->dateTime('ultimo_uso_en')->nullable();
+                $table->timestamps();
 
-            $table->unique('credential_id');
-            $table->index('fk_id_usuario');
-        });
+                $table->unique('credential_id');
+                $table->index('fk_id_usuario');
+            });
+        }
 
         // Retos de un solo uso: caducan en 5 minutos y se consumen al usarlos.
-        Schema::create('webauthn_challenges', function (Blueprint $table) {
-            $table->id();
-            $table->string('reto', 191)->unique();
-            $table->string('tipo', 20); // registro | autenticacion
-            $table->unsignedBigInteger('fk_id_usuario')->nullable();
-            $table->foreign('fk_id_usuario')->references('id_usuario')->on('usuarios')->cascadeOnDelete();
-            $table->dateTime('expira_en');
-            $table->timestamps();
+        if (!Schema::hasTable('webauthn_challenges')) {
+            Schema::create('webauthn_challenges', function (Blueprint $table) {
+                $table->id();
+                $table->string('reto', 191)->unique();
+                $table->string('tipo', 20); // registro | autenticacion
+                $table->unsignedBigInteger('fk_id_usuario')->nullable();
+                $table->foreign('fk_id_usuario')->references('id_usuario')->on('usuarios')->cascadeOnDelete();
+                $table->dateTime('expira_en');
+                $table->timestamps();
 
-            $table->index('expira_en');
-        });
+                $table->index('expira_en');
+            });
+        }
     }
 
     public function down(): void

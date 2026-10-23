@@ -30,7 +30,7 @@ Backend del proyecto SenaAccess: API REST que consume la app Android **y** panel
 | Ruta | Qué contiene |
 |---|---|
 | `routes/api.php` | **83 rutas** = contrato con el móvil (fuente de verdad del backend) |
-| `routes/web.php` | catch-all del SPA (`welcome.blade.php`) + descargas de APK (`SenaAccessV3.0/3.7/4.1.apk`) |
+| `routes/web.php` | catch-all del SPA (`welcome.blade.php`) + descarga del APK actual (`SenaAccessV9.0.apk`) |
 | `app/Http/Controllers/` | `AuthController`, `AdminController`, `AmbienteController`, `ExcusaController`, `EquipmentController`, `NovedadController`, `NotificacionController`, `TwoFactorController`, `AccesoQrController`, `ChatbotController`, `PrediccionController`, **`PasskeyController`** (huella WebAuthn) |
 | `app/Http/Middleware/` | `CheckAdminRole` (superadmin), `CheckAdminOrInstructor`, `CheckAdminOrPortero` (superadmin \| admin) |
 | `app/Models/` | `User`, `Role`, `Ingreso`, `IngresoEquipo`, `Ambiente`, `Excusa`, `Novedad`, `Notificacion`, `TokenRecovery`, `TwoFactorChallenge`, `PinAcceso`, `PrediccionModelo`, `Festivo`, `AccesoDiario`, **`Passkey`**, **`WebauthnChallenge`** |
@@ -88,11 +88,11 @@ SPA (`resources/js/app.jsx`): `/admin` → superadmin, `/portero` → admin, `/i
 
 ## Estado actual y pendientes
 
-- Último commit: `b9921c7` (2026-10-19) "Bonzi" — chatbot con herramientas reales, tema morado y animaciones.
+- Último commit: 2026-10-22 — fix de la migración WebAuthn (idempotente) y limpieza de APKs viejos (queda solo `SenaAccessV9.0.apk`).
 - Verificado en vivo el 2026-10-21: `GET /api/health` → `{"status":"ok"}` y `GET /SenaAccessV9.0.apk` → **200** (`application/vnd.android.package-archive`, 45.955.227 bytes).
 - Ojo: `GET /api/admin/roles` **sin token** devuelve 500 HTML de Laravel; no es caída del backend.
 - 2026-10-13: puerta sin loop (entrada por día + PIN corto de acceso) y fechas UTC reales (`serializeDate`).
-- Pendientes: (1) `public/` acumula APKs viejos (V2 → V4.1) y solo V3.0/V3.7/V4.1 tienen ruta de descarga explícita; (2) la cuenta de rol `Admin` (portería) hay que crearla/asignarla a mano.
+- Pendientes: (1) la cuenta de rol `Admin` (portería) hay que crearla/asignarla a mano.
 
 ## Esta máquina (verificar antes de usar)
 
@@ -221,3 +221,4 @@ Agentes en `.opencode/agent/`, skills en `.opencode/skill/*/SKILL.md` (todo vers
 - 2026-10-21 — AGENTS.md autocontenido y portable: reescribí el encabezado (cómo ubicarse sin rutas absolutas, identidad Laravel 10 + React 19 + Railway, mapa del repo, comandos y aviso de ext-calendar, roles y middleware, contrato con el móvil, credenciales, estado, "esta máquina" y checklist de verificación) y porté al historial las entradas del WEB que solo estaban en el AGENTS.md del móvil; las 59 entradas previas quedaron intactas.
 - 2026-10-21 — Auditoría integral web+móvil: corregí el solape del `<select>` sobre su etiqueta en el registro, el desborde de las páginas públicas (el pie montaba sobre la tarjeta) y la marca de la navbar sobre el menú; `/api/*` inexistente ya responde 404 JSON y sin token 401 (antes 500 HTML); el perfil se guardaba con el correo del centro (`@sena.edu.co`) porque el dominio se validaba aunque no cambiara; implementé **huella digital real (WebAuthn)** con `PasskeyService`/`PasskeyController` y la sección "Mi huella" en los 4 perfiles (las dos páginas simuladas que existían están eliminadas); el throttling responde en español y los paneles avisan el error real del servidor; en el móvil añadí la bandeja de **solicitudes pendientes** (aprobar/rechazar) y borré el código muerto de sugerencias y horarios. Informe completo en `AUDIT_REPORT.md` (52 tests, 0 solapes en 9 superficies × 6 anchos). Commits locales, sin push.
 - 2026-10-22 — Sincronización del equipo Windows + redeploy: la carpeta local se conectó a `SenaAccessWeb` y quedó alineada en `6ba0247` (sin cambios de código); este push dispara el deploy en Railway, que seguía sirviendo el build viejo (404/401 JSON aún no activos en producción).
+- 2026-10-22 — FIX crash de Railway: la migración `2026_10_21_000001_create_webauthn_tables` fallaba con 1050 porque `webauthn_credentials` ya existía; ahora usa `Schema::hasTable` y es idempotente. Además se borraron los APK V2–V4.1 (queda solo `SenaAccessV9.0.apk`), con ruta explícita única y sin referencias viejas.

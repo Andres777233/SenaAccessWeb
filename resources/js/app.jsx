@@ -173,14 +173,19 @@ const App = () => {
                 </span>
             </button>
 
-            {/* Alerta y Confirmación Personalizada Global */}
-            <CustomAlert />
+            {/* Capas globales (alerta, chatbot, campana/tema): dentro del
+                ErrorBoundary para que un fallo aqui no desmonte la app entera
+                y deje la pantalla en blanco. */}
+            <ErrorBoundary>
+                {/* Alerta y Confirmación Personalizada Global */}
+                <CustomAlert />
 
-            {/* Chatbot flotante: visible solo con sesión y fuera de las pantallas de acceso */}
-            <ChatbotGate />
+                {/* Chatbot flotante: visible solo con sesión y fuera de las pantallas de acceso */}
+                <ChatbotGate />
 
-            {/* Campana + tema flotantes dentro de los paneles */}
-            <AccionesFlotantesGate />
+                {/* Campana + tema flotantes dentro de los paneles */}
+                <AccionesFlotantesGate />
+            </ErrorBoundary>
 
             <div style={{color: 'var(--text-color)', position: 'fixed', bottom: 10, right: 10, background: 'var(--glass-bg)', padding: '5px', zIndex: 9999, borderRadius: '5px', fontSize: '12px'}}>
             </div>

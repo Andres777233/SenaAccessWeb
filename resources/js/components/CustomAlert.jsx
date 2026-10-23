@@ -62,8 +62,6 @@ const CustomAlert = () => {
         };
     }, []);
 
-    if (!state.visible) return null;
-
     const handleAction = (value) => {
         setState(prev => ({ ...prev, visible: false }));
         if (state.resolve) {
@@ -72,6 +70,9 @@ const CustomAlert = () => {
     };
 
     // Escape cierra la alerta (o cancela la confirmacion).
+    // OJO: este useEffect va antes del "return null"; si se ejecuta despues,
+    // React ve mas hooks que en el render anterior (#310) y desmonta la app
+    // completa dejando la pantalla en blanco.
     useEffect(() => {
         if (!state.visible) return undefined;
         const alPresionar = (e) => {
@@ -80,6 +81,8 @@ const CustomAlert = () => {
         window.addEventListener('keydown', alPresionar);
         return () => window.removeEventListener('keydown', alPresionar);
     }, [state.visible, state.isConfirm]);
+
+    if (!state.visible) return null;
 
     const isSuccess = state.type === 'success';
     const isError = state.type === 'error';

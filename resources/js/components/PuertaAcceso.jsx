@@ -100,7 +100,7 @@ const PuertaAcceso = () => {
 
                             <div className="row g-4">
                                 <div className={`col-12 col-lg-6 ${tab === 'escanear' ? '' : 'd-none d-lg-block'}`}>
-                                    <EscanearAcceso contexto="puerta" onRegistrado={alRegistrar} accion={<BotonTema />} />
+                                    <EscanearAcceso contexto="puerta" onRegistrado={alRegistrar} accion={<BotonTema fijo={false} />} />
                                 </div>
                                 <div className={`col-12 col-lg-6 ${tab === 'codigo' ? '' : 'd-none d-lg-block'}`}>
                                     <CodigoAcceso contexto="puerta" />

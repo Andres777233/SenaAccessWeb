@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 // Boton de tema claro/oscuro para las paginas publicas (acceso, registro,
-// recuperacion, 2FA). Va dentro de la tarjeta para no flotar por encima del
-// contenido ni tapar el pie de pagina.
-const BotonTema = () => {
+// recuperacion, 2FA, huella, 404). Se dibuja con un portal en <body> para que
+// quede siempre en la esquina superior derecha de la PANTALLA: la tarjeta
+// (.glass-box) usa backdrop-filter y eso atrapa a los hijos position:fixed.
+// Con fijo={false} se dibuja en linea, como en la cabecera de la puerta.
+const BotonTema = ({ fijo = true }) => {
     const [temaClaro, setTemaClaro] = useState(() => document.body.classList.contains('light-mode'));
 
     useEffect(() => {
@@ -20,7 +23,7 @@ const BotonTema = () => {
         window.dispatchEvent(new CustomEvent('tema-cambiado', { detail: { tema: claro ? 'light' : 'dark' } }));
     };
 
-    return (
+    const boton = (
         <button
             type="button"
             className="auth-theme-btn"
@@ -33,6 +36,9 @@ const BotonTema = () => {
             </span>
         </button>
     );
+
+    if (!fijo) return boton;
+    return createPortal(boton, document.body);
 };
 
 export default BotonTema;

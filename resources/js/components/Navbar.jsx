@@ -69,8 +69,25 @@ const Navbar = ({ currentUser, view, setView, userFilter, setUserFilter, links =
         }
     };
 
+    // En celular el menú colapsado debe cerrarse al elegir una vista
+    // (antes quedaba abierto tapando la pantalla).
+    const cerrarMenu = () => {
+        if (window.innerWidth >= 992) return;
+        const menu = document.getElementById('navbarMain');
+        if (!menu) return;
+        try {
+            if (window.bootstrap?.Collapse) {
+                window.bootstrap.Collapse.getOrCreateInstance(menu, { toggle: false }).hide();
+            } else {
+                menu.classList.remove('show');
+            }
+        } catch (_) {
+            menu.classList.remove('show');
+        }
+    };
+
     return (
-        <nav className="navbar navbar-expand-lg px-3 px-lg-4 py-2 navbar-custom">
+        <nav className="navbar navbar-expand-lg navbar-custom">
             <div className="container-fluid p-0">
                 {/* Botón colapsable para móviles */}
                 <button className="navbar-toggler border-success border-opacity-25" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain">
@@ -129,6 +146,7 @@ const Navbar = ({ currentUser, view, setView, userFilter, setUserFilter, links =
                                                                 if (item.onClick) item.onClick();
                                                                 if (item.view) setView(item.view);
                                                                 if (item.filter) setUserFilter(item.filter);
+                                                                cerrarMenu();
                                                             }}
                                                         >
                                                             <span className="material-symbols-outlined small">{item.icon}</span> {item.label}
@@ -147,6 +165,7 @@ const Navbar = ({ currentUser, view, setView, userFilter, setUserFilter, links =
                                         onClick={() => {
                                             setView(link.view);
                                             if (link.filter && setUserFilter) setUserFilter(link.filter);
+                                            cerrarMenu();
                                         }}
                                     >
                                         <span className="material-symbols-outlined small me-1">{link.icon}</span> {link.label}

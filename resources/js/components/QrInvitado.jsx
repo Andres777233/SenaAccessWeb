@@ -157,7 +157,8 @@ const QrInvitado = () => {
 
     return (
         <div className="fade-in-up">
-            <div className="acc-grid">
+            <div className="acc-view">
+                <div className="acc-grid">
                 <section className="acc-card">
                     <div className="acc-head">
                         <div>
@@ -179,6 +180,7 @@ const QrInvitado = () => {
                     {modo === 'camara' ? (
                         <>
                             <div className="acc-stage">
+                                <div className="acc-stage-guide" aria-hidden="true" />
                                 <div id={idRef.current} style={{ width: '100%', height: '100%' }} />
                                 {!escaneando && (
                                     <div className="acc-stage-empty">
@@ -284,9 +286,9 @@ const QrInvitado = () => {
                             <span className="acc-item-time">{resultado.hora}</span>
                         </div>
                     ) : (
-                        <div className="acc-empty">
+                        <div className="acc-vacio-linea">
                             <span className="material-symbols-outlined">badge</span>
-                            Sin validaciones todavía
+                            Aún no has validado a nadie en esta sesión.
                         </div>
                     )}
 
@@ -333,6 +335,7 @@ const QrInvitado = () => {
                     <li><b>2</b><span><strong>Código de la web:</strong> el usuario genera un QR o PIN en la puerta y tú lo validas aquí.</span></li>
                     <li><b>3</b><span><strong>Invitado:</strong> el QR del invitado se consume una sola vez y caduca a la hora.</span></li>
                 </ol>
+            </div>
             </div>
         </div>
     );

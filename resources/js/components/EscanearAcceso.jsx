@@ -6,7 +6,7 @@ import { horaBogota, etiquetaDia, esHoyBogota } from '../utils/formato';
 // Marcar entrada/salida con el QR de portería (aprendiz, instructor y la
 // puerta de entrada). Usa html5-qrcode para que la cámara funcione también en
 // Firefox, y deja pegar el código cuando no hay cámara.
-const EscanearAcceso = ({ contexto = 'panel', onRegistrado, ocultarCabecera = false }) => {
+const EscanearAcceso = ({ contexto = 'panel', onRegistrado, ocultarCabecera = false, accion = null }) => {
     const [modo, setModo] = useState('camara');
     const [fase, setFase] = useState('inicio'); // inicio | camara | validando | ok | error
     const [resultado, setResultado] = useState(null);
@@ -143,6 +143,7 @@ const EscanearAcceso = ({ contexto = 'panel', onRegistrado, ocultarCabecera = fa
                             : 'Apunta la cámara al QR que proyecta portería. Si no abre, pega el código.'}
                     </p>
                 </div>
+                {accion}
             </div>
 
             <div className="acc-tabs" role="tablist" aria-label="Método para registrar el acceso">
@@ -157,6 +158,7 @@ const EscanearAcceso = ({ contexto = 'panel', onRegistrado, ocultarCabecera = fa
             {modo === 'camara' ? (
                 <>
                     <div className="acc-stage">
+                        <div className="acc-stage-guide" aria-hidden="true" />
                         <div id={idRef.current} style={{ width: '100%', height: '100%' }} />
                         {!escaneando && (
                             <div className="acc-stage-empty">
@@ -247,74 +249,89 @@ const EscanearAcceso = ({ contexto = 'panel', onRegistrado, ocultarCabecera = fa
 
     return (
         <div className="fade-in-up">
-            <div className="acc-grid">
-                {tarjetaScanner}
-
-                <section className="acc-card">
-                    <div className="acc-head">
-                        <div>
-                            <h3 className="acc-title">Tu día</h3>
-                            <p className="acc-sub">{etiquetaDia()}</p>
-                        </div>
-                        <span className="acc-tag">{entrada ? 'Dentro' : 'Sin entrada'}</span>
-                    </div>
-
-                    <div className={`acc-status ${entrada ? '' : 'acc-status--fuera'}`} style={{ justifyContent: 'flex-start' }}>
-                        <span className="material-symbols-outlined" style={{ color: entrada ? 'var(--primary-color)' : '#ffc107' }}>
-                            {entrada ? 'login' : 'schedule'}
-                        </span>
-                        <div style={{ textAlign: 'left' }}>
-                            <strong style={{ display: 'block' }}>
-                                {entrada ? 'Entrada registrada' : 'Aún sin entrada hoy'}
-                            </strong>
-                            <span style={{ fontSize: '0.78rem', opacity: 0.7 }}>
-                                {entrada
-                                    ? `A la(s) ${horaBogota(dia?.entrada?.fecha)}${dia?.entrada?.lugar ? ` · ${dia.entrada.lugar}` : ''}`
-                                    : 'Escanea el QR de portería para abrir tu jornada.'}
-                            </span>
-                        </div>
-                    </div>
-
-                    <div className="acc-metas">
-                        <div className="acc-meta">
-                            <span>Último movimiento</span>
-                            <strong>{ultimo ? ultimo.tipo : '—'}</strong>
-                        </div>
-                        <div className="acc-meta">
-                            <span>Hora</span>
-                            <strong>{ultimo?.fecha ? horaBogota(ultimo.fecha) : '—'}</strong>
-                        </div>
-                    </div>
-
-                    <ol className="acc-steps">
-                        <li><b>1</b><span>Muestra o escanea el QR de portería.</span></li>
-                        <li><b>2</b><span>Espera el aviso verde de confirmación.</span></li>
-                        <li><b>3</b><span>La salida también se registra así al terminar el día.</span></li>
-                    </ol>
-
+            <div className="acc-view">
+                <div className="acc-pagehead">
                     <div>
-                        <h4 className="acc-title" style={{ fontSize: '0.92rem' }}>Movimientos de hoy</h4>
-                        {movimientos.length === 0 ? (
-                            <div className="acc-empty">
-                                <span className="material-symbols-outlined">history</span>
-                                Todavía no tienes movimientos registrados hoy
-                            </div>
-                        ) : (
-                            <div className="acc-list">
-                                {movimientos.map((m) => (
-                                    <div className="acc-item" key={m.id_ingreso}>
-                                        <span className="acc-tag">{m.ingreso_type}</span>
-                                        <div style={{ minWidth: 0 }}>
-                                            <div className="acc-item-name">{m.ingreso_place || 'CCyS'}</div>
-                                            <div className="acc-item-sub">Registrado por ti</div>
-                                        </div>
-                                        <div className="acc-item-time">{horaBogota(m.ingreso_datetime)}</div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
+                        <h2>Marcar acceso</h2>
+                        <p>Registra tu entrada o salida con el QR de portería. Queda en tu historial al instante.</p>
                     </div>
-                </section>
+                </div>
+
+                <div className="acc-grid acc-grid--acceso">
+                    {tarjetaScanner}
+
+                    <div className="acc-side">
+                        <section className="acc-card">
+                            <div className="acc-head">
+                                <div>
+                                    <h3 className="acc-title">Tu día</h3>
+                                    <p className="acc-sub">{etiquetaDia()}</p>
+                                </div>
+                                <span className="acc-tag">{entrada ? 'Dentro' : 'Sin entrada'}</span>
+                            </div>
+
+                            <div className="acc-dia">
+                                <span className="material-symbols-outlined" style={{ color: entrada ? 'var(--primary-color)' : '#ffc107' }}>
+                                    {entrada ? 'login' : 'schedule'}
+                                </span>
+                                <div>
+                                    <strong>{entrada ? 'Entrada registrada' : 'Aún sin entrada hoy'}</strong>
+                                    <span>
+                                        {entrada
+                                            ? `A la(s) ${horaBogota(dia?.entrada?.fecha)}${dia?.entrada?.lugar ? ` · ${dia.entrada.lugar}` : ''}`
+                                            : 'Escanea el QR de portería para abrir tu jornada.'}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className="acc-metas">
+                                <div className="acc-meta">
+                                    <span>Último movimiento</span>
+                                    <strong>{ultimo ? ultimo.tipo : '—'}</strong>
+                                </div>
+                                <div className="acc-meta">
+                                    <span>Hora</span>
+                                    <strong>{ultimo?.fecha ? horaBogota(ultimo.fecha) : '—'}</strong>
+                                </div>
+                            </div>
+
+                            <ol className="acc-steps">
+                                <li><b>1</b><span>Muestra o escanea el QR de portería.</span></li>
+                                <li><b>2</b><span>Espera el aviso verde de confirmación.</span></li>
+                                <li><b>3</b><span>La salida también se registra así al terminar el día.</span></li>
+                            </ol>
+                        </section>
+
+                        <section className="acc-card">
+                            <div className="acc-head">
+                                <div>
+                                    <h3 className="acc-title">Movimientos de hoy</h3>
+                                    <p className="acc-sub">Lo que ya quedó en tu historial</p>
+                                </div>
+                            </div>
+
+                            {movimientos.length === 0 ? (
+                                <div className="acc-empty">
+                                    <span className="material-symbols-outlined">history</span>
+                                    Todavía no tienes movimientos registrados hoy
+                                </div>
+                            ) : (
+                                <div className="acc-list">
+                                    {movimientos.map((m) => (
+                                        <div className="acc-item" key={m.id_ingreso}>
+                                            <span className="acc-tag">{m.ingreso_type}</span>
+                                            <div style={{ minWidth: 0 }}>
+                                                <div className="acc-item-name">{m.ingreso_place || 'CCyS'}</div>
+                                                <div className="acc-item-sub">Registrado por ti</div>
+                                            </div>
+                                            <div className="acc-item-time">{horaBogota(m.ingreso_datetime)}</div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </section>
+                    </div>
+                </div>
             </div>
         </div>
     );

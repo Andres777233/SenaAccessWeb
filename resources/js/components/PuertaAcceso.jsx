@@ -57,8 +57,6 @@ const PuertaAcceso = () => {
         <div className="auth-page fade-in-up">
             <main className="auth-main">
                 <div className="puerta-shell">
-                    <BotonTema />
-
                     {detectada || entrando ? (
                         <div className="glass-box puerta-card text-center">
                             <div className="acc-ok">
@@ -107,7 +105,7 @@ const PuertaAcceso = () => {
 
                             <div className="acc-grid">
                                 <div className={`acc-col ${tab === 'escanear' ? '' : 'd-none d-lg-flex'}`}>
-                                    <EscanearAcceso contexto="puerta" onRegistrado={alRegistrar} />
+                                    <EscanearAcceso contexto="puerta" onRegistrado={alRegistrar} accion={<BotonTema />} />
                                 </div>
                                 <div className={`acc-col ${tab === 'codigo' ? '' : 'd-none d-lg-flex'}`}>
                                     <CodigoAcceso contexto="puerta" />

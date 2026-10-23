@@ -264,6 +264,18 @@ body:has(.auth-page) .theme-toggle-btn {
     line-height: 1;
 }
 
+/* Sin el halo azul de Bootstrap al pulsarlo; verde solo con teclado */
+.theme-nav-btn:focus {
+    box-shadow: none !important;
+    outline: none;
+}
+
+.theme-nav-btn:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 3px;
+    border-radius: 50%;
+}
+
 .theme-nav-btn:hover {
     color: var(--primary-color) !important;
     filter: brightness(1.15);
@@ -1221,6 +1233,12 @@ h2 { margin-bottom: 2rem; color: var(--primary-color); }
     box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
     margin-top: 0;
     margin-bottom: 0;
+    /* Aire en los bordes: la marca no queda pegada a la ventana */
+    padding: 0.55rem 2rem;
+}
+
+@media (max-width: 991.98px) {
+    .navbar-custom { padding: 0.5rem 0.9rem; }
 }
 
 .navbar-collapse {
@@ -1236,7 +1254,7 @@ h2 { margin-bottom: 2rem; color: var(--primary-color); }
     flex: 0 0 auto;
     min-width: 0;
     /* Aire real entre la marca y el primer enlace (antes quedaban a ~18px). */
-    margin-right: 1.75rem;
+    margin-right: 2.5rem;
 }
 
 @media (max-width: 991.98px) {

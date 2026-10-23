@@ -423,6 +423,15 @@ body.light-mode .acc-tag { color: #16a34a; }
 .acc-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .acc-actions .btn { flex: 1 1 auto; }
 
+/* Botones dentro de las tarjetas: mismo lenguaje que el resto de la app */
+.acc-card .btn {
+    border-radius: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
 .acc-metas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 
 .acc-meta {

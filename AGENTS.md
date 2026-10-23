@@ -92,7 +92,7 @@ SPA (`resources/js/app.jsx`): `/admin` → superadmin, `/portero` → admin, `/i
 ## Estado actual y pendientes
 
 - Último commit: 2026-10-22 — fix de la migración WebAuthn (idempotente) y limpieza de APKs viejos (queda solo `SenaAccessV9.0.apk`).
-- 2026-10-22 — **tema nuevo (v2) opt-in**: `body.tema-v2` + interruptor "Tema nuevo / Tema viejo" (barra, menú Más y páginas públicas). Incluye navbar de escritorio con marca separada 40 px, dock de celular 4+1 con hoja "Más", dashboards con datos reales (`ingresos_semana`, `ultimos_accesos`), vistas de acceso/puerta/carnet/portería rediseñadas, escáner con `html5-qrcode` (funciona en Firefox) y la puerta auto-entra al detectar la Entrada (sin botón "ya marqué"). Lo clásico sigue intacto en `components/clasico/`.
+- 2026-10-22 — **tema nuevo (v2) por defecto**: `body.tema-v2` + interruptor "Tema nuevo / Tema viejo" (barra, menú Más y páginas públicas); "clasico" solo si el usuario lo elige. Incluye navbar de escritorio con marca separada 40 px, dock de celular 4+1 con hoja "Más", dashboards con datos reales (`ingresos_semana`, `ultimos_accesos`), vistas de acceso/puerta/carnet/portería rediseñadas, escáner con `html5-qrcode` (funciona en Firefox) y la puerta auto-entra al detectar la Entrada (sin botón "ya marqué"). Lo clásico sigue intacto en `components/clasico/`.
 - Verificado en vivo el 2026-10-21: `GET /api/health` → `{"status":"ok"}` y `GET /SenaAccessV9.0.apk` → **200** (`application/vnd.android.package-archive`, 45.955.227 bytes).
 - `GET /api/admin/roles` **sin token** devuelve 401 JSON; toda ruta `/api/*` inexistente devuelve 404 JSON.
 - 2026-10-13: puerta sin loop (entrada por día + PIN corto de acceso) y fechas UTC reales (`serializeDate`).

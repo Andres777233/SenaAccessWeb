@@ -10,9 +10,11 @@ const EVENTO = 'tema-ui-cambiado';
 
 export const leerTema = () => {
     try {
-        return localStorage.getItem(CLAVE) === TEMA_V2 ? TEMA_V2 : TEMA_CLASICO;
+        // Por defecto se estrena el tema nuevo; "clasico" solo si el usuario lo
+        // eligió explícitamente (así nadie se queda sin ver el rediseño).
+        return localStorage.getItem(CLAVE) === TEMA_CLASICO ? TEMA_CLASICO : TEMA_V2;
     } catch (_) {
-        return TEMA_CLASICO;
+        return TEMA_V2;
     }
 };
 

@@ -137,17 +137,35 @@ const App = () => {
         localStorage.setItem('theme', theme);
     }, [theme]);
 
-    // La navbar tambien cambia el tema: este aviso mantiene los dos botones
-    // sincronizados sin recargar la pagina.
+    // Los botones de las pantallas de acceso avisan el cambio de tema: este
+    // aviso mantiene el boton flotante sincronizado sin recargar la pagina.
     useEffect(() => {
         const alCambiarTema = (evento) => setTheme(evento.detail?.tema || 'dark');
         window.addEventListener('tema-cambiado', alCambiarTema);
         return () => window.removeEventListener('tema-cambiado', alCambiarTema);
     }, []);
 
+    // Funcion para alternar entre temas desde el boton flotante
+    const toggleTheme = () => {
+        setTheme(prevTheme => prevTheme === 'dark' ? 'light' : 'dark');
+    };
+
     return (
         <BrowserRouter>
             <LogoutHandler />
+            {/* Boton de modo claro/oscuro: flotante a la derecha, debajo de la
+                barra. En las pantallas de acceso lo dibuja BotonTema. */}
+            <button
+                type="button"
+                onClick={toggleTheme}
+                className="theme-toggle-btn"
+                aria-label={theme === 'dark' ? 'Activar modo claro' : 'Activar modo oscuro'}
+                title={theme === 'dark' ? 'Activar modo claro' : 'Activar modo oscuro'}
+            >
+                <span className="material-symbols-outlined">
+                    {theme === 'dark' ? 'light_mode' : 'dark_mode'}
+                </span>
+            </button>
             {/* Capas globales (alerta, chatbot, campana/tema): dentro del
                 ErrorBoundary para que un fallo aqui no desmonte la app entera
                 y deje la pantalla en blanco. */}

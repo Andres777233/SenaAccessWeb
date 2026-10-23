@@ -78,11 +78,16 @@ const Login = () => {
     const finalizarLogin = async (datos, correo = '') => {
         localStorage.setItem('access_token', datos.access_token);
         localStorage.setItem('user_role', datos.role);
+        // Guarda el usuario para que el panel pinte al instante; igual se
+        // refresca con /api/user al montar.
+        if (datos.user) {
+            localStorage.setItem('sena_usuario', JSON.stringify(datos.user));
+        }
         if (correo) guardarCorreoUsado(correo);
 
         const ruta = await decidirRutaPorRol(datos.role, datos.access_token);
-        // Carga limpia: evita chunks viejos y el estado intermedio del login.
-        window.location.assign(ruta);
+        // Navegacion SPA: sin recargar toda la pagina (el panel entra de una).
+        navigate(ruta, { replace: true });
     };
 
     const handleSubmit = async (e) => {
@@ -98,6 +103,9 @@ const Login = () => {
 
             // 2FA requerido: el backend no emitió token; se continúa en /verificacion-2fa.
             if (response.data.two_factor_required) {
+                // El reto no devuelve el usuario: se evita mostrar otro nombre
+                // mientras el panel valida la sesión.
+                localStorage.removeItem('sena_usuario');
                 localStorage.setItem('2fa_challenge_id', response.data.two_factor_id);
                 showAlert(response.data.message || 'Verificación en dos pasos requerida.');
                 navigate('/verificacion-2fa');

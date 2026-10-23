@@ -29,6 +29,7 @@ window.axios.interceptors.response.use((response) => {
     if (error && error.response && error.response.status === 401) {
         localStorage.removeItem('access_token');
         localStorage.removeItem('user_role');
+        localStorage.removeItem('sena_usuario');
         if (!window.location.pathname.startsWith('/login')) {
             window.location.href = '/login';
         }

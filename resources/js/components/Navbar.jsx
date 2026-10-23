@@ -1,39 +1,26 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import NotificacionesMenu from './NotificacionesMenu';
 
 // Navbar del panel con el diseño del repositorio de referencia: una sola fila,
-// marca + badge del rol, enlaces en mayusculas, y a la derecha el tema, la
-// campana, el perfil y salir. Nada flota sobre el contenido.
+// marca + badge del rol, enlaces en mayusculas, y a la derecha la campana, el
+// perfil y salir. El cambio de tema vive en el boton flotante de la esquina.
 const Navbar = ({ currentUser, view, setView, userFilter, setUserFilter, links = [] }) => {
     const navigate = useNavigate();
-    const [temaClaro, setTemaClaro] = useState(() => document.body.classList.contains('light-mode'));
-
-    useEffect(() => {
-        const alCambiar = (evento) => setTemaClaro(evento.detail?.tema === 'light');
-        window.addEventListener('tema-cambiado', alCambiar);
-        return () => window.removeEventListener('tema-cambiado', alCambiar);
-    }, []);
-
-    const toggleTema = () => {
-        const claro = !document.body.classList.contains('light-mode');
-        document.body.classList.toggle('light-mode', claro);
-        localStorage.setItem('theme', claro ? 'light' : 'dark');
-        setTemaClaro(claro);
-        window.dispatchEvent(new CustomEvent('tema-cambiado', { detail: { tema: claro ? 'light' : 'dark' } }));
-    };
 
     const handleLogout = async () => {
         try {
             await axios.post('/api/logout');
             localStorage.removeItem('access_token');
             localStorage.removeItem('user_role');
+            localStorage.removeItem('sena_usuario');
             navigate('/');
         } catch (error) {
             console.error('Error al cerrar sesión', error);
             localStorage.removeItem('access_token');
             localStorage.removeItem('user_role');
+            localStorage.removeItem('sena_usuario');
             navigate('/');
         }
     };
@@ -89,7 +76,7 @@ const Navbar = ({ currentUser, view, setView, userFilter, setUserFilter, links =
                     </div>
 
                     {/* Enlaces de Navegación Dinámicos */}
-                    <ul className="navbar-nav me-auto mb-2 mb-lg-0 gap-2">
+                    <ul className={`navbar-nav me-auto mb-2 mb-lg-0 gap-2 ${links.length > 6 ? 'nav-compacto' : ''}`}>
                         {links.map((link, index) => {
                             if (link.dropdown) {
                                 const hijoActivo = (link.items || []).some(item => item.view && item.view === view);
@@ -144,18 +131,8 @@ const Navbar = ({ currentUser, view, setView, userFilter, setUserFilter, links =
                         })}
                     </ul>
 
-                    {/* Derecha: tema, campana, perfil y salir */}
+                    {/* Derecha: campana, perfil y salir */}
                     <div className="navbar-actions d-flex align-items-center justify-content-lg-end gap-2 pt-2 pt-lg-0 border-top border-lg-0 border-success border-opacity-10">
-                        <button
-                            type="button"
-                            className="theme-nav-btn"
-                            onClick={toggleTema}
-                            title={temaClaro ? 'Activar modo oscuro' : 'Activar modo claro'}
-                            aria-label={temaClaro ? 'Activar modo oscuro' : 'Activar modo claro'}
-                        >
-                            <span className="material-symbols-outlined">{temaClaro ? 'dark_mode' : 'light_mode'}</span>
-                        </button>
-
                         <NotificacionesMenu />
 
                         <div className="vr d-none d-lg-block opacity-25" style={{ height: '30px' }}></div>

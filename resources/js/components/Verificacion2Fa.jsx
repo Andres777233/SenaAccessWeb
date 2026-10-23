@@ -15,9 +15,9 @@ const guardarSesion2Fa = (data) => {
 
 // Redirige al panel según rol y a la puerta solo si aún no marcó la Entrada
 // de hoy (misma regla que el login normal, en utils/sesion.js).
-const redirigirPorRol = async (role, token) => {
+const redirigirPorRol = async (role, token, navigate) => {
     const ruta = await decidirRutaPorRol(role, token);
-    window.location.assign(ruta);
+    navigate(ruta, { replace: true });
 };
 
 const Verificacion2Fa = () => {
@@ -51,7 +51,7 @@ const Verificacion2Fa = () => {
                 if (estado === 'aprobado') {
                     marcarResuelto();
                     guardarSesion2Fa(response.data);
-                    await redirigirPorRol(response.data.role, response.data.access_token);
+                    await redirigirPorRol(response.data.role, response.data.access_token, navigate);
                 } else if (estado === 'rechazado' || estado === 'denegado') {
                     marcarResuelto();
                     setGeneralError('El intento fue rechazado. Vuelve a iniciar sesión.');
@@ -105,7 +105,7 @@ const Verificacion2Fa = () => {
             });
             marcarResuelto();
             guardarSesion2Fa(response.data);
-            await redirigirPorRol(response.data.role, response.data.access_token);
+            await redirigirPorRol(response.data.role, response.data.access_token, navigate);
         } catch (error) {
             if (error.response) {
                 const mensaje = error.response.data.message || 'Código inválido';

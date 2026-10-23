@@ -458,7 +458,8 @@ const Instructor = () => {
     };
 
     // Nav espeja el dock del instructor móvil (Inicio·Ambientes·Novedades·Historial·Equipos).
-    // EXCUSAS se conserva: es la única entrada a generar PIN (en el móvil vive dentro del detalle del ambiente).
+    // Excusas, Mi carnet y Marcar acceso van visibles en la barra: son
+    // accesos directos del instructor y no deben quedar escondidos.
     const instructorLinks = [
         { label: 'Dashboard', icon: 'dashboard', view: 'dashboard' },
         { label: 'Mis salones', icon: 'meeting_room', view: 'ambientes' },
@@ -473,18 +474,10 @@ const Instructor = () => {
             ]
         },
         { label: 'Historial', icon: 'history', view: 'historial' },
+        { label: 'Excusas', icon: 'key', view: 'excusas' },
         { label: 'Mis equipos', icon: 'inventory_2', view: 'mis_equipos' },
-        {
-            label: 'Más',
-            icon: 'apps',
-            view: 'qr_carnet',
-            dropdown: true,
-            items: [
-                { label: 'Mi carnet', icon: 'id_card', view: 'qr_carnet' },
-                { label: 'Excusas', icon: 'key', view: 'excusas' },
-                { label: 'Marcar acceso', icon: 'qr_code_scanner', view: 'escanear_acceso' }
-            ]
-        }
+        { label: 'Mi carnet', icon: 'id_card', view: 'qr_carnet' },
+        { label: 'Marcar acceso', icon: 'qr_code_scanner', view: 'escanear_acceso' }
     ];
 
     if (loading) return <div className="text-white text-center mt-5">Cargando...</div>;

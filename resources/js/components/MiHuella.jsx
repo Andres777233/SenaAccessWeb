@@ -12,6 +12,8 @@ const MiHuella = () => {
     const [cargando, setCargando] = useState(true);
     const [procesando, setProcesando] = useState(false);
     const [soportado, setSoportado] = useState(false);
+    const [password, setPassword] = useState('');
+    const [passwordError, setPasswordError] = useState('');
 
     const cargar = async () => {
         try {
@@ -30,19 +32,31 @@ const MiHuella = () => {
     }, []);
 
     const registrar = async () => {
+        if (!password) {
+            setPasswordError('Confirma tu contraseña para registrar la huella.');
+            return;
+        }
+
         setProcesando(true);
+        setPasswordError('');
         try {
             const opciones = await axios.post('/api/huellas/registro/opciones', {
                 nombre_dispositivo: navigator.platform || 'Este dispositivo',
+                user_password: password,
             });
             const credencial = await registrarHuella(opciones.data.opciones);
             await axios.post('/api/huellas/registro', {
                 reto: opciones.data.reto,
+                user_password: password,
                 ...credencial,
             });
+            setPassword('');
             showAlert('Huella registrada en este dispositivo.');
             await cargar();
         } catch (error) {
+            if (error?.response?.status === 422) {
+                setPasswordError(error.response?.data?.message || 'No se pudo autorizar el registro.');
+            }
             const mensaje = error?.response?.data?.message || mensajeErrorHuella(error);
             showAlert(mensaje, 'error');
         } finally {
@@ -113,11 +127,30 @@ const MiHuella = () => {
                         </div>
                     )}
 
+                    <label className="form-label opacity-75 small mt-2" htmlFor="huella-password">
+                        Confirma tu contraseña actual
+                    </label>
+                    <input
+                        id="huella-password"
+                        type="password"
+                        className={`form-control ${passwordError ? 'is-invalid' : ''}`}
+                        value={password}
+                        onChange={(e) => { setPassword(e.target.value); setPasswordError(''); }}
+                        placeholder="Contraseña actual"
+                        autoComplete="current-password"
+                    />
+                    {passwordError && (
+                        <div className="text-danger small mt-1">
+                            <span className="material-symbols-outlined small me-1">error</span>
+                            {passwordError}
+                        </div>
+                    )}
+
                     <button
                         type="button"
-                        className="btn btn-outline-success w-100 py-3 d-flex align-items-center justify-content-center gap-2"
+                        className="btn btn-outline-success w-100 py-3 mt-2 d-flex align-items-center justify-content-center gap-2"
                         onClick={registrar}
-                        disabled={procesando || !soportado}
+                        disabled={procesando || !soportado || !password}
                     >
                         <span className="material-symbols-outlined">fingerprint</span>
                         {procesando ? 'REGISTRANDO...' : 'REGISTRAR HUELLA EN ESTE DISPOSITIVO'}

@@ -15,6 +15,8 @@ import LandingPage from './components/LandingPage';
 import CustomAlert from './components/CustomAlert';
 import ChatbotWidget from './components/ChatbotWidget';
 import PuertaAcceso from './components/PuertaAcceso';
+import HuellaSimulacion from './components/HuellaSimulacion';
+import NotFound from './components/NotFound';
 // Paneles pesados por rol: lazy para que la primera carga solo baje el chunk
 // de la ruta visitada (antes las 12 rutas viajaban en un solo app-*.js).
 const Admin = lazy(() => import('./components/Admin'));
@@ -70,6 +72,13 @@ const LogoutHandler = () => {
     return null;
 };
 
+// El chatbot no debe tapar la puerta de acceso ni la simulacion de huella.
+const ChatbotGate = () => {
+    const location = useLocation();
+    const oculto = ['/puerta-acceso', '/huella', '/login'].includes(location.pathname);
+    return (!oculto && !!localStorage.getItem('access_token')) ? <ChatbotWidget /> : null;
+};
+
 const App = () => {
     const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
 
@@ -113,8 +122,8 @@ const App = () => {
             {/* Alerta y Confirmación Personalizada Global */}
             <CustomAlert />
 
-            {/* Chatbot flotante: visible solo cuando hay sesión (como en Sebastián) */}
-            {!!localStorage.getItem('access_token') && <ChatbotWidget />}
+            {/* Chatbot flotante: visible solo con sesión y fuera de las pantallas de acceso */}
+            <ChatbotGate />
 
             <div style={{color: 'var(--text-color)', position: 'fixed', bottom: 10, right: 10, background: 'var(--glass-bg)', padding: '5px', zIndex: 9999, borderRadius: '5px', fontSize: '12px'}}>
             </div>
@@ -127,12 +136,13 @@ const App = () => {
                     <Route path="/password-recovery" element={<PasswordRecovery />} />
                     <Route path="/reset-password" element={<ResetPassword />} />
                     <Route path="/loading" element={<Loading />} />
+                    <Route path="/huella" element={<HuellaSimulacion />} />
                     <Route path="/puerta-acceso" element={localStorage.getItem('access_token') ? <PuertaAcceso /> : <Navigate to="/login" replace />} />
                     <Route path="/admin" element={<ProtectedRoute expectedRole="superadmin"><Admin /></ProtectedRoute>} />
                     <Route path="/aprendiz" element={<ProtectedRoute expectedRole="aprendiz"><Aprendiz /></ProtectedRoute>} />
                     <Route path="/instructor" element={<ProtectedRoute expectedRole="instructor"><Instructor /></ProtectedRoute>} />
                     <Route path="/portero" element={<ProtectedRoute expectedRole="admin"><Portero /></ProtectedRoute>} />
-                    <Route path="*" element={<div style={{color: 'var(--text-color)'}}>404 - Página no encontrada</div>} />
+                    <Route path="*" element={<NotFound />} />
                 </Routes>
             </Suspense>
         </BrowserRouter>

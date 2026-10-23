@@ -50,22 +50,25 @@ class PasskeyService
     public function rpId(Request $request): string
     {
         $configurado = config('webauthn.rp_id') ?: env('WEBAUTHN_RP_ID');
+        $hostApp = parse_url((string) config('app.url'), PHP_URL_HOST);
 
-        return $configurado ?: $request->getHost();
+        return $configurado ?: $hostApp ?: $request->getHost();
     }
 
     /**
-     * Origenes admitidos: el de la peticion mas los declarados en config.
+     * Origenes admitidos: SOLO los declarados en config y APP_URL.
+     * Nunca el header Origin de la peticion: aceptarlo permitiria a cualquier
+     * sitio iniciar una ceremonia WebAuthn en nombre de otro origen.
+     * En local se tolera el Origin para no romper el desarrollo.
      */
     public function origenesAdmitidos(Request $request): array
     {
         $origenes = config('webauthn.allowed_origins', []);
+        $origenes[] = rtrim((string) config('app.url'), '/');
 
-        if ($request->headers->get('Origin')) {
+        if (app()->environment('local') && $request->headers->get('Origin')) {
             $origenes[] = rtrim($request->headers->get('Origin'), '/');
         }
-
-        $origenes[] = rtrim(config('app.url'), '/');
 
         return array_values(array_unique(array_filter($origenes)));
     }

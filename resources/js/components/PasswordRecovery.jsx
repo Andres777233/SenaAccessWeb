@@ -75,7 +75,7 @@ const PasswordRecovery = () => {
                     </div>
                 </form>
                 <div className="mt-4 text-center">
-                    <p className="mb-2 theme-text">¿Recordaste tu contraseña? <Link to="/" className="custom-link fw-bold">Inicia sesión</Link></p>
+                    <p className="mb-2 theme-text">¿Recordaste tu contraseña? <Link to="/login" className="custom-link fw-bold">Inicia sesión</Link></p>
                 </div>
             </div>
             </main>

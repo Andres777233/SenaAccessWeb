@@ -134,6 +134,13 @@ class AuthController extends Controller
 
     public function register(Request $request)
     {
+        // Normaliza el correo: MySQL compara sin distinguir mayusculas, pero el
+        // login busca el valor exacto en minusculas. Sin esto, quien se registra
+        // como Juan@Gmail.com no puede entrar despues.
+        $request->merge([
+            'user_email' => strtolower(trim((string) $request->input('user_email'))),
+        ]);
+
         //VALIDADOR: DATOS NECESARIOS PARA EL REGISTRO
         // El correo solo se acepta si termina en @gmail.com, @hotmail.com,
         // @outlook.com o @soy.sena.edu.co (evita correos falsos de otros dominios).
@@ -350,6 +357,13 @@ class AuthController extends Controller
 
         $user->user_password = Hash::make($request->password); //ACTUALIZA LA CONTRASEÑA DEL USUARIO
         $user->save(); //GUARDA LOS CAMBIOS EN LA BASE DE DATOS
+
+        // Cambiar la clave invalida todas las sesiones abiertas: si alguien
+        // tenia un token robado, deja de servir inmediatamente.
+        $user->tokens()->delete();
+        \App\Models\TwoFactorChallenge::where('fk_id_usuario', $user->id_usuario)
+            ->where('estado', 'pendiente')
+            ->update(['estado' => 'rechazado', 'resolved_at' => Carbon::now()]);
 
         // Invalida todos los tokens pendientes del usuario (el último ya se usó):
         // evita reutilizar un mismo correo para generar varios códigos válidos.

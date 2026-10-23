@@ -5,7 +5,7 @@ import QRCode from 'qrcode';
 import Footer from './Footer';
 import BotonTema from './BotonTema';
 import { showAlert } from './CustomAlert';
-import { huellaDisponible, solicitarHuella, mensajeErrorHuella } from '../utils/webauthn';
+import { decidirRutaPorRol } from '../utils/sesion';
 
 const Login = () => {
     // HOOK: useNavigate maneja las redirecciones post-login hacia los paneles de control.
@@ -29,8 +29,7 @@ const Login = () => {
     };
     const [user_password, setPassword] = useState(''); // Estado para almacenar contraseña del usuario
     const [showPassword, setShowPassword] = useState(false); // Estado para alternar visibilidad de contraseña
-    const [puedeUsarHuella, setPuedeUsarHuella] = useState(false); // El navegador admite WebAuthn
-    const [ingresandoConHuella, setIngresandoConHuella] = useState(false); // Lectura de la huella en curso
+    const [enviando, setEnviando] = useState(false); // Evita doble submit mientras viaja el login
     const [isGuestMode, setIsGuestMode] = useState(false); // Estado para alternar modo invitado
     const [guestData, setGuestData] = useState({ // Estado para almacenar datos de invitado
         user_name: '',
@@ -74,7 +73,8 @@ const Login = () => {
     };
 
     // Cierra el ingreso: guarda el token, aplica la puerta de entrada y
-    // lleva al panel del rol. La usan el login con clave y el login con huella.
+    // lleva al panel del rol. La ruta la decide utils/sesion.js para que el
+    // login normal y el 2FA se comporten igual.
     const finalizarLogin = async (datos, correo = '') => {
         localStorage.setItem('access_token', datos.access_token);
         localStorage.setItem('user_role', datos.role);
@@ -82,72 +82,14 @@ const Login = () => {
 
         showAlert(datos.message || 'Login exitoso');
 
-        // Puerta de entrada: aprendiz e instructor marcan su Entrada con el
-        // QR de portería antes de ver su panel (el resto entra directo).
-        const userRole = (datos.role || '').toLowerCase();
-        if (userRole === 'aprendiz' || userRole === 'instructor') {
-            try {
-                const { data } = await axios.get('/api/my-ingresos', {
-                    headers: { Authorization: `Bearer ${datos.access_token}` }
-                });
-                const lista = Array.isArray(data) ? data : (data.data || []);
-                const hoy = new Intl.DateTimeFormat('en-CA', {
-                    timeZone: 'America/Bogota', year: 'numeric', month: '2-digit', day: '2-digit'
-                }).format(new Date());
-                const fmt = (f) => {
-                    try {
-                        return new Intl.DateTimeFormat('en-CA', {
-                            timeZone: 'America/Bogota', year: 'numeric', month: '2-digit', day: '2-digit'
-                        }).format(new Date(f));
-                    } catch (_) { return ''; }
-                };
-                const tieneEntrada = lista.some((m) => m.ingreso_type === 'Entrada' && fmt(m.ingreso_datetime) === hoy);
-                if (!tieneEntrada) {
-                    navigate('/puerta-acceso');
-                    return;
-                }
-            } catch (_) { /* si falla la verificación, sigue al panel */ }
-        }
-
-        if (userRole === 'superadmin') {
-            navigate('/admin');
-        } else if (userRole === 'instructor') {
-            navigate('/instructor');
-        } else if (userRole === 'aprendiz') {
-            navigate('/aprendiz');
-        } else if (userRole === 'admin' || userRole === 'portero') {
-            navigate('/portero');
-        } else {
-            navigate('/loading');
-        }
+        const ruta = await decidirRutaPorRol(datos.role, datos.access_token);
+        navigate(ruta);
     };
-
-    // Ingreso con huella (WebAuthn): el navegador pide la biometria del
-    // dispositivo y el servidor devuelve la misma sesion que el login normal.
-    const entrarConHuella = async () => {
-        setIngresandoConHuella(true);
-        try {
-            const opciones = await axios.post('/api/huellas/login/opciones');
-            const credencial = await solicitarHuella(opciones.data.opciones);
-            const respuesta = await axios.post('/api/huellas/login', {
-                reto: opciones.data.reto,
-                ...credencial,
-            });
-            await finalizarLogin(respuesta.data);
-        } catch (error) {
-            const mensaje = error?.response?.data?.message || mensajeErrorHuella(error);
-            showAlert(mensaje, 'error');
-        } finally {
-            setIngresandoConHuella(false);
-        }
-    };
-
-    useEffect(() => {
-        setPuedeUsarHuella(huellaDisponible());
-    }, []);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (enviando) return;
+        setEnviando(true);
         try {
             const response = await axios.post('/api/login', {
                 user_email,
@@ -170,6 +112,8 @@ const Login = () => {
             } else {
                 showAlert('Error al conectar con el servidor.', 'error');
             }
+        } finally {
+            setEnviando(false);
         }
     };
 
@@ -410,27 +354,24 @@ const Login = () => {
                     </div>
 
                     <div className="d-grid gap-3 mb-4">
-                        <button className="btn btn-glow btn-primary-login w-100 fw-bold py-3 d-flex align-items-center justify-content-center gap-2" type="submit">
+                        <button className="btn btn-glow btn-primary-login w-100 fw-bold py-3 d-flex align-items-center justify-content-center gap-2" type="submit" disabled={enviando}>
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                 // Icono de flecha de inicio de sesión
                                 <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
                                 <polyline points="10 17 15 12 10 7" />
                                 <line x1="15" y1="12" x2="3" y2="12" />
                             </svg>
-                            INGRESAR
+                            {enviando ? 'INGRESANDO...' : 'INGRESAR'}
                         </button>
 
-                        {puedeUsarHuella && (
-                            <button
-                                type="button"
-                                className="btn btn-outline-success w-100 fw-bold d-flex align-items-center justify-content-center gap-2"
-                                onClick={entrarConHuella}
-                                disabled={ingresandoConHuella}
-                            >
-                                <span className="material-symbols-outlined">fingerprint</span>
-                                {ingresandoConHuella ? 'LEYENDO HUELLA...' : 'INGRESAR CON HUELLA'}
-                            </button>
-                        )}
+                        <button
+                            type="button"
+                            className="btn btn-outline-success w-100 fw-bold d-flex align-items-center justify-content-center gap-2"
+                            onClick={() => navigate('/huella')}
+                        >
+                            <span className="material-symbols-outlined">fingerprint</span>
+                            INGRESAR CON HUELLA
+                        </button>
 
                         <div className="position-relative text-center my-3">
                             <hr className="border-secondary opacity-25" />

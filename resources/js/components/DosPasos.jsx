@@ -6,7 +6,7 @@ import { showAlert } from './CustomAlert';
 const DosPasos = () => {
     const [activado, setActivado] = useState(null);
     const [cargando, setCargando] = useState(true);
-    const [pidiendoClave, setPidiendoClave] = useState(false);
+    const [accionClave, setAccionClave] = useState(null); // 'activar' | 'desactivar' | null
     const [password, setPassword] = useState('');
     const [passwordError, setPasswordError] = useState('');
     const [procesando, setProcesando] = useState(false);
@@ -52,20 +52,13 @@ const DosPasos = () => {
         return () => clearInterval(intervalo);
     }, []);
 
-    const handleActivar = async () => {
-        setProcesando(true);
-        try {
-            const response = await axios.post('/api/2fa/activar');
-            setActivado(true);
-            showAlert(response.data.message || 'Verificación en dos pasos activada.');
-        } catch (error) {
-            showAlert('Error al activar: ' + (error.response?.data?.message || 'Error desconocido'), 'error');
-        } finally {
-            setProcesando(false);
-        }
+    const handleActivar = () => {
+        setPassword('');
+        setPasswordError('');
+        setAccionClave('activar');
     };
 
-    const handleDesactivar = async (e) => {
+    const handleConfirmarClave = async (e) => {
         e.preventDefault();
         if (!password) {
             setPasswordError('Ingresa tu contraseña actual.');
@@ -73,17 +66,22 @@ const DosPasos = () => {
         }
         setProcesando(true);
         try {
-            const response = await axios.post('/api/2fa/desactivar', { user_password: password });
-            setActivado(false);
-            setPidiendoClave(false);
+            const url = accionClave === 'activar' ? '/api/2fa/activar' : '/api/2fa/desactivar';
+            const response = await axios.post(url, { user_password: password });
+            setActivado(accionClave === 'activar');
+            setAccionClave(null);
             setPassword('');
             setPasswordError('');
-            showAlert(response.data.message || 'Verificación en dos pasos desactivada.');
+            showAlert(response.data.message || (accionClave === 'activar'
+                ? 'Verificación en dos pasos activada.'
+                : 'Verificación en dos pasos desactivada.'));
         } catch (error) {
             if (error.response?.data?.errors) {
                 setPasswordError(error.response.data.errors.user_password?.[0] || '');
+            } else {
+                setPasswordError(error.response?.data?.message || 'No se pudo confirmar la operación.');
             }
-            showAlert('Error al desactivar: ' + (error.response?.data?.message || 'Error desconocido'), 'error');
+            showAlert('Error: ' + (error.response?.data?.message || 'Error desconocido'), 'error');
         } finally {
             setProcesando(false);
         }
@@ -126,38 +124,36 @@ const DosPasos = () => {
 
             {cargando ? (
                 <div className="text-center py-2"><div className="spinner-border spinner-border-sm text-success" role="status"></div></div>
-            ) : activado ? (
-                <>
-                    {!pidiendoClave ? (
-                        <button className="btn btn-outline-danger action-btn w-100 btn-press" onClick={() => setPidiendoClave(true)}>
-                            <span className="material-symbols-outlined small">lock_open</span> Desactivar
+            ) : accionClave ? (
+                <form onSubmit={handleConfirmarClave}>
+                    <label className="form-label opacity-75 small">
+                        Confirma con tu contraseña actual para {accionClave === 'activar' ? 'activar' : 'desactivar'}
+                    </label>
+                    <input
+                        type="password"
+                        className={`form-control ${passwordError ? 'is-invalid' : ''}`}
+                        value={password}
+                        onChange={(e) => { setPassword(e.target.value); setPasswordError(''); }}
+                        placeholder="Contraseña actual"
+                        autoComplete="current-password"
+                    />
+                    {passwordError && <div className="text-danger small mt-1"><span className="material-symbols-outlined small me-1">error</span>{passwordError}</div>}
+                    <div className="d-flex gap-2 mt-3 flex-wrap">
+                        <button type="submit" className={`btn ${accionClave === 'activar' ? 'btn-success' : 'btn-danger'} action-btn flex-grow-1 btn-press`} disabled={procesando}>
+                            {procesando ? 'Verificando...' : accionClave === 'activar' ? 'Confirmar activación' : 'Confirmar desactivación'}
                         </button>
-                    ) : (
-                        <form onSubmit={handleDesactivar}>
-                            <label className="form-label opacity-75 small">Confirma con tu contraseña actual</label>
-                            <input
-                                type="password"
-                                className={`form-control ${passwordError ? 'is-invalid' : ''}`}
-                                value={password}
-                                onChange={(e) => { setPassword(e.target.value); setPasswordError(''); }}
-                                placeholder="Contraseña actual"
-                                autoComplete="current-password"
-                            />
-                            {passwordError && <div className="text-danger small mt-1"><span className="material-symbols-outlined small me-1">error</span>{passwordError}</div>}
-                            <div className="d-flex gap-2 mt-3 flex-wrap">
-                                <button type="submit" className="btn btn-danger action-btn flex-grow-1 btn-press" disabled={procesando}>
-                                    {procesando ? 'Verificando...' : 'Confirmar desactivación'}
-                                </button>
-                                <button type="button" className="btn btn-outline-secondary action-btn px-4 btn-press" onClick={() => { setPidiendoClave(false); setPassword(''); setPasswordError(''); }}>
-                                    Cancelar
-                                </button>
-                            </div>
-                        </form>
-                    )}
-                </>
+                        <button type="button" className="btn btn-outline-secondary action-btn px-4 btn-press" onClick={() => { setAccionClave(null); setPassword(''); setPasswordError(''); }}>
+                            Cancelar
+                        </button>
+                    </div>
+                </form>
+            ) : activado ? (
+                <button className="btn btn-outline-danger action-btn w-100 btn-press" onClick={() => { setAccionClave('desactivar'); setPassword(''); setPasswordError(''); }}>
+                    <span className="material-symbols-outlined small">lock_open</span> Desactivar
+                </button>
             ) : (
-                <button className="btn btn-success action-btn w-100 btn-press" onClick={handleActivar} disabled={procesando}>
-                    <span className="material-symbols-outlined small">lock</span> {procesando ? 'Activando...' : 'Activar'}
+                <button className="btn btn-success action-btn w-100 btn-press" onClick={handleActivar}>
+                    <span className="material-symbols-outlined small">lock</span> Activar
                 </button>
             )}
 

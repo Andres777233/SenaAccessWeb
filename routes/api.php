@@ -32,7 +32,7 @@ Route::get('/health', function () {
 });
 
 // Rutas de autenticación con Sanctum
-Route::post('/register', [AuthController::class, 'register']);
+Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:register');
 // Throttle anclado al correo (ver AppServiceProvider): máx 5 fallos/min por cuenta.
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
 // Throttle por correo: máx 3 solicitudes/min, evita spam de correos.
@@ -149,7 +149,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/2fa/aprobar', [TwoFactorController::class, 'aprobar']);
 
     // Chatbot flotante (Gemini): responde 503 honesto sin GEMINI_API_KEY.
-    Route::post('/chatbot', [ChatbotController::class, 'chat']);
+    // Limite por usuario: cada mensaje cuesta una llamada al modelo.
+    Route::post('/chatbot', [ChatbotController::class, 'chat'])->middleware('throttle:chatbot');
 
     // QR rotativo de portería: mostrar (admin/superadmin) y validar (cualquiera).
     Route::get('/acceso/qr/{tipo}', [AccesoQrController::class, 'mostrar'])->middleware('admin_or_portero');

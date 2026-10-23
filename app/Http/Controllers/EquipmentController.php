@@ -24,7 +24,7 @@ class EquipmentController extends Controller
             'equipo_brand' => 'required|string',//VALIDA QUE LA MARCA DEL EQUIPO EXISTA
             'equipo_model' => 'nullable|string',//VALIDA QUE EL MODELO DEL EQUIPO EXISTA
             'equipo_color' => 'required|string',//VALIDA QUE EL COLOR DEL EQUIPO EXISTA
-            'equipo_serial' => 'required|string|unique:ingreso_equipos', //VALIDA QUE EL SERIAL NO SE REPITA
+            'equipo_serial' => 'required|string|max:100', //EL SERIAL PUEDE REPETIRSE EN PRESTAMOS POSTERIORES
             'equipo_observations' => 'nullable|string',//VALIDA QUE LAS OBSERVACIONES NO SE REPITAN
             'equipo_propiedad' => 'nullable|in:Prestado,Propio',
             'fk_id_usuario' => 'nullable|integer|exists:usuarios,id_usuario',

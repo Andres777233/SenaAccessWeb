@@ -50,8 +50,9 @@ class AppServiceProvider extends ServiceProvider
         });
 
         RateLimiter::for('reset-password', function (Request $request) {
-            $key = trim($request->input('code', ''));
-            return Limit::perMinute(10)->by($key ?: $request->ip());
+            // Anclado a la IP: el codigo cambia en cada intento, asi que usarlo
+            // como clave permitia probar codigos sin limite real.
+            return Limit::perMinute(10)->by($request->ip());
         });
 
         RateLimiter::for('verification', function (Request $request) {
@@ -67,8 +68,20 @@ class AppServiceProvider extends ServiceProvider
         });
 
         RateLimiter::for('pin', function (Request $request) {
-            $key = trim($request->input('pin', ''));
-            return Limit::perMinute(10)->by($key ?: $request->ip());
+            $userId = $request->user()?->id_usuario;
+            return Limit::perMinute(10)->by($userId ? 'u:' . $userId : $request->ip());
+        });
+
+        // Registro publico: frena el spam de cuentas y correos.
+        RateLimiter::for('register', function (Request $request) {
+            $key = strtolower(trim((string) $request->input('user_email', '')));
+            return Limit::perMinute(5)->by($key ?: $request->ip());
+        });
+
+        // Chatbot: cada mensaje cuesta una llamada a Gemini.
+        RateLimiter::for('chatbot', function (Request $request) {
+            $userId = $request->user()?->id_usuario;
+            return Limit::perMinute(12)->by($userId ? 'u:' . $userId : $request->ip());
         });
     }
 }

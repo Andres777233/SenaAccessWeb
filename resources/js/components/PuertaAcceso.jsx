@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Footer from './Footer';
+import BotonTema from './BotonTema';
 import EscanearAcceso from './EscanearAcceso';
 import { showAlert } from './CustomAlert';
 
@@ -52,13 +53,16 @@ const PuertaAcceso = () => {
     };
 
     return (
-        <div className="fade-in-up">
-            <div className="mx-auto" style={{ maxWidth: '560px' }}>
-                <EscanearAcceso />
-                <button type="button" className="btn btn-glow btn-primary-login w-100 fw-bold py-3 btn-press" onClick={verificarYEntrar} disabled={verificando}>
-                    {verificando ? 'VERIFICANDO...' : 'YA MARQUÉ, ENTRAR'}
-                </button>
-            </div>
+        <div className="auth-page fade-in-up">
+            <main className="auth-main">
+                <div className="glass-box puerta-card">
+                    <BotonTema />
+                    <EscanearAcceso />
+                    <button type="button" className="btn btn-glow w-100 fw-bold py-3 mt-3 btn-press" onClick={verificarYEntrar} disabled={verificando}>
+                        {verificando ? 'VERIFICANDO...' : 'YA MARQUÉ, ENTRAR'}
+                    </button>
+                </div>
+            </main>
             <Footer />
         </div>
     );

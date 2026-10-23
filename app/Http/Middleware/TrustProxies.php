@@ -12,7 +12,9 @@ class TrustProxies extends Middleware
      *
      * @var array<int, string>|string|null
      */
-    protected $proxies;
+    // Railway termina TLS en su proxy: sin confiar en el X-Forwarded-For,
+    // $request->ip() devuelve la IP del proxy y los limites por IP no sirven.
+    protected $proxies = '*';
 
     /**
      * The headers that should be used to detect proxies.

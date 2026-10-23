@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Services\NotificacionService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
@@ -95,7 +96,17 @@ class TwoFactorController extends Controller
      */
     public function activar(Request $request)
     {
+        $validated = $request->validate([
+            'user_password' => 'required|string',
+        ]);
+
         $user = $request->user();
+
+        // Activar 2FA es sensible: si un token ajeno cae en malas manos, no
+        // debe poder bloquear la cuenta sin conocer la clave actual.
+        if (!Hash::check($validated['user_password'], $user->user_password)) {
+            return response()->json(['message' => 'Contraseña incorrecta.'], 422);
+        }
 
         $user->forceFill(['two_factor_enabled' => true])->save();
 
@@ -155,8 +166,21 @@ class TwoFactorController extends Controller
         }
 
         if (!Hash::check($validated['code'], $reto->code_hash)) {
+            // Limite por reto: sin esto, el throttle por IP se puede esquivar
+            // rotando codigos y el de 6 digitos seria fuerza bruta viable.
+            $llave = '2fa_intentos:' . $reto->challenge_id;
+            $intentos = (int) Cache::get($llave, 0) + 1;
+            Cache::put($llave, $intentos, now()->addMinutes(self::RETO_MINUTOS));
+
+            if ($intentos >= 5) {
+                $reto->update(['estado' => 'rechazado', 'resolved_at' => Carbon::now()]);
+                return response()->json(['message' => 'Demasiados intentos. Vuelve a iniciar sesión.'], 429);
+            }
+
             return response()->json(['message' => 'Código incorrecto.'], 422);
         }
+
+        Cache::forget('2fa_intentos:' . $reto->challenge_id);
 
         return $this->resolverAprobado($reto);
     }
@@ -398,14 +422,23 @@ class TwoFactorController extends Controller
             return response()->json(['message' => 'Usuario no encontrado.'], 404);
         }
 
+        if (($user->estado_cuenta ?? 'aprobada') === 'pendiente') {
+            return response()->json(['message' => 'Tu cuenta esta en espera de aprobacion.'], 403);
+        }
+
+        if (($user->estado_cuenta ?? '') === 'rechazada') {
+            return response()->json(['message' => 'Tu solicitud de cuenta fue rechazada.'], 403);
+        }
+
         // Reto aprobado = dueño verificado: confía en este teléfono de una vez.
         $this->confiarDispositivo($reto);
 
-        if (!$reto->access_token) {
-            $token = $user->createToken('auth_token')->plainTextToken;
-            $reto->forceFill(['access_token' => $token])->save();
-            // Sin Entrada automática: la marca el QR de portería (puerta de entrada).
-        }
+        // Un token nuevo por reto, revocando el anterior si el cliente vuelve
+        // a consultar el estado. El token NUNCA se guarda en claro en la BD.
+        $nombreToken = '2fa_' . $reto->challenge_id;
+        $user->tokens()->where('name', $nombreToken)->delete();
+        $token = $user->createToken($nombreToken)->plainTextToken;
+        // Sin Entrada automática: la marca el QR de portería (puerta de entrada).
 
         $user->refresh();
 
@@ -413,7 +446,7 @@ class TwoFactorController extends Controller
             'message' => 'Login exitoso',
             'user' => $user,
             'role' => $user->role->rol_name,
-            'access_token' => $reto->access_token,
+            'access_token' => $token,
             'token_type' => 'Bearer',
             'email_verified_at' => $user->email_verified_at,
         ]);

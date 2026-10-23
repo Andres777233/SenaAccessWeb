@@ -8,6 +8,7 @@ use App\Models\Ingreso;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ExcusaController extends Controller
 {
@@ -135,7 +136,7 @@ class ExcusaController extends Controller
         $excusa = Excusa::where('pin', $pin)->where('estado', 'pendiente')->with(['aprendiz', 'ambiente', 'instructor'])->first();
         if (!$excusa) {
             $expirada = Excusa::where('pin', $pin)->where('estado', 'expirada')->first();
-            if ($expirada) return response()->json(['message' => 'PIN expirado (vigencia 60 min). Pide al instructor una nueva excusa.'], 400);
+            if ($expirada) return response()->json(['message' => 'PIN expirado (vigencia 15 min). Pide al instructor una nueva excusa.'], 400);
             $usada = Excusa::where('pin', $pin)->where('estado', 'usada')->first();
             if ($usada) return response()->json(['message' => 'PIN ya utilizado.'], 400);
             return response()->json(['message' => 'PIN inválido.'], 400);
@@ -146,15 +147,22 @@ class ExcusaController extends Controller
             return response()->json(['message' => 'PIN expirado.'], 400);
         }
 
-        $excusa->update(['estado' => 'usada', 'usado_en' => Carbon::now()]);
+        $ultimo = Ingreso::where('fk_id_user', $excusa->fk_id_aprendiz)->orderByDesc('id_ingreso')->first();
+        if (($ultimo?->ingreso_type) !== 'Entrada') {
+            return response()->json(['message' => 'El aprendiz no tiene una entrada registrada; no se puede marcar salida.'], 422);
+        }
 
-        // Registrar Salida en ingresos para el aprendiz.
-        Ingreso::create([
-            'ingreso_datetime' => Carbon::now('America/Bogota'),
-            'ingreso_place' => $excusa->ambiente ? $excusa->ambiente->ambiente_nombre : 'Salida con excusa',
-            'ingreso_type' => 'Salida',
-            'fk_id_user' => $excusa->fk_id_aprendiz,
-        ]);
+        DB::transaction(function () use ($excusa) {
+            $excusa->update(['estado' => 'usada', 'usado_en' => Carbon::now()]);
+
+            // Registrar Salida en ingresos para el aprendiz.
+            Ingreso::create([
+                'ingreso_datetime' => Carbon::now('America/Bogota'),
+                'ingreso_place' => $excusa->ambiente ? $excusa->ambiente->ambiente_nombre : 'Salida con excusa',
+                'ingreso_type' => 'Salida',
+                'fk_id_user' => $excusa->fk_id_aprendiz,
+            ]);
+        });
 
         $excusa->load(['aprendiz:id_usuario,user_name,user_lastname,user_identification', 'ambiente:id_ambiente,ambiente_nombre', 'instructor:id_usuario,user_name,user_lastname']);
 

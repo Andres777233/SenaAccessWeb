@@ -44,7 +44,7 @@ const ResetPassword = () => {
             if (response.ok) {
                 setMessage(data.message || 'Contraseña actualizada correctamente.');
                 setTimeout(() => {
-                    navigate('/'); // Navigate to login
+                    navigate('/login');
                 }, 2000);
             } else {
                 setError(data.message || 'Error al actualizar la contraseña.');
@@ -127,8 +127,9 @@ const ResetPassword = () => {
                         </button>
                     </div>
                 </form>
-                <div className="mt-4 text-center">
+                <div className="mt-4 text-center d-grid gap-2">
                     <Link to="/password-recovery" className="custom-link fw-bold">Volver a solicitar código</Link>
+                    <Link to="/login" className="custom-link fw-bold">Ir al login</Link>
                 </div>
             </div>
             </main>

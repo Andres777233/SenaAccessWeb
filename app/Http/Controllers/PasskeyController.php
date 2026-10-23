@@ -6,12 +6,14 @@ use App\Models\Passkey;
 use App\Models\User;
 use App\Services\PasskeyService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 
 /**
  * Huella digital en la web (WebAuthn / passkey).
  *
- * - Se registra la credencial desde el perfil (pide la sesion iniciada).
+ * - Se registra la credencial desde el perfil (pide la sesion iniciada y la
+ *   contrasena actual: un token robado no basta para crear una huella).
  * - El ingreso con huella devuelve el mismo token que el login por clave.
  */
 class PasskeyController extends Controller
@@ -21,13 +23,31 @@ class PasskeyController extends Controller
     }
 
     /**
+     * La contrasena actual autoriza altas/bajas de credenciales.
+     * Sin esto, un token robado podria registrar la huella del atacante y
+     * saltarse el segundo factor.
+     */
+    private function passwordValida(Request $request): bool
+    {
+        return Hash::check(
+            (string) $request->input('user_password'),
+            (string) $request->user()->user_password
+        );
+    }
+
+    /**
      * Opciones para registrar la huella de este dispositivo.
      */
     public function opcionesRegistro(Request $request)
     {
         $request->validate([
             'nombre_dispositivo' => 'nullable|string|max:120',
+            'user_password' => 'required|string',
         ]);
+
+        if (!$this->passwordValida($request)) {
+            return response()->json(['message' => 'Contrasena incorrecta. No se puede registrar la huella.'], 422);
+        }
 
         $respuesta = $this->passkeys->opcionesRegistro($request, $request->user());
 
@@ -45,6 +65,7 @@ class PasskeyController extends Controller
     {
         $datos = $request->validate([
             'reto' => 'required|string',
+            'user_password' => 'required|string',
             'id' => 'required|string',
             'rawId' => 'nullable|string',
             'type' => 'nullable|string',
@@ -52,6 +73,10 @@ class PasskeyController extends Controller
             'transports' => 'nullable|array',
             'nombre_dispositivo' => 'nullable|string|max:120',
         ]);
+
+        if (!$this->passwordValida($request)) {
+            return response()->json(['message' => 'Contrasena incorrecta. No se puede registrar la huella.'], 422);
+        }
 
         $respuesta = $datos['response'];
         $respuesta['transports'] = $datos['transports'] ?? ($respuesta['transports'] ?? []);

@@ -124,6 +124,16 @@ const QrScannerModal = ({ isOpen, onClose, onScanSuccess }) => {
         };
     }, [isOpen]);
 
+    // Cerrar con Escape sin dejar la camara encendida.
+    useEffect(() => {
+        if (!isOpen) return undefined;
+        const alPresionar = (e) => {
+            if (e.key === 'Escape') onClose();
+        };
+        window.addEventListener('keydown', alPresionar);
+        return () => window.removeEventListener('keydown', alPresionar);
+    }, [isOpen, onClose]);
+
     // Cambiar de cámara
     const handleCameraChange = (e) => {
         const newCameraId = e.target.value;
@@ -164,7 +174,7 @@ const QrScannerModal = ({ isOpen, onClose, onScanSuccess }) => {
     if (!isOpen) return null;
 
     return (
-        <div className="equipment-modal-overlay" onClick={onClose}>
+        <div className="equipment-modal-overlay" role="dialog" aria-modal="true" aria-label="Escanear carnet o QR" onClick={onClose}>
             <div className="equipment-modal-box qr-scanner-modal-box p-4" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '520px' }}>
                 {/* Header */}
                 <div className="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom border-success border-opacity-20">

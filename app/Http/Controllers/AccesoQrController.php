@@ -66,14 +66,15 @@ class AccesoQrController extends Controller
         if (abs($ventanaActual - (int) $json['ventana']) > 1) {
             return response()->json(['message' => 'QR vencido. Pide que lo actualicen en portería.'], 422);
         }
-        // Anti-replay: el mismo QR no se procesa dos veces en su vigencia.
-        $llaveReplay = 'acceso_qr_usado:' . hash('sha256', $data['qr_payload']);
+        $user = $request->user();
+
+        // Anti-replay POR USUARIO: el QR de portería es el mismo para todos,
+        // así que una clave global dejaría entrar solo al primero de la fila.
+        $llaveReplay = 'acceso_qr_usado:' . $user->id_usuario . ':' . hash('sha256', $data['qr_payload']);
         if (Cache::has($llaveReplay)) {
             return response()->json(['message' => 'Este QR ya fue usado. Espera al siguiente.'], 422);
         }
         Cache::put($llaveReplay, true, self::VENTANA_SEG * 2);
-
-        $user = $request->user();
         $ultimo = Ingreso::where('fk_id_user', $user->id_usuario)->orderByDesc('id_ingreso')->first();
         $ultimoTipo = $ultimo?->ingreso_type;
 
@@ -155,7 +156,6 @@ class AccesoQrController extends Controller
         if ($pin->expira_en->isPast()) {
             return response()->json(['message' => 'PIN vencido. Pide uno nuevo.'], 400);
         }
-        $pin->update(['usado_en' => Carbon::now('America/Bogota')]);
         $user = $request->user();
 
         if ($pin->tipo === 'entrada') {
@@ -165,8 +165,11 @@ class AccesoQrController extends Controller
                 ->whereDate('ingreso_datetime', $hoy)
                 ->exists();
             if ($entradaHoy) {
+                // No se consume el PIN: el usuario puede usarlo cuando de verdad
+                // necesite marcar (antes se perdía sin registrar nada).
                 return response()->json(['message' => 'Ya registraste tu entrada de hoy.', 'duplicado' => true]);
             }
+            $pin->update(['usado_en' => Carbon::now('America/Bogota')]);
             $ingreso = Ingreso::create([
                 'ingreso_datetime' => Carbon::now('America/Bogota'),
                 'ingreso_place' => 'CCyS',
@@ -180,6 +183,7 @@ class AccesoQrController extends Controller
         if (($ultimo?->ingreso_type) !== 'Entrada') {
             return response()->json(['message' => 'No tienes una entrada registrada para marcar salida.'], 422);
         }
+        $pin->update(['usado_en' => Carbon::now('America/Bogota')]);
         $ingreso = Ingreso::create([
             'ingreso_datetime' => Carbon::now('America/Bogota'),
             'ingreso_place' => 'CCyS',

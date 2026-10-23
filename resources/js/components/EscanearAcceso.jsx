@@ -69,38 +69,38 @@ const EscanearAcceso = () => {
     };
 
     return (
-        <div className="fade-in-up">
-            <div className="glass-box p-4 mb-5 mx-auto" style={{ maxWidth: '560px' }}>
-                <div className="section-header text-center">
-                    <h3 className="mb-0">Marcar entrada / salida</h3>
-                    <p className="opacity-50 small">Escanea el QR de portería con tu cámara o pega el código</p>
-                </div>
-                {resultado && (
-                    <div className={`alert ${resultado.ok ? 'alert-success' : 'alert-danger'} text-center`}>{resultado.message}</div>
-                )}
-                {escaneando ? (
-                    <>
-                        <video ref={videoRef} className="w-100 rounded-4 bg-black" style={{ maxHeight: '320px' }} playsInline muted />
-                        <button type="button" className="btn btn-outline-secondary w-100 mt-2" onClick={detenerCamara}>Detener cámara</button>
-                    </>
-                ) : (
-                    <button type="button" className="btn btn-success w-100 py-2 mb-3" onClick={iniciarCamara}>
-                        <span className="material-symbols-outlined small me-1">qr_code_scanner</span> Escanear con cámara
-                    </button>
-                )}
-                {camaraError && <p className="text-warning small text-center">{camaraError}</p>}
-                <div className="input-group mt-2">
-                    <input
-                        type="text"
-                        className="form-control"
-                        placeholder="...o pega aquí el código del QR"
-                        value={codigo}
-                        onChange={(e) => setCodigo(e.target.value)}
-                    />
-                    <button type="button" className="btn btn-outline-success" disabled={validando || !codigo.trim()} onClick={() => validar()}>
-                        {validando ? 'Marcando...' : 'Marcar'}
-                    </button>
-                </div>
+        <div className="puerta-scanner">
+            <div className="puerta-head text-center">
+                <span className="material-symbols-outlined puerta-icon">qr_code_scanner</span>
+                <h3 className="mb-1">Marcar entrada / salida</h3>
+                <p className="opacity-50 small">Escanea el QR de portería con tu cámara o pega el código</p>
+            </div>
+            {resultado && (
+                <div className={`alert ${resultado.ok ? 'alert-success' : 'alert-danger'} text-center`}>{resultado.message}</div>
+            )}
+            {escaneando ? (
+                <>
+                    <video ref={videoRef} className="w-100 rounded-4 bg-black" style={{ maxHeight: '320px' }} playsInline muted />
+                    <button type="button" className="btn btn-glow w-100 mt-2" onClick={detenerCamara}>Detener cámara</button>
+                </>
+            ) : (
+                <button type="button" className="btn btn-primary-login w-100 py-3 mb-3" onClick={iniciarCamara}>
+                    <span className="material-symbols-outlined small me-1">qr_code_scanner</span> Escanear con cámara
+                </button>
+            )}
+            {camaraError && <p className="text-warning small text-center">{camaraError}</p>}
+            <div className="input-group mt-2 puerta-input-group">
+                <input
+                    type="text"
+                    className="form-control"
+                    placeholder="Pega el código del QR"
+                    aria-label="Código del QR"
+                    value={codigo}
+                    onChange={(e) => setCodigo(e.target.value)}
+                />
+                <button type="button" className="btn btn-glow" disabled={validando || !codigo.trim()} onClick={() => validar()}>
+                    {validando ? 'Marcando...' : 'Marcar'}
+                </button>
             </div>
         </div>
     );

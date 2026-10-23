@@ -71,12 +71,22 @@ const CustomAlert = () => {
         }
     };
 
+    // Escape cierra la alerta (o cancela la confirmacion).
+    useEffect(() => {
+        if (!state.visible) return undefined;
+        const alPresionar = (e) => {
+            if (e.key === 'Escape') handleAction(!state.isConfirm);
+        };
+        window.addEventListener('keydown', alPresionar);
+        return () => window.removeEventListener('keydown', alPresionar);
+    }, [state.visible, state.isConfirm]);
+
     const isSuccess = state.type === 'success';
     const isError = state.type === 'error';
     const isWarning = state.type === 'warning';
 
     return (
-        <div className="custom-alert-overlay" style={{
+        <div className="custom-alert-overlay" role="dialog" aria-modal="true" aria-label="Aviso del sistema" style={{
             position: 'fixed',
             inset: 0,
             zIndex: 99999,

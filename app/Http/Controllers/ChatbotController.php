@@ -66,11 +66,12 @@ class ChatbotController extends Controller
                     $payload['tools'] = [$herramientas];
                 }
 
-                $response = Http::timeout(25)
+                $response = Http::withHeaders(['x-goog-api-key' => $apiKey])
+                    ->timeout(25)
                     ->retry(3, 500, function ($exception) {
                         return $exception->getCode() >= 500;
                     }, throw: false)
-                    ->post("{$endpoint}?key={$apiKey}", $payload);
+                    ->post($endpoint, $payload);
 
                 if (!$response->successful()) {
                     // Si el modelo rechaza el esquema de herramientas, se reintenta
@@ -157,6 +158,11 @@ class ChatbotController extends Controller
         $history = array_slice((array) $request->input('history', []), -10);
         foreach ($history as $turn) {
             if (!isset($turn['role'], $turn['text']) || !is_string($turn['text'])) {
+                continue;
+            }
+            // Solo los roles de una conversacion normal: un "system" inyectado
+            // por el cliente intentaria cambiar las instrucciones del modelo.
+            if (!in_array($turn['role'], ['user', 'model'], true)) {
                 continue;
             }
             $texto = mb_substr(trim($turn['text']), 0, 1500);

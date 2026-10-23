@@ -50,7 +50,7 @@ const LandingPage = () => {
 
                 <div className="mt-5 pt-4 border-top border-success border-opacity-10" style={{ animation: 'fadeInUp 1.6s ease-out' }}>
                     <p className="small theme-text opacity-75 mb-0">Sistema de Gestión de Ambientes y Equipos</p>
-                    <p className="small text-success mt-1 opacity-75">v0.1.9</p>
+                    <p className="small text-success mt-1 opacity-75">v9.0</p>
                 </div>
             </div>
         </div>

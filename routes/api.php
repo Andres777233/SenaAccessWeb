@@ -156,6 +156,12 @@ Route::middleware('auth:sanctum')->group(function () {
     // QR rotativo de portería: mostrar (admin/superadmin) y validar (cualquiera).
     Route::get('/acceso/qr/{tipo}', [AccesoQrController::class, 'mostrar'])->middleware('admin_or_portero');
     Route::post('/acceso/validar', [AccesoQrController::class, 'validar']);
+    // La puerta web lo consulta cada pocos segundos para entrar sola cuando
+    // portería registra la Entrada (antes había que pulsar "ya marqué").
+    Route::get('/acceso/estado', [AccesoQrController::class, 'estado'])->middleware('throttle:60,1');
+    // Portería escanea el carnet digital (web o móvil) y registra la Entrada.
+    Route::post('/acceso/carnet', [AccesoQrController::class, 'carnet'])
+        ->middleware(['admin_or_portero', 'throttle:120,1']);
     // PIN corto de acceso: portería lo genera y el aprendiz lo digita sin cámara.
     Route::post('/admin/pines-acceso', [AccesoQrController::class, 'generarPin'])->middleware('admin_or_portero');
     Route::post('/acceso/validar-pin', [AccesoQrController::class, 'validarPin']);

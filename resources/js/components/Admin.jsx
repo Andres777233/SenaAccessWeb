@@ -648,7 +648,7 @@ const handleCancelEdit = () => {
     const renderView = () => {
         switch (view) {
             case 'dashboard':
-                return <StatsDashboard currentUser={currentUser} />;
+                return <StatsDashboard currentUser={currentUser} onNavegar={setView} />;
             case 'users':
                 return (
                     <div className="fade-in-up">
@@ -1373,14 +1373,31 @@ const handleCancelEdit = () => {
         }
     };
 
-    // Nav espeja el dock del admin móvil (INICIO·NOVEDADES·USUARIOS·AMBIENTES).
-    // Sin MÁS: las vistas secundarias siguen en el switch (reversible).
+    // Nav espeja el dock del admin móvil (Inicio·Novedades·Usuarios·Ambientes)
+    // y agrupa el resto en "Más" para que ninguna vista quede sin entrada.
     const adminLinks = [
-        { label: 'DASHBOARD', icon: 'dashboard', view: 'dashboard' },
-        { label: 'NOVEDADES', icon: 'report_problem', view: 'novedad_historial' },
-        { label: 'USUARIOS', icon: 'group', view: 'users', filter: 'all' },
-        { label: 'AMBIENTES', icon: 'meeting_room', view: 'ambientes' },
-        { label: 'ESCANEAR CARNET', icon: 'qr_code_scanner', view: 'escanear_carnet' }
+        { label: 'Dashboard', icon: 'dashboard', view: 'dashboard' },
+        { label: 'Novedades', icon: 'report_problem', view: 'novedad_historial' },
+        { label: 'Usuarios', icon: 'group', view: 'users', filter: 'all' },
+        { label: 'Ambientes', icon: 'meeting_room', view: 'ambientes' },
+        { label: 'Escanear carnet', icon: 'qr_code_scanner', view: 'escanear_carnet' },
+        {
+            label: 'Más',
+            icon: 'apps',
+            view: 'historial',
+            dropdown: true,
+            items: [
+                { label: 'Historial de accesos', icon: 'history', view: 'historial' },
+                { label: 'Personas en el centro', icon: 'badge', view: 'presentes' },
+                { label: 'Excusas', icon: 'key', view: 'excusas' },
+                { label: 'Validar QR', icon: 'qr_code_scanner', view: 'validar_qr' },
+                { label: 'Registrar equipo', icon: 'add_box', view: 'equipo_entry' },
+                { label: 'Historial de equipos', icon: 'inventory_2', view: 'historial_equipos' },
+                { label: 'Directorio', icon: 'contacts', view: 'directorio' },
+                { label: 'Acceso QR', icon: 'qr_code_2', view: 'acceso_qr' },
+                { label: 'Mi carnet', icon: 'id_card', view: 'qr_carnet' }
+            ]
+        }
     ];
 
     return (
@@ -1392,6 +1409,7 @@ const handleCancelEdit = () => {
                 userFilter={userFilter}
                 setUserFilter={setUserFilter}
                 links={adminLinks}
+                primaryViews={['dashboard', 'novedad_historial', 'users', 'ambientes']}
             />
 
             <main className="container-fluid px-3 px-md-5 py-2 flex-grow-1">

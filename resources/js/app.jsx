@@ -1,5 +1,6 @@
 import './bootstrap';
 import '../css/app.css';
+import '../css/tema-v2.css';
 
 import React, { Suspense, lazy, useState, useEffect, Component } from 'react';
 import ReactDOM from 'react-dom/client';
@@ -17,6 +18,12 @@ import ChatbotWidget from './components/ChatbotWidget';
 import PuertaAcceso from './components/PuertaAcceso';
 import HuellaSimulacion from './components/HuellaSimulacion';
 import NotFound from './components/NotFound';
+import TemaFlotante from './components/v2/TemaFlotante';
+import { aplicarTema, leerTema } from './utils/tema';
+
+// El tema elegido se aplica antes del primer render para que no haya un
+// parpadeo del sistema anterior.
+aplicarTema(leerTema());
 // Paneles pesados por rol: lazy para que la primera carga solo baje el chunk
 // de la ruta visitada (antes las 12 rutas viajaban en un solo app-*.js).
 const Admin = lazy(() => import('./components/Admin'));
@@ -165,6 +172,9 @@ const App = () => {
 
             {/* Alerta y Confirmación Personalizada Global */}
             <CustomAlert />
+
+            {/* Interruptor Tema nuevo / Tema viejo en las páginas públicas */}
+            <TemaFlotante />
 
             {/* Chatbot flotante: visible solo con sesión y fuera de las pantallas de acceso */}
             <ChatbotGate />

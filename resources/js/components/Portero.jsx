@@ -234,13 +234,13 @@ const Portero = () => {
     // Nav espeja el dock del portero móvil (Inicio·Validar·Equipos·Historial).
     // EXCUSAS valida PIN y VALIDAR QR el QR de invitado (en el móvil van unificados).
     const porteroLinks = [
-        { label: 'DASHBOARD', icon: 'dashboard', view: 'dashboard' },
-        { label: 'EXCUSAS', icon: 'key', view: 'excusas' },
-        { label: 'VALIDAR QR', icon: 'qr_code_scanner', view: 'validar_qr' },
-        { label: 'EQUIPOS', icon: 'inventory_2', view: 'equipos' },
-        { label: 'HISTORIAL DE ACCESOS', icon: 'history', view: 'historial' },
-        { label: 'MI CARNET', icon: 'id_card', view: 'qr_carnet' },
-        { label: 'ACCESO QR', icon: 'qr_code_2', view: 'acceso_qr' }
+        { label: 'Dashboard', icon: 'dashboard', view: 'dashboard' },
+        { label: 'Excusas', icon: 'key', view: 'excusas' },
+        { label: 'Validar QR', icon: 'qr_code_scanner', view: 'validar_qr' },
+        { label: 'Equipos', icon: 'inventory_2', view: 'equipos' },
+        { label: 'Historial', icon: 'history', view: 'historial' },
+        { label: 'Mi carnet', icon: 'id_card', view: 'qr_carnet' },
+        { label: 'Acceso QR', icon: 'qr_code_2', view: 'acceso_qr' }
     ];
 
     const filteredEquipment = equipmentList.filter(item => {
@@ -344,7 +344,7 @@ const Portero = () => {
 
         switch (view) {
             case 'dashboard':
-                return <StatsDashboard currentUser={currentUser} />;
+                return <StatsDashboard currentUser={currentUser} onNavegar={setView} />;
             case 'historial':
                 return (
                     <div className="fade-in-up">
@@ -619,7 +619,7 @@ const Portero = () => {
             <Navbar currentUser={currentUser} view={view} setView={(newView) => {
                 setView(newView);
                 setEditingProfile(false);
-            }} links={porteroLinks} />
+            }} links={porteroLinks} primaryViews={['dashboard', 'validar_qr', 'equipos', 'historial']} />
             <main className="container-fluid px-3 px-md-5 py-4 flex-grow-1">{renderView()}</main>
             <Footer />
         </div>

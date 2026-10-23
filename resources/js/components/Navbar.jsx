@@ -1,8 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import ShellV2 from './v2/ShellV2';
+import { useTema, cambiarTema, TEMA_V2 } from '../utils/tema';
 
-const Navbar = ({ currentUser, view, setView, userFilter, setUserFilter, links = [] }) => {
+const Navbar = (props) => {
+    const { esV2 } = useTema();
+    if (esV2) return <ShellV2 {...props} />;
+    return <NavbarClasico {...props} />;
+};
+
+// Barra del tema viejo (se conserva tal cual, con el interruptor al tema nuevo
+// y el arreglo de separación entre la marca y el primer enlace).
+const NavbarClasico = ({ currentUser, view, setView, userFilter, setUserFilter, links = [] }) => {
     const navigate = useNavigate();
     const [notifications, setNotifications] = useState([]);
     const [unread, setUnread] = useState(0);
@@ -153,6 +163,17 @@ const Navbar = ({ currentUser, view, setView, userFilter, setUserFilter, links =
 
                     {/* Columna derecha: Perfil y Acciones */}
                     <div className="navbar-actions d-flex align-items-center justify-content-lg-end gap-3 pt-2 pt-lg-0 border-top border-lg-0 border-success border-opacity-10">
+                        {/* Prueba del sistema visual nuevo sin perder el actual */}
+                        <button
+                            className="btn btn-outline-success btn-sm d-flex align-items-center gap-1"
+                            type="button"
+                            onClick={() => cambiarTema(TEMA_V2)}
+                            title="Cambiar al tema nuevo (puedes volver cuando quieras)"
+                        >
+                            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>auto_awesome</span>
+                            Tema nuevo
+                        </button>
+
                         {/* Tema claro/oscuro: vive en la barra para no tapar nada */}
                         <button
                             className="btn btn-link p-1 text-success theme-nav-btn"

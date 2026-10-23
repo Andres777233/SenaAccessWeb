@@ -307,7 +307,7 @@ const Instructor = () => {
 
         switch (view) {
             case 'dashboard':
-                return <StatsDashboard currentUser={currentUser} />;
+                return <StatsDashboard currentUser={currentUser} onNavegar={setView} />;
             case 'historial':
                 return (
                     <div className="fade-in-up">
@@ -458,23 +458,23 @@ const Instructor = () => {
     // Nav espeja el dock del instructor móvil (Inicio·Ambientes·Novedades·Historial·Equipos).
     // EXCUSAS se conserva: es la única entrada a generar PIN (en el móvil vive dentro del detalle del ambiente).
     const instructorLinks = [
-        { label: 'DASHBOARD', icon: 'dashboard', view: 'dashboard' },
-        { label: 'MIS SALONES', icon: 'meeting_room', view: 'ambientes' },
+        { label: 'Dashboard', icon: 'dashboard', view: 'dashboard' },
+        { label: 'Mis salones', icon: 'meeting_room', view: 'ambientes' },
         {
-            label: 'NOVEDADES',
+            label: 'Novedades',
             icon: 'report_problem',
             view: 'novedad_historial',
             dropdown: true,
             items: [
-                { label: 'Reportar Novedad', icon: 'add_circle', view: 'novedad_form' },
-                { label: 'Historial de Novedades', icon: 'history', view: 'novedad_historial' }
+                { label: 'Reportar novedad', icon: 'add_circle', view: 'novedad_form' },
+                { label: 'Historial de novedades', icon: 'history', view: 'novedad_historial' }
             ]
         },
-        { label: 'HISTORIAL DE ACCESOS', icon: 'history', view: 'historial' },
-        { label: 'EXCUSAS', icon: 'key', view: 'excusas' },
-        { label: 'MIS EQUIPOS', icon: 'inventory_2', view: 'mis_equipos' },
-        { label: 'MI CARNET', icon: 'id_card', view: 'qr_carnet' },
-        { label: 'MARCAR ACCESO', icon: 'qr_code_scanner', view: 'escanear_acceso' }
+        { label: 'Historial', icon: 'history', view: 'historial' },
+        { label: 'Excusas', icon: 'key', view: 'excusas' },
+        { label: 'Mis equipos', icon: 'inventory_2', view: 'mis_equipos' },
+        { label: 'Mi carnet', icon: 'id_card', view: 'qr_carnet' },
+        { label: 'Marcar acceso', icon: 'qr_code_scanner', view: 'escanear_acceso' }
     ];
 
     if (loading) return <div className="text-white text-center mt-5">Cargando...</div>;
@@ -484,7 +484,7 @@ const Instructor = () => {
             <Navbar currentUser={currentUser} view={view} setView={(newView) => {
                 setView(newView);
                 setEditingProfile(false);
-            }} links={instructorLinks} />
+            }} links={instructorLinks} primaryViews={['dashboard', 'ambientes', 'novedad_historial', 'escanear_acceso']} />
             <main className="container-fluid px-3 px-md-5 py-4 flex-grow-1">{renderView()}</main>
             <Footer />
         </div>

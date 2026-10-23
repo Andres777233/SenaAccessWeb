@@ -306,7 +306,7 @@ const Aprendiz = () => {
 
         switch (view) {
             case 'dashboard':
-                return <StatsDashboard currentUser={currentUser} />;
+                return <StatsDashboard currentUser={currentUser} onNavegar={setView} />;
             case 'comprobantes':
                 return (
                     <div className="fade-in-up">
@@ -487,12 +487,12 @@ const Aprendiz = () => {
     };
 
     const aprendizLinks = [ // Definicion de enlaces para el navbar (espejo del dock móvil: Inicio·Excusas·Historial·Equipos)
-        { label: 'DASHBOARD', icon: 'dashboard', view: 'dashboard' },
-        { label: 'MIS PERMISOS', icon: 'key', view: 'permisos' },
-        { label: 'HISTORIAL DE ACCESOS', icon: 'history', view: 'historial' },
-        { label: 'MIS EQUIPOS', icon: 'inventory_2', view: 'comprobantes' },
-        { label: 'MI CARNET', icon: 'id_card', view: 'qr_carnet' },
-        { label: 'MARCAR ACCESO', icon: 'qr_code_scanner', view: 'escanear_acceso' }
+        { label: 'Dashboard', icon: 'dashboard', view: 'dashboard' },
+        { label: 'Mis permisos', icon: 'key', view: 'permisos' },
+        { label: 'Historial', icon: 'history', view: 'historial' },
+        { label: 'Mis equipos', icon: 'inventory_2', view: 'comprobantes' },
+        { label: 'Mi carnet', icon: 'id_card', view: 'qr_carnet' },
+        { label: 'Marcar acceso', icon: 'qr_code_scanner', view: 'escanear_acceso' }
     ];
 
     return ( // Estructura principal
@@ -505,6 +505,7 @@ const Aprendiz = () => {
                     setEditingProfile(false);
                 }}
                 links={aprendizLinks}
+                primaryViews={['dashboard', 'qr_carnet', 'escanear_acceso', 'historial']}
             />
 
             <main className="container-fluid px-3 px-md-5 py-2 flex-grow-1">

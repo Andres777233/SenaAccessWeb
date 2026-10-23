@@ -21,7 +21,7 @@ Backend del proyecto SenaAccess: API REST que consume la app Android **y** panel
 | Frontend | SPA **React 19.2** + `react-router-dom 7.13` + **Vite 6** + Bootstrap **5.3.2** (CDN) + FontAwesome 5.10 + Material Symbols |
 | Auth | Laravel **Sanctum** (Bearer) + 2FA propio (código de 6 dígitos + enlace firmado SÍ/NO por correo) |
 | Extras | dompdf (comprobante de equipo), phpspreadsheet (export Excel), cloudinary-laravel (fotos de perfil), resend-laravel (correo) |
-| Tamaño | **83** rutas API, **13** controllers, **16** models, **43** migraciones, **3** seeders, **31** componentes `.jsx` |
+| Tamaño | **92** rutas API, **14** controllers, **17** models, **45** migraciones, **3** seeders, **46** componentes `.jsx` |
 | Deploy | Railway: `railway.json` (builder `dockerfile` + `releaseCommand` = `migrate --force --seed` + healthcheck `/api/health`) |
 | Repo | `https://github.com/Andres777233/SenaAccessWeb` — rama `main` (push = deploy) |
 
@@ -29,14 +29,14 @@ Backend del proyecto SenaAccess: API REST que consume la app Android **y** panel
 
 | Ruta | Qué contiene |
 |---|---|
-| `routes/api.php` | **83 rutas** = contrato con el móvil (fuente de verdad del backend) |
+| `routes/api.php` | **92 rutas** = contrato con el móvil (fuente de verdad del backend) |
 | `routes/web.php` | catch-all del SPA (`welcome.blade.php`) + descarga del APK actual (`SenaAccessV9.0.apk`) |
 | `app/Http/Controllers/` | `AuthController`, `AdminController`, `AmbienteController`, `ExcusaController`, `EquipmentController`, `NovedadController`, `NotificacionController`, `TwoFactorController`, `AccesoQrController`, `ChatbotController`, `PrediccionController`, **`PasskeyController`** (huella WebAuthn) |
 | `app/Http/Middleware/` | `CheckAdminRole` (superadmin), `CheckAdminOrInstructor`, `CheckAdminOrPortero` (superadmin \| admin) |
 | `app/Models/` | `User`, `Role`, `Ingreso`, `IngresoEquipo`, `Ambiente`, `Excusa`, `Novedad`, `Notificacion`, `TokenRecovery`, `TwoFactorChallenge`, `PinAcceso`, `PrediccionModelo`, `Festivo`, `AccesoDiario`, **`Passkey`**, **`WebauthnChallenge`** |
-| `database/migrations/` | **43** migraciones (esquema completo) |
+| `database/migrations/` | **45** migraciones (esquema completo) |
 | `database/seeders/` | `DatabaseSeeder` (roles + 9 cuentas), `DemoDataSeeder` (datos demo, idempotente), `FestivoSeeder` (festivos, cálculo propio de Pascua) |
-| `resources/js/` | SPA: `app.jsx` (rutas y guardas) + `components/` (31 `.jsx`) + `assets/` + `utils/` (`webauthn.js`, `mensajes.js`, `comprobante.js`) |
+| `resources/js/` | SPA: `app.jsx` (rutas y guardas) + `components/` (46 `.jsx`, con `components/v2/` del tema nuevo y `components/clasico/` del tema viejo) + `assets/` + `utils/` (`webauthn.js`, `mensajes.js`, `comprobante.js`, `tema.js`, `formato.js`, `useEsperarEntrada.js`) + `resources/css/tema-v2.css` |
 | `resources/views/` | `welcome.blade.php` (cáscara del SPA), `emails/` (5 plantillas), `comprobantes/`, `exports/` |
 | `public/` | APKs descargables (`SenaAccessV9.0.apk` es el actual), `avatars/`, `email/` (logo del correo), `build/` (bundle de Vite), `static-html-backup/` |
 | raíz | `railway.json`, `nixpacks.toml`, `Dockerfile`, `.railwayignore`, `.dockerignore`, `iniciar-servidor.sh`, `documentacion/`, `AGENTS.md` |
@@ -72,6 +72,9 @@ SPA (`resources/js/app.jsx`): `/admin` → superadmin, `/portero` → admin, `/i
 - **Fotos de perfil**: Cloudinary (`CLOUDINARY_URL` + `CLOUDINARY_UPLOAD_PRESET` en Railway; **sin estas el upload devuelve 500**).
 - **Errores**: JSON con `message`; el móvil los muestra con `detalleHttp` (código + mensaje real). Toda ruta `/api/*` inexistente responde **404 JSON** (no el HTML del SPA) y sin token responde **401 JSON** (nunca 500).
 - **Huella digital en la web (WebAuthn)**: `POST /api/huellas/registro/opciones|registro`, `POST /api/huellas/login/opciones|login`, `GET/DELETE /api/huellas/{id}`. La clave privada vive en el autenticador del dispositivo; el servidor guarda solo la clave pública. En producción define `WEBAUTHN_RP_ID` y `WEBAUTHN_ALLOWED_ORIGINS` (por defecto usa el dominio de la petición).
+- **Estado de acceso (web)**: `GET /api/acceso/estado` → `{entrada_hoy, entrada, dentro, ultimo}`. La puerta lo consulta cada 3 s y entra sola al panel cuando portería registra la entrada (ya no existe el botón "ya marqué, entrar").
+- **Carnet en portería**: `POST /api/acceso/carnet` (`{carnet}` con el JSON del QR o el documento) registra la Entrada del dueño y devuelve `{message, duplicado, usuario}`. Es la vía para que el carnet mostrado en la web sirva de verdad como entrada.
+- **Tema nuevo / tema viejo (web)**: `resources/css/tema-v2.css` solo aplica con `body.tema-v2`. El interruptor vive en la barra, en "Más" y en las páginas públicas; se guarda en `localStorage.ui_tema` (`v2` o `clasico`). Cada vista con dos diseños tiene su original en `components/clasico/` y el nuevo en `components/v2/`; `Navbar.jsx` decide cuál montar.
 
 ## Credenciales de prueba (las crea `DatabaseSeeder`)
 
@@ -89,6 +92,7 @@ SPA (`resources/js/app.jsx`): `/admin` → superadmin, `/portero` → admin, `/i
 ## Estado actual y pendientes
 
 - Último commit: 2026-10-22 — fix de la migración WebAuthn (idempotente) y limpieza de APKs viejos (queda solo `SenaAccessV9.0.apk`).
+- 2026-10-22 — **tema nuevo (v2) opt-in**: `body.tema-v2` + interruptor "Tema nuevo / Tema viejo" (barra, menú Más y páginas públicas). Incluye navbar de escritorio con marca separada 40 px, dock de celular 4+1 con hoja "Más", dashboards con datos reales (`ingresos_semana`, `ultimos_accesos`), vistas de acceso/puerta/carnet/portería rediseñadas, escáner con `html5-qrcode` (funciona en Firefox) y la puerta auto-entra al detectar la Entrada (sin botón "ya marqué"). Lo clásico sigue intacto en `components/clasico/`.
 - Verificado en vivo el 2026-10-21: `GET /api/health` → `{"status":"ok"}` y `GET /SenaAccessV9.0.apk` → **200** (`application/vnd.android.package-archive`, 45.955.227 bytes).
 - `GET /api/admin/roles` **sin token** devuelve 401 JSON; toda ruta `/api/*` inexistente devuelve 404 JSON.
 - 2026-10-13: puerta sin loop (entrada por día + PIN corto de acceso) y fechas UTC reales (`serializeDate`).
@@ -105,9 +109,9 @@ SPA (`resources/js/app.jsx`): `/admin` → superadmin, `/portero` → admin, `/i
 
 1. `git rev-parse --show-toplevel` → raíz; `git status -sb` → rama `main` y sin cambios sin commitear.
 2. `php artisan --version` → 10.x.
-3. `grep -c "Route::" routes/api.php` → **80**.
-4. `ls app/Http/Controllers | wc -l` → **12**; `ls app/Models | wc -l` → **14**.
-5. `ls database/migrations | wc -l` → **42**.
+3. `grep -c "Route::" routes/api.php` → **92**.
+4. `ls app/Http/Controllers | wc -l` → **14**; `ls app/Models | wc -l` → **17**.
+5. `ls database/migrations | wc -l` → **45**.
 6. `grep -rn "easter_date" app database | grep -v "//"` → **0 resultados** (ext-calendar no existe en el build).
 7. `php artisan migrate:status` → sin migraciones pendientes.
 8. `npm run build` → bundle en `public/build` sin errores.
@@ -227,3 +231,4 @@ Agentes en `.opencode/agent/`, skills en `.opencode/skill/*/SKILL.md` (todo vers
 - 2026-10-22 — Login web sin recargas manuales (ErrorBoundary + recarga limpia tras login/2FA) y entrada asistida: tabla `codigos_acceso` + `POST /api/acceso/generar|validar-codigo`; `/puerta-acceso` genera QR+PIN de 5 min y el móvil de portería lo valida (app pendiente).
 - 2026-10-22 — Fondo con movimiento visible: se subió a `scale(1.14)`, 26 s y desplazamiento ±4%%/±2.5%% (antes 1.08/60 s/1.4%% era casi imperceptible).
 - 2026-10-22 — Fondo restaurado exactamente al original: patrón `background-size: 60% auto` + `moveBackground` 60s linear + blur(2px); se quitó el override de `prefers-reduced-motion` que apagaba la animación.
+- 2026-10-22 — Tema nuevo v2 (web) + paridad Android: navbar reordenada (marca separada, "Más" por desborde, CTA por rol), dock móvil 4+1 con hoja, dashboards con datos reales, puerta sin "ya marqué" (auto-entrada por `GET /api/acceso/estado`), `POST /api/acceso/carnet` para validar el carnet en portería, escáner con html5-qrcode y vistas de acceso/QR/carnet rediseñadas; en Android, `VistaValidarUnificada` pasó de 4 tarjetas grandes a una fila de pestañas y se quitaron los eyebrows/MAYÚSCULAS del panel de portería y la puerta.

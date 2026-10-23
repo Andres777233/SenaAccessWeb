@@ -1119,9 +1119,9 @@ h2 { margin-bottom: 2rem; color: var(--primary-color); }
     background: transparent;
     border: none;
     color: var(--text-color);
-    font-size: 0.70rem;
-    font-weight: 700;
-    letter-spacing: 1px;
+    font-size: 0.76rem;
+    font-weight: 650;
+    letter-spacing: 0.2px;
     padding: 8px 12px;
     border-radius: 8px;
     transition: all 0.2s ease;
@@ -1235,6 +1235,12 @@ h2 { margin-bottom: 2rem; color: var(--primary-color); }
        se montaba encima del primer enlace del menu. */
     flex: 0 0 auto;
     min-width: 0;
+    /* Aire real entre la marca y el primer enlace (antes quedaban a ~18px). */
+    margin-right: 1.75rem;
+}
+
+@media (max-width: 991.98px) {
+    .navbar-brand-wrap { margin-right: 0; }
 }
 
 /* Los enlaces se reparten en varias lineas antes de montarse sobre la marca */

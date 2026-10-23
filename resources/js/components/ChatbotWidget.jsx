@@ -100,6 +100,14 @@ const ChatbotWidget = () => {
     // Limpia el temporizador del estado del mono al desmontar.
     useEffect(() => () => clearTimeout(timerMono.current), []);
 
+    // Tema nuevo en celular: el asistente se abre desde la hoja "Más" del dock
+    // (así la burbuja flotante no tapa el contenido ni la barra inferior).
+    useEffect(() => {
+        const abrir = () => setIsOpen(true);
+        window.addEventListener('abrir-chatbot', abrir);
+        return () => window.removeEventListener('abrir-chatbot', abrir);
+    }, []);
+
     // Precarga las poses para que el cambio de imagen sea instantaneo.
     useEffect(() => {
         if (!bonzi) return;

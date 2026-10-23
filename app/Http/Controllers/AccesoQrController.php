@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Ingreso;
 use App\Models\PinAcceso;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -110,6 +111,109 @@ class AccesoQrController extends Controller
             'fk_id_user' => $user->id_usuario,
         ]);
         return response()->json(['message' => 'Salida registrada. ¡Hasta pronto!', 'ingreso' => $ingreso], 201);
+    }
+
+    // Estado del día para la web: permite que la puerta detecte sola cuando
+    // portería registra la Entrada (sin el botón "ya marqué"). Consulta barata:
+    // no descarga el historial ni calcula estadísticas.
+    public function estado(Request $request)
+    {
+        $user = $request->user();
+        $hoy = Carbon::now('America/Bogota')->toDateString();
+
+        $entradaHoy = Ingreso::where('fk_id_user', $user->id_usuario)
+            ->where('ingreso_type', 'Entrada')
+            ->whereDate('ingreso_datetime', $hoy)
+            ->orderByDesc('id_ingreso')
+            ->first();
+
+        $ultimo = Ingreso::where('fk_id_user', $user->id_usuario)
+            ->orderByDesc('id_ingreso')
+            ->first();
+
+        $formato = function ($ingreso) {
+            if (!$ingreso) {
+                return null;
+            }
+            return [
+                'id_ingreso' => $ingreso->id_ingreso,
+                'tipo' => $ingreso->ingreso_type,
+                'fecha' => optional($ingreso->ingreso_datetime)->toIso8601String(),
+                'lugar' => $ingreso->ingreso_place,
+            ];
+        };
+
+        return response()->json([
+            'entrada_hoy' => $entradaHoy !== null,
+            'entrada' => $formato($entradaHoy),
+            'dentro' => $ultimo !== null && $ultimo->ingreso_type === 'Entrada',
+            'ultimo' => $formato($ultimo),
+        ]);
+    }
+
+    // Carnet digital: portería escanea el QR del carnet (el que se muestra en
+    // "Mi carnet" de la web o del móvil) y se registra la Entrada del dueño.
+    // Cierra el circuito: el usuario ve en su pantalla que ya puede entrar.
+    public function carnet(Request $request)
+    {
+        $data = $request->validate(['carnet' => 'required|string|max:2000']);
+        $texto = trim($data['carnet']);
+
+        // El QR del carnet es JSON; si llega un texto plano se toma como documento.
+        $json = json_decode($texto, true);
+        $identificacion = $texto;
+        $idUsuario = null;
+
+        if (is_array($json) && ($json['app'] ?? '') === 'SENA_ACCESS') {
+            $identificacion = isset($json['user_identification']) ? trim((string) $json['user_identification']) : '';
+            $idUsuario = $json['id_usuario'] ?? null;
+        }
+
+        $user = $idUsuario
+            ? User::with('role')->find($idUsuario)
+            : User::with('role')->where('user_identification', $identificacion)->first();
+
+        if (!$user) {
+            return response()->json(['message' => 'No encontramos un usuario con ese carnet.'], 404);
+        }
+
+        $nombre = trim(($user->user_name ?? '') . ' ' . ($user->user_lastname ?? ''));
+        $hoy = Carbon::now('America/Bogota')->toDateString();
+
+        $entradaHoy = Ingreso::where('fk_id_user', $user->id_usuario)
+            ->where('ingreso_type', 'Entrada')
+            ->whereDate('ingreso_datetime', $hoy)
+            ->exists();
+
+        $usuario = [
+            'id_usuario' => $user->id_usuario,
+            'nombre' => $nombre ?: 'Usuario',
+            'rol' => $user->role->rol_name ?? null,
+            'identificacion' => $user->user_identification,
+            'foto' => $user->profile_photo_path,
+        ];
+
+        if ($entradaHoy) {
+            return response()->json([
+                'message' => $nombre . ' ya tiene una entrada registrada hoy.',
+                'duplicado' => true,
+                'usuario' => $usuario,
+            ]);
+        }
+
+        $ingreso = Ingreso::create([
+            'ingreso_datetime' => Carbon::now('America/Bogota'),
+            'ingreso_place' => 'CCyS',
+            'ingreso_type' => 'Entrada',
+            'fk_id_user' => $user->id_usuario,
+        ]);
+
+        return response()->json([
+            'message' => 'Entrada registrada para ' . ($nombre ?: 'el usuario') . '.',
+            'duplicado' => false,
+            'usuario' => $usuario,
+            'ingreso' => $ingreso,
+        ], 201);
     }
 
     // PIN corto de acceso (admin/portero lo dicta cuando no hay cámara):

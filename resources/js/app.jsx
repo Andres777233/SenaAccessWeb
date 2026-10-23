@@ -18,7 +18,6 @@ import ChatbotWidget from './components/ChatbotWidget';
 import PuertaAcceso from './components/PuertaAcceso';
 import HuellaSimulacion from './components/HuellaSimulacion';
 import NotFound from './components/NotFound';
-import AccionesFlotantes from './components/AccionesFlotantes';
 // Paneles pesados por rol: lazy para que la primera carga solo baje el chunk
 // de la ruta visitada (antes las 12 rutas viajaban en un solo app-*.js).
 const Admin = lazy(() => import('./components/Admin'));
@@ -81,14 +80,6 @@ const ChatbotGate = () => {
     return (!oculto && !!localStorage.getItem('access_token')) ? <ChatbotWidget /> : null;
 };
 
-// Campana y tema flotantes: solo dentro de los paneles con sesión.
-const PANELES = ['/admin', '/aprendiz', '/instructor', '/portero'];
-const AccionesFlotantesGate = () => {
-    const location = useLocation();
-    const enPanel = PANELES.some((ruta) => location.pathname.startsWith(ruta));
-    return (enPanel && !!localStorage.getItem('access_token')) ? <AccionesFlotantes /> : null;
-};
-
 // Los paneles son lazy: tras un deploy el chunk viejo puede faltar y React
 // deja la pantalla vacia. Si es un error de chunk, recarga una sola vez.
 class ErrorBoundary extends Component {
@@ -146,11 +137,6 @@ const App = () => {
         localStorage.setItem('theme', theme);
     }, [theme]);
 
-    // Función para alternar entre temas
-    const toggleTheme = () => {
-        setTheme(prevTheme => prevTheme === 'dark' ? 'light' : 'dark');
-    };
-
     // La navbar tambien cambia el tema: este aviso mantiene los dos botones
     // sincronizados sin recargar la pagina.
     useEffect(() => {
@@ -162,17 +148,6 @@ const App = () => {
     return (
         <BrowserRouter>
             <LogoutHandler />
-            {/* Botón de Modo Claro/Oscuro */}
-            <button 
-                onClick={toggleTheme}
-                className="theme-toggle-btn"
-                aria-label="Toggle theme"
-            >
-                <span className="material-symbols-outlined">
-                    {theme === 'dark' ? 'light_mode' : 'dark_mode'}
-                </span>
-            </button>
-
             {/* Capas globales (alerta, chatbot, campana/tema): dentro del
                 ErrorBoundary para que un fallo aqui no desmonte la app entera
                 y deje la pantalla en blanco. */}
@@ -182,9 +157,6 @@ const App = () => {
 
                 {/* Chatbot flotante: visible solo con sesión y fuera de las pantallas de acceso */}
                 <ChatbotGate />
-
-                {/* Campana + tema flotantes dentro de los paneles */}
-                <AccionesFlotantesGate />
             </ErrorBoundary>
 
             <div style={{color: 'var(--text-color)', position: 'fixed', bottom: 10, right: 10, background: 'var(--glass-bg)', padding: '5px', zIndex: 9999, borderRadius: '5px', fontSize: '12px'}}>

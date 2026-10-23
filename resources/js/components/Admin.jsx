@@ -741,13 +741,13 @@ const handleCancelEdit = () => {
                         )}
 
                         {!editingUser && !creatingUser ? (
-                            <div className="mx-auto" style={{ maxWidth: '1200px' }}>
+                            <div className="mx-auto w-100" style={{ maxWidth: '1200px', minWidth: 0 }}>
                                 <div className="d-flex justify-content-between align-items-center mb-5 flex-wrap gap-3 px-3 px-md-4">
                                     <div className="section-header mb-0">
                                         <h3 className="mb-0">Gestión de {userFilter === 'all' ? 'Usuarios' : userFilter === 'pendientes' ? 'Cuentas pendientes' : userFilter}</h3>
                                         <p className="small opacity-50 mb-0">Total: {usuariosTotal} registros{usuariosCargando ? ' • cargando…' : ''}</p>
                                     </div>
-                                    <div className="d-flex gap-2 flex-wrap align-items-center">
+                                    <div className="d-flex gap-2 flex-wrap align-items-center usuarios-acciones">
                                         <button className="btn btn-success action-btn" onClick={handleNewUser}>
                                             <span className="material-symbols-outlined small">person_add</span> Nuevo usuario
                                         </button>

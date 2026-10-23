@@ -1,12 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import NotificacionesMenu from './NotificacionesMenu';
 
-// Navbar del panel: marca + menú + perfil + salir. La campana y el cambio de
-// tema viven en los botones flotantes (AccionesFlotantes), como en el diseño
-// de referencia; así la barra queda limpia.
+// Navbar del panel con el diseño del repositorio de referencia: una sola fila,
+// marca + badge del rol, enlaces en mayusculas, y a la derecha el tema, la
+// campana, el perfil y salir. Nada flota sobre el contenido.
 const Navbar = ({ currentUser, view, setView, userFilter, setUserFilter, links = [] }) => {
     const navigate = useNavigate();
+    const [temaClaro, setTemaClaro] = useState(() => document.body.classList.contains('light-mode'));
+
+    useEffect(() => {
+        const alCambiar = (evento) => setTemaClaro(evento.detail?.tema === 'light');
+        window.addEventListener('tema-cambiado', alCambiar);
+        return () => window.removeEventListener('tema-cambiado', alCambiar);
+    }, []);
+
+    const toggleTema = () => {
+        const claro = !document.body.classList.contains('light-mode');
+        document.body.classList.toggle('light-mode', claro);
+        localStorage.setItem('theme', claro ? 'light' : 'dark');
+        setTemaClaro(claro);
+        window.dispatchEvent(new CustomEvent('tema-cambiado', { detail: { tema: claro ? 'light' : 'dark' } }));
+    };
 
     const handleLogout = async () => {
         try {
@@ -61,11 +77,11 @@ const Navbar = ({ currentUser, view, setView, userFilter, setUserFilter, links =
                 </button>
 
                 <div className="collapse navbar-collapse" id="navbarMain">
-                    {/* Columna izquierda: Logo y Marca (en celular ya está arriba) */}
+                    {/* Marca (en escritorio) */}
                     <div className="navbar-brand-wrap d-none d-lg-flex align-items-center gap-3">
                         <img src="/Icons/logoSena.png" alt="SENA" style={{ height: '40px' }} />
-                        <div className="d-none d-sm-block">
-                            <h5 className="mb-0 fw-bold " style={{ letterSpacing: '1px' }}>SENA <span className="text-success neon-text">ACCESS</span></h5>
+                        <div>
+                            <h5 className="mb-0 fw-bold" style={{ letterSpacing: '1px' }}>SENA <span className="text-success neon-text">ACCESS</span></h5>
                             <span className="badge bg-success bg-opacity-10 text-success border border-success border-opacity-20" style={{ fontSize: '0.6rem' }}>
                                 {currentUser?.role?.rol_name?.toUpperCase() || 'USER'} PANEL
                             </span>
@@ -98,7 +114,7 @@ const Navbar = ({ currentUser, view, setView, userFilter, setUserFilter, links =
                                                             onClick={() => {
                                                                 if (item.onClick) item.onClick();
                                                                 if (item.view) setView(item.view);
-                                                                if (item.filter) setUserFilter(item.filter);
+                                                                if (item.filter && setUserFilter) setUserFilter(item.filter);
                                                                 cerrarMenu();
                                                             }}
                                                         >
@@ -128,14 +144,28 @@ const Navbar = ({ currentUser, view, setView, userFilter, setUserFilter, links =
                         })}
                     </ul>
 
-                    {/* Columna derecha: Perfil y Salir */}
-                    <div className="navbar-actions d-flex align-items-center justify-content-lg-end gap-3 pt-2 pt-lg-0 border-top border-lg-0 border-success border-opacity-10">
+                    {/* Derecha: tema, campana, perfil y salir */}
+                    <div className="navbar-actions d-flex align-items-center justify-content-lg-end gap-2 pt-2 pt-lg-0 border-top border-lg-0 border-success border-opacity-10">
+                        <button
+                            type="button"
+                            className="theme-nav-btn"
+                            onClick={toggleTema}
+                            title={temaClaro ? 'Activar modo oscuro' : 'Activar modo claro'}
+                            aria-label={temaClaro ? 'Activar modo oscuro' : 'Activar modo claro'}
+                        >
+                            <span className="material-symbols-outlined">{temaClaro ? 'dark_mode' : 'light_mode'}</span>
+                        </button>
+
+                        <NotificacionesMenu />
+
+                        <div className="vr d-none d-lg-block opacity-25" style={{ height: '30px' }}></div>
+
                         <div
                             className="profile-nav-trigger d-flex align-items-center gap-2 cursor-pointer p-1 px-2 rounded-pill hover-bg"
                             onClick={() => { setView('profile'); cerrarMenu(); }}
                             style={{ cursor: 'pointer', transition: 'all 0.2s' }}
                         >
-                            <div className="text-end d-none d-md-block">
+                            <div className="text-end d-md-block">
                                 <p className="mb-0 fw-bold small text-truncate" style={{ maxWidth: '150px' }}>{currentUser?.user_name}</p>
                                 <p className="mb-0 opacity-50" style={{ fontSize: '0.65rem' }}>{currentUser?.role?.rol_name}</p>
                             </div>
@@ -150,7 +180,7 @@ const Navbar = ({ currentUser, view, setView, userFilter, setUserFilter, links =
 
                         <div className="vr d-none d-lg-block opacity-25" style={{ height: '30px' }}></div>
 
-                        <button className="btn-logout-minimal" onClick={handleLogout} title="Cerrar Sesión">
+                        <button className="btn-logout-minimal d-none d-lg-flex" onClick={handleLogout} title="Cerrar Sesión">
                             <span className="material-symbols-outlined">logout</span>
                         </button>
                     </div>

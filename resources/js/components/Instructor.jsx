@@ -473,10 +473,18 @@ const Instructor = () => {
             ]
         },
         { label: 'Historial', icon: 'history', view: 'historial' },
-        { label: 'Excusas', icon: 'key', view: 'excusas' },
         { label: 'Mis equipos', icon: 'inventory_2', view: 'mis_equipos' },
-        { label: 'Mi carnet', icon: 'id_card', view: 'qr_carnet' },
-        { label: 'Marcar acceso', icon: 'qr_code_scanner', view: 'escanear_acceso' }
+        {
+            label: 'Más',
+            icon: 'apps',
+            view: 'qr_carnet',
+            dropdown: true,
+            items: [
+                { label: 'Mi carnet', icon: 'id_card', view: 'qr_carnet' },
+                { label: 'Excusas', icon: 'key', view: 'excusas' },
+                { label: 'Marcar acceso', icon: 'qr_code_scanner', view: 'escanear_acceso' }
+            ]
+        }
     ];
 
     if (loading) return <div className="text-white text-center mt-5">Cargando...</div>;

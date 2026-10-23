@@ -224,44 +224,28 @@ body::before {
     color: var(--text-color) !important;
 }
 
-/* Theme Toggle Button */
-.theme-toggle-btn {
-    position: absolute;
-    top: 90px; /* Justo debajo de la altura aproximada del navbar */
-    right: 30px;
-    z-index: 1000;
-    background: var(--glass-bg);
-    border: 1.5px solid var(--primary-color);
-    color: var(--primary-color);
-    border-radius: 50%;
-    width: 46px;
-    height: 46px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.15), 0 0 15px rgba(2, 217, 20, 0.25);
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-}
-
-/* Con la barra de navegacion presente el tema se cambia desde la propia
-   barra: el boton flotante se oculta para no tapar la campana ni el perfil. */
-body:has(.navbar-custom) .theme-toggle-btn {
-    display: none;
-}
-
-/* En paginas publicas el tema se cambia desde la tarjeta: el flotante
-   duplicaba el boton en escritorio. */
-body:has(.auth-page) .theme-toggle-btn {
-    display: none;
-}
-
 .theme-nav-btn {
     color: var(--primary-color) !important;
     text-decoration: none;
     line-height: 1;
+    width: 38px;
+    height: 38px;
+    flex: 0 0 auto;
+    border-radius: 50%;
+    border: 1.5px solid var(--primary-color);
+    background: var(--glass-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.2s ease;
+}
+
+.theme-nav-btn .material-symbols-outlined { font-size: 20px; }
+
+.theme-nav-btn:hover {
+    background: rgba(2, 217, 20, 0.1);
+    transform: scale(1.05);
 }
 
 /* Sin el halo azul de Bootstrap al pulsarlo; verde solo con teclado */
@@ -279,16 +263,6 @@ body:has(.auth-page) .theme-toggle-btn {
 .theme-nav-btn:hover {
     color: var(--primary-color) !important;
     filter: brightness(1.15);
-}
-
-.theme-toggle-btn:hover {
-    transform: rotate(45deg) scale(1.12);
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2), 0 0 25px rgba(2, 217, 20, 0.45);
-    background: rgba(2, 217, 20, 0.08);
-}
-
-.theme-toggle-btn:active {
-    transform: rotate(45deg) scale(0.95);
 }
 
 @keyframes moveBackground {
@@ -473,11 +447,6 @@ body:has(.auth-page) .theme-toggle-btn {
     .auth-main {
         padding-bottom: 24px;
         align-items: flex-start;
-    }
-
-    /* En las páginas públicas el tema se cambia desde la propia tarjeta */
-    body:has(.auth-page) .theme-toggle-btn {
-        display: none;
     }
 }
 
@@ -1145,15 +1114,34 @@ h2 { margin-bottom: 2rem; color: var(--primary-color); }
     background: transparent;
     border: none;
     color: var(--text-color);
-    font-size: 0.76rem;
-    font-weight: 650;
-    letter-spacing: 0.2px;
-    padding: 8px 12px;
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    padding: 7px 9px;
     border-radius: 8px;
     transition: all 0.2s ease;
     display: flex;
     align-items: center;
     opacity: 0.8;
+    /* Etiquetas como en el repositorio de referencia */
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.nav-item-link .material-symbols-outlined {
+    font-size: 17px;
+}
+
+@media (min-width: 992px) and (max-width: 1199.98px) {
+    /* Entre 992 y 1200 el menu no cabe con iconos: se ocultan para que todo
+       quede en una sola fila sin desbordar. */
+    .nav-item-link .material-symbols-outlined { display: none; }
+    .nav-item-link { font-size: 0.64rem; padding: 7px 7px; }
+
+    /* La marca queda solo con el logo y el perfil solo con el avatar */
+    .navbar-brand-wrap h5,
+    .navbar-brand-wrap .badge { display: none; }
+    .profile-nav-trigger .text-end { display: none; }
 }
 
 .nav-item-link:hover, .nav-item-link.active {
@@ -1262,41 +1250,115 @@ h2 { margin-bottom: 2rem; color: var(--primary-color); }
     row-gap: 0.5rem;
 }
 
+/* Escritorio: una sola fila como el repositorio de referencia */
+@media (min-width: 992px) {
+    .navbar-custom {
+        min-height: 65px;
+        padding-top: 0.45rem;
+        padding-bottom: 0.45rem;
+    }
+
+    .navbar-custom .navbar-collapse {
+        flex-wrap: nowrap !important;
+        row-gap: 0;
+    }
+
+    .navbar-custom .navbar-nav {
+        flex-wrap: nowrap;
+        row-gap: 0;
+        gap: 0.25rem !important;
+    }
+
+    .navbar-center {
+        flex-wrap: nowrap;
+    }
+}
+
 .navbar-brand-wrap {
     /* La marca conserva su ancho natural: si se encoge, el texto "SENA ACCESS"
        se montaba encima del primer enlace del menu. */
     flex: 0 0 auto;
     min-width: 0;
     /* Aire real entre la marca y el primer enlace (antes quedaban a ~18px). */
-    margin-right: 2.5rem;
+    margin-right: 1.5rem;
 }
 
 @media (max-width: 991.98px) {
     .navbar-brand-wrap { margin-right: 0; }
 }
 
-/* Los enlaces se reparten en varias lineas antes de montarse sobre la marca */
-.navbar-custom .navbar-nav {
-    flex-wrap: wrap;
-    min-width: 0;
-    row-gap: 0.25rem;
-}
-
-.navbar-custom .navbar-collapse {
-    flex-wrap: wrap;
-    row-gap: 0.5rem;
-}
-
-.navbar-center {
-    flex: 0 1 auto;
-    min-width: 0;
-    flex-wrap: wrap;
-    justify-content: center;
-    row-gap: 0.25rem;
-}
-
 .navbar-actions {
-    flex: 1 1 0;
+    flex: 0 0 auto;
+    margin-left: auto;
+}
+
+/* ---- Campana de notificaciones dentro del navbar ---- */
+.nav-notif { position: relative; flex: 0 0 auto; }
+
+.nav-icon-btn {
+    position: relative;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: 1.5px solid var(--primary-color);
+    background: var(--glass-bg);
+    color: var(--primary-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.2s ease;
+}
+
+.nav-icon-btn:hover {
+    background: rgba(2, 217, 20, 0.1);
+    transform: scale(1.05);
+}
+
+.nav-icon-btn .material-symbols-outlined { font-size: 20px; }
+
+.nav-notif-badge {
+    position: absolute;
+    top: -3px;
+    right: -3px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    border-radius: 999px;
+    background: #dc3545;
+    color: #ffffff;
+    font-size: 0.62rem;
+    font-weight: 700;
+    line-height: 18px;
+    text-align: center;
+    border: 2px solid var(--bg-color);
+}
+
+.nav-notif-panel {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    width: min(340px, calc(100vw - 32px));
+    max-height: 380px;
+    overflow-y: auto;
+    padding: 8px;
+    border-radius: 16px;
+    background: var(--dropdown-bg);
+    border: 1px solid rgba(2, 217, 20, 0.3);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+    z-index: 1200;
+    animation: fadeInUp 0.18s ease-out;
+}
+
+@media (max-width: 991.98px) {
+    .nav-notif-panel {
+        position: fixed;
+        top: 58px;
+        right: 12px;
+        left: 12px;
+        width: auto;
+        max-height: 60vh;
+    }
 }
 
 .carousel-wrapper {
@@ -2034,16 +2096,6 @@ body.light-mode .user-info-item {
 
 /* ---- Navbar colapsado (tablets y móviles) ---- */
 @media (max-width: 991.98px) {
-    /* Botón de tema como flotante: no choca con el menú desplegado */
-    .theme-toggle-btn {
-        position: fixed;
-        top: auto;
-        bottom: 20px;
-        right: 16px;
-        width: 42px;
-        height: 42px;
-    }
-
     /* Dropdowns dentro del menú apilado: ancho completo bajo su padre */
     .navbar-nav .nav-item.dropdown > .dropdown-menu {
         position: static;
@@ -2696,77 +2748,7 @@ body.light-mode .codigo-acceso {
     }
 }
 
-/* ---- Acciones flotantes del panel (campana + tema) ---- */
-.acciones-flotantes {
-    position: fixed;
-    top: 118px;
-    right: 20px;
-    z-index: 1030;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.accion-flotante-wrap { position: relative; }
-
-.accion-flotante {
-    position: relative;
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    border: 1.5px solid var(--primary-color);
-    background: var(--glass-bg);
-    color: var(--primary-color);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25), 0 0 14px rgba(2, 217, 20, 0.18);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.2s ease;
-}
-
-.accion-flotante:hover {
-    transform: scale(1.08);
-    background: rgba(2, 217, 20, 0.1);
-}
-
-.accion-flotante:active { transform: scale(0.96); }
-.accion-flotante .material-symbols-outlined { font-size: 22px; }
-
-.accion-flotante-badge {
-    position: absolute;
-    top: -3px;
-    right: -3px;
-    min-width: 18px;
-    height: 18px;
-    padding: 0 4px;
-    border-radius: 999px;
-    background: #dc3545;
-    color: #ffffff;
-    font-size: 0.62rem;
-    font-weight: 700;
-    line-height: 18px;
-    text-align: center;
-    border: 2px solid var(--bg-color);
-}
-
-.accion-flotante-panel {
-    position: absolute;
-    top: 0;
-    right: 56px;
-    width: min(340px, calc(100vw - 110px));
-    max-height: 380px;
-    overflow-y: auto;
-    padding: 8px;
-    border-radius: 16px;
-    background: var(--dropdown-bg);
-    border: 1px solid rgba(2, 217, 20, 0.3);
-    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
-    animation: fadeInUp 0.18s ease-out;
-}
-
+/* ---- Contenido del panel de notificaciones (cabecera e items) ---- */
 .accion-flotante-head {
     display: flex;
     align-items: center;
@@ -2799,35 +2781,10 @@ body.light-mode .codigo-acceso {
 .accion-flotante-item-texto { font-size: 0.75rem; opacity: 0.75; }
 .accion-flotante-item-fecha { font-size: 0.65rem; opacity: 0.45; }
 
-@media (max-width: 991.98px) {
-    /* En celular los dos botones viven dentro de la barra superior, entre la
-       marca y el botón de salir: no tapan el contenido. */
-    .acciones-flotantes {
-        top: 10px;
-        right: 56px;
-        flex-direction: row !important;
-        align-items: center;
-        gap: 6px;
-        z-index: 1040;
-    }
-
-    .accion-flotante { width: 34px; height: 34px; }
-    .accion-flotante .material-symbols-outlined { font-size: 19px; }
-    .accion-flotante-badge {
-        top: -4px;
-        right: -4px;
-        min-width: 16px;
-        height: 16px;
-        line-height: 16px;
-        font-size: 0.56rem;
-    }
-
-    .accion-flotante-panel {
-        position: fixed;
-        top: 58px;
-        right: 12px;
-        left: 12px;
-        width: auto;
-        max-height: 60vh;
-    }
+/* ---- Admin > Usuarios en celular: el filtro por rol no debe desbordar ---- */
+@media (max-width: 575.98px) {
+    .usuarios-acciones { width: 100%; }
+    .usuarios-acciones .btn-group { flex-wrap: wrap; width: 100%; }
+    .usuarios-acciones .btn-group > .btn { flex: 1 1 auto; }
+    .usuarios-acciones .search-input-group { max-width: 100% !important; width: 100%; }
 }

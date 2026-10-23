@@ -226,3 +226,4 @@ Agentes en `.opencode/agent/`, skills en `.opencode/skill/*/SKILL.md` (todo vers
 - 2026-10-22 — Fondo con movimiento restaurado: cover + scale(1.08) con `@keyframes moverFondo` (transform GPU, sin mosaico ni bordes) y respeto a `prefers-reduced-motion`.
 - 2026-10-22 — Login web sin recargas manuales (ErrorBoundary + recarga limpia tras login/2FA) y entrada asistida: tabla `codigos_acceso` + `POST /api/acceso/generar|validar-codigo`; `/puerta-acceso` genera QR+PIN de 5 min y el móvil de portería lo valida (app pendiente).
 - 2026-10-22 — Fondo con movimiento visible: se subió a `scale(1.14)`, 26 s y desplazamiento ±4%%/±2.5%% (antes 1.08/60 s/1.4%% era casi imperceptible).
+- 2026-10-22 — Fondo restaurado exactamente al original: patrón `background-size: 60% auto` + `moveBackground` 60s linear + blur(2px); se quitó el override de `prefers-reduced-motion` que apagaba la animación.

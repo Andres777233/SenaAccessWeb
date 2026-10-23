@@ -141,14 +141,13 @@ body::before {
     bottom: 0;
     z-index: -2;
     background: var(--bg-overlay), var(--bg-image);
-    /* La imagen es un patron completo, no un tile: cover evita el mosaico
-       repetido. El scale + translate animado da movimiento sin dejar bordes. */
-    background-size: cover;
-    background-repeat: no-repeat;
-    background-position: center;
-    will-change: transform;
-    transform: scale(1.14) translate3d(0, 0, 0);
-    animation: moverFondo 26s ease-in-out infinite alternate;
+    /* Fondo original: patron visible al 60% con desplazamiento horizontal continuo. */
+    background-size: 60% auto;
+    background-repeat: repeat;
+    filter: blur(2px);
+    animation: moveBackground 60s linear infinite;
+    will-change: background-position;
+    transform: translate3d(0, 0, 0);
     transition: background 0.4s ease;
 }
 
@@ -280,19 +279,12 @@ body:has(.auth-page) .theme-toggle-btn {
     transform: rotate(45deg) scale(0.95);
 }
 
-@keyframes moverFondo {
-    0% {
-        transform: scale(1.14) translate3d(-4%, -2.5%, 0);
+@keyframes moveBackground {
+    from {
+        background-position: 0% center;
     }
-    100% {
-        transform: scale(1.14) translate3d(4%, 2.5%, 0);
-    }
-}
-
-/* Respeta a quien prefiere reducir animaciones. */
-@media (prefers-reduced-motion: reduce) {
-    body::before {
-        animation: none;
+    to {
+        background-position: 100% center;
     }
 }
 

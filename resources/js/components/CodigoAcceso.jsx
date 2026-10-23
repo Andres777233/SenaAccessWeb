@@ -4,7 +4,8 @@ import QRCode from 'qrcode';
 import { showAlert } from './CustomAlert';
 
 // Código de un solo uso para que portería registre la entrada del usuario.
-// La puerta escucha el estado y pasa sola al panel cuando se usa.
+// Misma estética que el resto de la app: tarjeta de vidrio, QR sobre blanco y
+// el PIN con el badge que ya usa portería.
 const CodigoAcceso = ({ contexto = 'puerta' }) => {
     const [codigo, setCodigo] = useState(null);
     const [cargando, setCargando] = useState(false);
@@ -55,77 +56,64 @@ const CodigoAcceso = ({ contexto = 'puerta' }) => {
 
     if (!codigo) {
         return (
-            <section className="acc-card">
-                <div className="acc-head">
-                    <div>
-                        <h3 className="acc-title">Muestra tu código</h3>
-                        <p className="acc-sub">Genera un QR y un PIN de un solo uso. Portería lo escanea o lo digita.</p>
-                    </div>
+            <div className="glass-box p-4 h-100">
+                <h4 className="fw-bold mb-1">Muestra tu código</h4>
+                <p className="small opacity-75 mb-3">Genera un QR y un PIN de un solo uso. Portería lo escanea o lo digita.</p>
+
+                <div className="acc-qr-box acc-qr-box--vacio mb-3" aria-hidden="true">
+                    <span className="material-symbols-outlined" style={{ fontSize: 44 }}>qr_code_2</span>
                 </div>
 
-                <div className="acc-code">
-                    <div className="acc-qr acc-qr--vacio" aria-hidden="true">
-                        <span className="material-symbols-outlined" style={{ fontSize: 46 }}>qr_code_2</span>
-                        <span>Tu QR aparecerá aquí</span>
-                    </div>
-                    <p className="acc-time">El código dura 5 minutos y se invalida al usarse una vez.</p>
-                </div>
+                <p className="text-center small opacity-50 mb-3">El código dura 5 minutos y se invalida al usarse una vez.</p>
 
-                <button type="button" className="btn btn-outline-success py-2" onClick={generar} disabled={cargando}>
-                    <span className="material-symbols-outlined small me-1">bolt</span>
-                    {cargando ? 'Generando…' : 'Generar mi código'}
+                <button type="button" className="btn btn-glow w-100" onClick={generar} disabled={cargando}>
+                    {cargando ? 'GENERANDO…' : 'GENERAR MI CÓDIGO'}
                 </button>
-            </section>
+            </div>
         );
     }
 
     return (
-        <section className="acc-card">
-            <div className="acc-head">
-                <div>
-                    <h3 className="acc-title">Muestra tu código</h3>
-                    <p className="acc-sub">QR o PIN en portería. Se renueva solo cuando vence.</p>
-                </div>
+        <div className="glass-box p-4 h-100">
+            <h4 className="fw-bold mb-1">Muestra tu código</h4>
+            <p className="small opacity-75 mb-3">QR o PIN en portería. Se renueva solo cuando vence.</p>
+
+            <div className="acc-qr-box mb-3">
+                <img src={codigo.qr} alt={`Código QR de acceso, PIN ${codigo.pin}`} />
             </div>
 
-            <div className="acc-code">
-                <div className="acc-qr">
-                    <img src={codigo.qr} alt={`Código QR de acceso, PIN ${codigo.pin}`} />
-                </div>
-
-                <div className="acc-pin" aria-label={`PIN ${codigo.pin}`}>
-                    {String(codigo.pin).split('').map((d, i) => <b key={i}>{d}</b>)}
-                </div>
-
-                <div className={`acc-bar ${porcentaje <= 25 ? 'is-low' : ''}`} aria-hidden="true">
-                    <i style={{ width: `${porcentaje}%` }} />
-                </div>
-
-                <p className={`acc-time ${expirado ? 'text-danger' : ''}`}>
-                    {expirado
-                        ? 'Código vencido. Genera uno nuevo.'
-                        : `Vence en ${String(Math.floor(restante / 60)).padStart(2, '0')}:${String(restante % 60).padStart(2, '0')}`}
-                </p>
+            <div className="text-center mb-3">
+                <span className="badge px-4 py-3 fs-4 text-warning border border-warning bg-opacity-10" style={{ letterSpacing: '7px' }}>
+                    {codigo.pin}
+                </span>
             </div>
 
-            <div className="acc-actions">
+            <div className="progress mb-2" style={{ height: '6px' }} role="progressbar" aria-valuenow={porcentaje} aria-valuemin="0" aria-valuemax="100">
+                <div className={`progress-bar ${porcentaje <= 25 ? 'bg-warning' : 'bg-success'}`} style={{ width: `${porcentaje}%` }} />
+            </div>
+
+            <p className={`text-center small mb-3 ${expirado ? 'text-danger' : 'opacity-75'}`}>
+                {expirado
+                    ? 'Código vencido. Genera uno nuevo.'
+                    : `Vence en ${String(Math.floor(restante / 60)).padStart(2, '0')}:${String(restante % 60).padStart(2, '0')}`}
+            </p>
+
+            <div className="d-grid gap-2">
                 <button type="button" className="btn btn-outline-success" onClick={copiarPin}>
-                    <span className="material-symbols-outlined small me-1">content_copy</span>
+                    <span className="material-symbols-outlined small align-middle me-1">content_copy</span>
                     Copiar PIN
                 </button>
                 <button type="button" className="btn btn-glow" onClick={generar} disabled={cargando}>
-                    <span className="material-symbols-outlined small me-1">refresh</span>
-                    {cargando ? 'Generando…' : 'Generar otro'}
+                    {cargando ? 'GENERANDO…' : 'GENERAR OTRO'}
                 </button>
             </div>
 
             {contexto === 'puerta' && (
-                <div className="acc-status">
-                    <span className="acc-dot" aria-hidden="true" />
-                    <span className="small">Esta pantalla pasa sola a tu panel cuando portería lo escanee.</span>
-                </div>
+                <p className="text-center small opacity-50 mt-3 mb-0">
+                    Esta pantalla pasa sola a tu panel cuando portería lo escanee.
+                </p>
             )}
-        </section>
+        </div>
     );
 };
 

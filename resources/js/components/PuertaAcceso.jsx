@@ -9,8 +9,7 @@ import { useEsperarEntrada } from '../utils/useEsperarEntrada';
 // Puerta de entrada: tras el login, quien no tenga Entrada de hoy debe
 // registrarla antes de entrar a su panel. No hay botón de "ya marqué":
 // la pantalla consulta el estado cada pocos segundos y, en cuanto portería
-// registra la entrada (escaneando el QR o el código del usuario), pasa sola
-// al panel, igual que hace la app Android.
+// registra la entrada, pasa sola al panel (igual que la app Android).
 const PuertaAcceso = () => {
     const navigate = useNavigate();
     const [tab, setTab] = useState('escanear');
@@ -59,15 +58,11 @@ const PuertaAcceso = () => {
                 <div className="puerta-shell">
                     {detectada || entrando ? (
                         <div className="glass-box puerta-card text-center">
-                            <div className="acc-ok">
-                                <div className="acc-ok-mark">
-                                    <span className="material-symbols-outlined">check</span>
-                                </div>
-                                <h2 className="h4 fw-bold mt-2">Entrada registrada</h2>
-                                <p className="small opacity-75 mb-3">Bienvenido. Estamos abriendo tu panel…</p>
-                                <div className="spinner-border spinner-border-sm text-success" role="status">
-                                    <span className="visually-hidden">Abriendo el panel…</span>
-                                </div>
+                            <span className="material-symbols-outlined text-success" style={{ fontSize: '52px' }}>check_circle</span>
+                            <h2 className="h4 fw-bold mt-2 mb-1">Entrada registrada</h2>
+                            <p className="small opacity-75 mb-3">Bienvenido. Estamos abriendo tu panel…</p>
+                            <div className="spinner-border spinner-border-sm text-success" role="status">
+                                <span className="visually-hidden">Abriendo el panel…</span>
                             </div>
                         </div>
                     ) : (
@@ -92,32 +87,30 @@ const PuertaAcceso = () => {
                             )}
 
                             {/* Selector solo en celular: en escritorio se ven las dos tarjetas */}
-                            <div className="d-flex d-lg-none justify-content-center mb-3">
-                                <div className="acc-tabs" role="tablist" aria-label="Cómo registrar tu entrada">
-                                    <button type="button" role="tab" aria-selected={tab === 'escanear'} className={`acc-tab ${tab === 'escanear' ? 'is-on' : ''}`} onClick={() => setTab('escanear')}>
+                            <div className="d-flex d-lg-none justify-content-center mb-1">
+                                <div className="btn-group" role="group" aria-label="Cómo registrar tu entrada">
+                                    <button type="button" className={`btn ${tab === 'escanear' ? 'btn-success' : 'btn-outline-success'}`} onClick={() => setTab('escanear')}>
                                         Escanear QR
                                     </button>
-                                    <button type="button" role="tab" aria-selected={tab === 'codigo'} className={`acc-tab ${tab === 'codigo' ? 'is-on' : ''}`} onClick={() => setTab('codigo')}>
+                                    <button type="button" className={`btn ${tab === 'codigo' ? 'btn-success' : 'btn-outline-success'}`} onClick={() => setTab('codigo')}>
                                         Mi código
                                     </button>
                                 </div>
                             </div>
 
-                            <div className="acc-grid">
-                                <div className={`acc-col ${tab === 'escanear' ? '' : 'd-none d-lg-flex'}`}>
+                            <div className="row g-4">
+                                <div className={`col-12 col-lg-6 ${tab === 'escanear' ? '' : 'd-none d-lg-block'}`}>
                                     <EscanearAcceso contexto="puerta" onRegistrado={alRegistrar} accion={<BotonTema />} />
                                 </div>
-                                <div className={`acc-col ${tab === 'codigo' ? '' : 'd-none d-lg-flex'}`}>
+                                <div className={`col-12 col-lg-6 ${tab === 'codigo' ? '' : 'd-none d-lg-block'}`}>
                                     <CodigoAcceso contexto="puerta" />
                                 </div>
                             </div>
 
-                            <div className="acc-status mt-3">
-                                <span className="acc-dot" aria-hidden="true" />
-                                <span className="small">
-                                    {error && !mensaje ? error : (mensaje || 'Verificando tu entrada…')}
-                                </span>
-                            </div>
+                            <p className="text-center small opacity-75 mb-0">
+                                <span className="acc-pulse" aria-hidden="true" />
+                                {error && !mensaje ? error : (mensaje || 'Verificando tu entrada…')}
+                            </p>
                         </>
                     )}
                 </div>

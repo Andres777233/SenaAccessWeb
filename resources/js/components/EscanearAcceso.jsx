@@ -4,9 +4,9 @@ import { Html5Qrcode } from 'html5-qrcode';
 import { horaBogota, etiquetaDia, esHoyBogota } from '../utils/formato';
 
 // Marcar entrada/salida con el QR de portería (aprendiz, instructor y la
-// puerta de entrada). Usa html5-qrcode para que la cámara funcione también en
-// Firefox, y deja pegar el código cuando no hay cámara.
-const EscanearAcceso = ({ contexto = 'panel', onRegistrado, ocultarCabecera = false, accion = null }) => {
+// puerta de entrada). Sigue el mismo lenguaje visual que el resto del panel:
+// tarjetas de vidrio, botones y badges de siempre.
+const EscanearAcceso = ({ contexto = 'panel', onRegistrado, accion = null }) => {
     const [modo, setModo] = useState('camara');
     const [fase, setFase] = useState('inicio'); // inicio | camara | validando | ok | error
     const [resultado, setResultado] = useState(null);
@@ -133,11 +133,11 @@ const EscanearAcceso = ({ contexto = 'panel', onRegistrado, ocultarCabecera = fa
     const ultimo = dia?.ultimo;
 
     const tarjetaScanner = (
-        <section className="acc-card">
-            <div className="acc-head">
+        <div className="glass-box p-4 h-100 d-flex flex-column">
+            <div className="d-flex align-items-start justify-content-between gap-3 acc-head-accion">
                 <div>
-                    <h3 className="acc-title">{contexto === 'puerta' ? 'Escanea el QR de portería' : 'Marcar entrada / salida'}</h3>
-                    <p className="acc-sub">
+                    <h4 className="fw-bold mb-1">{contexto === 'puerta' ? 'Escanea el QR de portería' : 'Marcar entrada / salida'}</h4>
+                    <p className="small opacity-75 mb-0">
                         {contexto === 'puerta'
                             ? 'Con la cámara del equipo o pegando el código.'
                             : 'Apunta la cámara al QR que proyecta portería. Si no abre, pega el código.'}
@@ -146,11 +146,11 @@ const EscanearAcceso = ({ contexto = 'panel', onRegistrado, ocultarCabecera = fa
                 {accion}
             </div>
 
-            <div className="acc-tabs" role="tablist" aria-label="Método para registrar el acceso">
-                <button type="button" role="tab" aria-selected={modo === 'camara'} className={`acc-tab ${modo === 'camara' ? 'is-on' : ''}`} onClick={() => { setModo('camara'); reiniciar(); }}>
+            <div className="btn-group mt-3 mb-3" role="group" aria-label="Método para registrar el acceso">
+                <button type="button" className={`btn ${modo === 'camara' ? 'btn-success' : 'btn-outline-success'}`} onClick={() => { setModo('camara'); reiniciar(); }}>
                     Cámara
                 </button>
-                <button type="button" role="tab" aria-selected={modo === 'codigo'} className={`acc-tab ${modo === 'codigo' ? 'is-on' : ''}`} onClick={() => { setModo('codigo'); reiniciar(); detenerCamara(); setFase('inicio'); }}>
+                <button type="button" className={`btn ${modo === 'codigo' ? 'btn-success' : 'btn-outline-success'}`} onClick={() => { setModo('codigo'); reiniciar(); detenerCamara(); setFase('inicio'); }}>
                     Pegar código
                 </button>
             </div>
@@ -158,73 +158,62 @@ const EscanearAcceso = ({ contexto = 'panel', onRegistrado, ocultarCabecera = fa
             {modo === 'camara' ? (
                 <>
                     <div className="acc-stage">
-                        <div className="acc-stage-guide" aria-hidden="true" />
                         <div id={idRef.current} style={{ width: '100%', height: '100%' }} />
                         {!escaneando && (
                             <div className="acc-stage-empty">
                                 <span className="material-symbols-outlined">qr_code_scanner</span>
-                                <strong>Cámara apagada</strong>
-                                <span>Apunta al QR que proyecta portería: el registro es automático.</span>
-                                <button type="button" className="btn btn-primary-login px-4 py-2 mt-2" onClick={iniciarCamara} disabled={ocupado}>
-                                    <span className="material-symbols-outlined small me-1">photo_camera</span>
-                                    {ocupado ? 'Validando…' : 'Abrir cámara'}
+                                <p className="fw-bold text-white mb-0">Cámara apagada</p>
+                                <p>Apunta al QR que proyecta portería: el registro es automático.</p>
+                                <button type="button" className="btn btn-glow mt-2" onClick={iniciarCamara} disabled={ocupado}>
+                                    {ocupado ? 'VALIDANDO…' : 'ABRIR CÁMARA'}
                                 </button>
                             </div>
-                        )}
-                        {escaneando && (
-                            <>
-                                <div className="acc-corners" aria-hidden="true"><i /><i /><i /><i /></div>
-                                <div className="acc-line" aria-hidden="true" />
-                            </>
                         )}
                     </div>
 
                     {errorCamara && (
-                        <div className="acc-alert acc-alert--warn">
-                            <span className="material-symbols-outlined">videocam_off</span>
-                            <div>{errorCamara}</div>
-                        </div>
+                        <div className="alert alert-warning small mt-3 mb-0 py-2">{errorCamara}</div>
                     )}
 
                     {escaneando && (
-                        <div className="acc-actions">
-                            <button type="button" className="btn btn-outline-success" onClick={detener}>
-                                <span className="material-symbols-outlined small me-1">stop_circle</span>
-                                Detener cámara
-                            </button>
-                        </div>
+                        <button type="button" className="btn btn-outline-success w-100 mt-3" onClick={detener}>
+                            <span className="material-symbols-outlined small align-middle me-1">stop_circle</span>
+                            Detener cámara
+                        </button>
                     )}
                 </>
             ) : (
                 <>
-                    <div>
-                        <label className="form-label" htmlFor="acc-codigo">Código del QR</label>
-                        <div className="acc-row">
-                            <input
-                                id="acc-codigo"
-                                type="text"
-                                className="form-control"
-                                placeholder="Pega aquí el contenido del QR"
-                                value={codigo}
-                                onChange={(e) => setCodigo(e.target.value)}
-                                onKeyDown={(e) => { if (e.key === 'Enter') validar(codigo); }}
-                            />
-                            <button type="button" className="btn btn-primary-login px-4" onClick={() => validar(codigo)} disabled={ocupado || !codigo.trim()}>
-                                {ocupado ? 'Validando…' : 'Registrar'}
-                            </button>
-                        </div>
+                    <label className="form-label" htmlFor="acc-codigo">Código del QR</label>
+                    <div className="input-group">
+                        <input
+                            id="acc-codigo"
+                            type="text"
+                            className="form-control"
+                            placeholder="Pega aquí el contenido del QR"
+                            value={codigo}
+                            onChange={(e) => setCodigo(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === 'Enter') validar(codigo); }}
+                        />
+                        <button type="button" className="btn btn-success fw-bold px-3" onClick={() => validar(codigo)} disabled={ocupado || !codigo.trim()}>
+                            {ocupado ? 'VALIDANDO…' : 'REGISTRAR'}
+                        </button>
                     </div>
-                    <p className="acc-time">El código cambia cada 30 segundos: cópialo justo después de escanearlo.</p>
+                    <p className="small opacity-50 mt-2 mb-0">El código cambia cada 30 segundos: cópialo justo después de escanearlo.</p>
                 </>
             )}
 
             {fase === 'ok' && resultado && (
-                <div className="acc-ok">
-                    <div className="acc-ok-mark">
-                        <span className="material-symbols-outlined">check</span>
+                <div className="alert alert-success mt-3 mb-0">
+                    <div className="d-flex align-items-center gap-2">
+                        <span className="material-symbols-outlined">check_circle</span>
+                        <div>
+                            <div className="fw-bold">{resultado.message}</div>
+                            <div className="small">
+                                {resultado.duplicado ? 'Tu entrada de hoy ya estaba registrada.' : `Registrado a las ${horaBogota(new Date())}.`}
+                            </div>
+                        </div>
                     </div>
-                    <h3>{resultado.message}</h3>
-                    <p>{resultado.duplicado ? 'Tu entrada de hoy ya estaba registrada.' : `Registrado a las ${horaBogota(new Date())}.`}</p>
                     <button type="button" className="btn btn-outline-success btn-sm mt-2" onClick={reiniciar}>
                         Registrar otro movimiento
                     </button>
@@ -232,15 +221,12 @@ const EscanearAcceso = ({ contexto = 'panel', onRegistrado, ocultarCabecera = fa
             )}
 
             {(fase === 'error' || (resultado && !resultado.ok)) && (
-                <div className="acc-alert acc-alert--err">
-                    <span className="material-symbols-outlined">error</span>
-                    <div>
-                        <strong>No se pudo registrar</strong>
-                        {resultado?.message}
-                    </div>
+                <div className="alert alert-danger mt-3 mb-0 small">
+                    <span className="material-symbols-outlined small align-middle me-1">error</span>
+                    {resultado?.message}
                 </div>
             )}
-        </section>
+        </div>
     );
 
     if (contexto === 'puerta') {
@@ -250,30 +236,28 @@ const EscanearAcceso = ({ contexto = 'panel', onRegistrado, ocultarCabecera = fa
     return (
         <div className="fade-in-up">
             <div className="acc-view">
-                <div className="acc-pagehead">
-                    <div>
-                        <h2>Marcar acceso</h2>
-                        <p>Registra tu entrada o salida con el QR de portería. Queda en tu historial al instante.</p>
-                    </div>
+                <div className="section-header">
+                    <h3 className="mb-0">Marcar acceso</h3>
+                    <p className="small opacity-75 mb-0">Registra tu entrada o salida con el QR de portería. Queda en tu historial al instante.</p>
                 </div>
 
-                <div className="acc-grid acc-grid--acceso">
-                    {tarjetaScanner}
+                <div className="row g-4">
+                    <div className="col-12 col-lg-7">{tarjetaScanner}</div>
 
-                    <div className="acc-side">
-                        <section className="acc-card">
-                            <div className="acc-head">
+                    <div className="col-12 col-lg-5">
+                        <div className="glass-box p-4 mb-4">
+                            <div className="d-flex align-items-start justify-content-between gap-2 mb-3">
                                 <div>
-                                    <h3 className="acc-title">Tu día</h3>
-                                    <p className="acc-sub">{etiquetaDia()}</p>
+                                    <h4 className="fw-bold mb-0">Tu día</h4>
+                                    <p className="small opacity-75 mb-0">{etiquetaDia()}</p>
                                 </div>
-                                <span className="acc-tag">{entrada ? 'Dentro' : 'Sin entrada'}</span>
+                                <span className={`badge border ${entrada ? 'bg-success bg-opacity-25 text-success border-success border-opacity-50' : 'bg-secondary bg-opacity-25 text-light border-secondary border-opacity-50'}`}>
+                                    {entrada ? 'DENTRO' : 'SIN ENTRADA'}
+                                </span>
                             </div>
 
-                            <div className="acc-dia">
-                                <span className="material-symbols-outlined" style={{ color: entrada ? 'var(--primary-color)' : '#ffc107' }}>
-                                    {entrada ? 'login' : 'schedule'}
-                                </span>
+                            <div className={`acc-dia mb-3 ${entrada ? '' : 'acc-dia--fuera'}`}>
+                                <span className="material-symbols-outlined">{entrada ? 'login' : 'schedule'}</span>
                                 <div>
                                     <strong>{entrada ? 'Entrada registrada' : 'Aún sin entrada hoy'}</strong>
                                     <span>
@@ -284,52 +268,57 @@ const EscanearAcceso = ({ contexto = 'panel', onRegistrado, ocultarCabecera = fa
                                 </div>
                             </div>
 
-                            <div className="acc-metas">
-                                <div className="acc-meta">
-                                    <span>Último movimiento</span>
-                                    <strong>{ultimo ? ultimo.tipo : '—'}</strong>
+                            <div className="row g-2 mb-3">
+                                <div className="col-6">
+                                    <div className="p-3 bg-dark bg-opacity-25 rounded border border-success border-opacity-10 h-100">
+                                        <span className="form-label d-block mb-1 opacity-50">ÚLTIMO MOVIMIENTO</span>
+                                        <div className="fw-bold">{ultimo ? ultimo.tipo : '—'}</div>
+                                    </div>
                                 </div>
-                                <div className="acc-meta">
-                                    <span>Hora</span>
-                                    <strong>{ultimo?.fecha ? horaBogota(ultimo.fecha) : '—'}</strong>
+                                <div className="col-6">
+                                    <div className="p-3 bg-dark bg-opacity-25 rounded border border-success border-opacity-10 h-100">
+                                        <span className="form-label d-block mb-1 opacity-50">HORA</span>
+                                        <div className="fw-bold">{ultimo?.fecha ? horaBogota(ultimo.fecha) : '—'}</div>
+                                    </div>
                                 </div>
                             </div>
 
-                            <ol className="acc-steps">
-                                <li><b>1</b><span>Muestra o escanea el QR de portería.</span></li>
-                                <li><b>2</b><span>Espera el aviso verde de confirmación.</span></li>
-                                <li><b>3</b><span>La salida también se registra así al terminar el día.</span></li>
-                            </ol>
-                        </section>
+                            <ul className="list-unstyled small opacity-75 mb-0">
+                                <li className="d-flex gap-2 mb-1">
+                                    <span className="material-symbols-outlined text-success" style={{ fontSize: '18px' }}>check_circle</span>
+                                    Muestra o escanea el QR de portería.
+                                </li>
+                                <li className="d-flex gap-2 mb-1">
+                                    <span className="material-symbols-outlined text-success" style={{ fontSize: '18px' }}>check_circle</span>
+                                    Espera el aviso verde de confirmación.
+                                </li>
+                                <li className="d-flex gap-2">
+                                    <span className="material-symbols-outlined text-success" style={{ fontSize: '18px' }}>check_circle</span>
+                                    La salida también se registra así al terminar el día.
+                                </li>
+                            </ul>
+                        </div>
 
-                        <section className="acc-card">
-                            <div className="acc-head">
-                                <div>
-                                    <h3 className="acc-title">Movimientos de hoy</h3>
-                                    <p className="acc-sub">Lo que ya quedó en tu historial</p>
-                                </div>
-                            </div>
+                        <div className="glass-box p-4">
+                            <h4 className="fw-bold mb-1">Movimientos de hoy</h4>
+                            <p className="small opacity-75 mb-3">Lo que ya quedó en tu historial</p>
 
                             {movimientos.length === 0 ? (
-                                <div className="acc-empty">
-                                    <span className="material-symbols-outlined">history</span>
-                                    Todavía no tienes movimientos registrados hoy
+                                <p className="text-center small opacity-50 py-3 mb-0">Todavía no tienes movimientos registrados hoy</p>
+                            ) : movimientos.map((m) => (
+                                <div className="acc-fila" key={m.id_ingreso}>
+                                    <span className={`badge border ${m.ingreso_type === 'Entrada' ? 'bg-success bg-opacity-25 text-success border-success border-opacity-50' : 'bg-warning bg-opacity-25 text-warning border-warning border-opacity-50'}`}>
+                                        {m.ingreso_type}
+                                    </span>
+                                    <div>
+                                        <strong>{m.ingreso_place || 'CCyS'}</strong>
+                                        <br />
+                                        <small>Registrado por ti</small>
+                                    </div>
+                                    <span className="acc-fila-hora">{horaBogota(m.ingreso_datetime)}</span>
                                 </div>
-                            ) : (
-                                <div className="acc-list">
-                                    {movimientos.map((m) => (
-                                        <div className="acc-item" key={m.id_ingreso}>
-                                            <span className="acc-tag">{m.ingreso_type}</span>
-                                            <div style={{ minWidth: 0 }}>
-                                                <div className="acc-item-name">{m.ingreso_place || 'CCyS'}</div>
-                                                <div className="acc-item-sub">Registrado por ti</div>
-                                            </div>
-                                            <div className="acc-item-time">{horaBogota(m.ingreso_datetime)}</div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </section>
+                            ))}
+                        </div>
                     </div>
                 </div>
             </div>

@@ -70,7 +70,6 @@ const QrInvitado = () => {
                 try {
                     data = await pedir('/api/acceso/validar-codigo', { pin: limpio });
                 } catch (e) {
-                    // Un documento de 6 dígitos también es válido: segundo intento.
                     if (e.response?.status === 422 || e.response?.status === 404) {
                         data = await pedir('/api/acceso/carnet', { carnet: limpio });
                         canal = 'carnet';
@@ -158,184 +157,163 @@ const QrInvitado = () => {
     return (
         <div className="fade-in-up">
             <div className="acc-view">
-                <div className="acc-grid">
-                <section className="acc-card">
-                    <div className="acc-head">
-                        <div>
-                            <h3 className="acc-title">Validar acceso</h3>
-                            <p className="acc-sub">Carnet del usuario, código de la web y QR de invitado.</p>
-                        </div>
-                        <span className="acc-tag">{validos} válidos hoy</span>
-                    </div>
+                <div className="section-header">
+                    <h3 className="mb-0">Validar acceso</h3>
+                    <p className="small opacity-75 mb-0">Carnet del usuario, código de la web y QR de invitado en un solo lugar.</p>
+                </div>
 
-                    <div className="acc-tabs" role="tablist" aria-label="Método de validación">
-                        <button type="button" role="tab" aria-selected={modo === 'camara'} className={`acc-tab ${modo === 'camara' ? 'is-on' : ''}`} onClick={() => { setModo('camara'); setFase('inicio'); setResultado(null); detenerCamara(); }}>
-                            Cámara
-                        </button>
-                        <button type="button" role="tab" aria-selected={modo === 'codigo'} className={`acc-tab ${modo === 'codigo' ? 'is-on' : ''}`} onClick={() => { setModo('codigo'); setFase('inicio'); setResultado(null); detenerCamara(); }}>
-                            Código o PIN
-                        </button>
-                    </div>
-
-                    {modo === 'camara' ? (
-                        <>
-                            <div className="acc-stage">
-                                <div className="acc-stage-guide" aria-hidden="true" />
-                                <div id={idRef.current} style={{ width: '100%', height: '100%' }} />
-                                {!escaneando && (
-                                    <div className="acc-stage-empty">
-                                        <span className="material-symbols-outlined">qr_code_scanner</span>
-                                        <strong>Cámara apagada</strong>
-                                        <span>Apunta al carnet, al código de la web o al QR del invitado.</span>
-                                        <button type="button" className="btn btn-primary-login px-4 py-2 mt-2" onClick={iniciarCamara} disabled={ocupado}>
-                                            <span className="material-symbols-outlined small me-1">photo_camera</span>
-                                            {ocupado ? 'Validando…' : 'Abrir cámara'}
-                                        </button>
-                                    </div>
-                                )}
-                                {escaneando && (
-                                    <>
-                                        <div className="acc-corners" aria-hidden="true"><i /><i /><i /><i /></div>
-                                        <div className="acc-line" aria-hidden="true" />
-                                    </>
-                                )}
-                            </div>
-
-                            {errorCamara && (
-                                <div className="acc-alert acc-alert--warn">
-                                    <span className="material-symbols-outlined">videocam_off</span>
-                                    <div>{errorCamara}</div>
+                <div className="row g-4">
+                    <div className="col-12 col-lg-7">
+                        <div className="glass-box p-4 h-100">
+                            <div className="d-flex align-items-start justify-content-between gap-2 mb-3">
+                                <div>
+                                    <h4 className="fw-bold mb-1">Escáner de portería</h4>
+                                    <p className="small opacity-75 mb-0">Apunta al carnet, al código de la web o al QR del invitado.</p>
                                 </div>
-                            )}
-
-                            {escaneando && (
-                                <div className="acc-actions">
-                                    <button type="button" className="btn btn-outline-success" onClick={detener}>
-                                        <span className="material-symbols-outlined small me-1">stop_circle</span>
-                                        Detener cámara
-                                    </button>
-                                </div>
-                            )}
-                        </>
-                    ) : (
-                        <>
-                            <div>
-                                <label className="form-label" htmlFor="acc-porteria">Código, PIN o documento</label>
-                                <div className="acc-row">
-                                    <input
-                                        id="acc-porteria"
-                                        type="text"
-                                        className="form-control"
-                                        placeholder="PIN de 6 dígitos, documento o código del QR"
-                                        value={texto}
-                                        onChange={(e) => setTexto(e.target.value)}
-                                        onKeyDown={(e) => { if (e.key === 'Enter') validar(texto); }}
-                                    />
-                                    <button type="button" className="btn btn-primary-login px-4" onClick={() => validar(texto)} disabled={ocupado || !texto.trim()}>
-                                        {ocupado ? 'Validando…' : 'Validar'}
-                                    </button>
-                                </div>
-                            </div>
-                            <p className="acc-time">Detectamos el tipo solo: PIN de 6 dígitos, documento del carnet o código del invitado.</p>
-                        </>
-                    )}
-
-                    {fase === 'listo' && resultado && (
-                        <div className={`acc-alert ${resultado.ok ? 'acc-alert--ok' : 'acc-alert--err'}`}>
-                            <span className="material-symbols-outlined">{resultado.ok ? 'check_circle' : 'error'}</span>
-                            <div style={{ flex: 1 }}>
-                                <strong>{resultado.ok ? (resultado.duplicado ? 'Acceso repetido' : 'Acceso registrado') : 'No se pudo validar'}</strong>
-                                {resultado.mensaje}
-                            </div>
-                        </div>
-                    )}
-                </section>
-
-                <section className="acc-card">
-                    <div className="acc-head">
-                        <div>
-                            <h3 className="acc-title">Persona</h3>
-                            <p className="acc-sub">La última validación de esta sesión.</p>
-                        </div>
-                    </div>
-
-                    <div className="acc-metas">
-                        <div className="acc-meta">
-                            <span>Válidos</span>
-                            <strong>{validos}</strong>
-                        </div>
-                        <div className="acc-meta">
-                            <span>Rechazados</span>
-                            <strong>{rechazados}</strong>
-                        </div>
-                    </div>
-
-                    {resultado?.persona ? (
-                        <div className="acc-persona">
-                            <div className="acc-avatar">
-                                {resultado.persona.foto
-                                    ? <img src={resultado.persona.foto} alt="" />
-                                    : inicialesDe(resultado.persona.nombre?.split(' ')[0], resultado.persona.nombre?.split(' ')[1])}
-                            </div>
-                            <div style={{ minWidth: 0, flex: 1 }}>
-                                <span className="acc-persona-name">{resultado.persona.nombre}</span>
-                                <span className="acc-persona-sub">
-                                    {resultado.persona.identificacion || 'Sin documento'} · {resultado.persona.rol || 'Usuario'}
+                                <span className="badge bg-success bg-opacity-25 text-success border border-success border-opacity-50">
+                                    {validos} VÁLIDOS HOY
                                 </span>
                             </div>
-                            <span className="acc-item-time">{resultado.hora}</span>
-                        </div>
-                    ) : (
-                        <div className="acc-vacio-linea">
-                            <span className="material-symbols-outlined">badge</span>
-                            Aún no has validado a nadie en esta sesión.
-                        </div>
-                    )}
 
-                    <div>
-                        <h4 className="acc-title" style={{ fontSize: '0.92rem' }}>Validados ahora</h4>
-                        {historial.length === 0 ? (
-                            <div className="acc-empty">
-                                <span className="material-symbols-outlined">history</span>
-                                Nada por aquí todavía
+                            <div className="btn-group mb-3" role="group" aria-label="Método de validación">
+                                <button type="button" className={`btn ${modo === 'camara' ? 'btn-success' : 'btn-outline-success'}`} onClick={() => { setModo('camara'); setFase('inicio'); setResultado(null); }}>
+                                    Cámara
+                                </button>
+                                <button type="button" className={`btn ${modo === 'codigo' ? 'btn-success' : 'btn-outline-success'}`} onClick={() => { setModo('codigo'); setFase('inicio'); setResultado(null); detenerCamara(); }}>
+                                    Código o PIN
+                                </button>
                             </div>
-                        ) : (
-                            <div className="acc-list">
-                                {historial.map((h, i) => (
-                                    <div className="acc-item" key={`${h.hora}-${i}`}>
-                                        <div className="acc-avatar" style={{ width: 32, height: 32, fontSize: '0.7rem' }}>
-                                            {h.ok ? (h.persona ? inicialesDe(h.persona.nombre?.split(' ')[0], h.persona.nombre?.split(' ')[1]) : 'OK') : '!'}
-                                        </div>
-                                        <div style={{ minWidth: 0 }}>
-                                            <div className="acc-item-name">{h.persona?.nombre || (h.ok ? 'Acceso' : 'Código rechazado')}</div>
-                                            <div className="acc-item-sub">
-                                                {h.ok
-                                                    ? (h.canal === 'carnet' ? 'Carnet' : h.canal === 'invitado' ? 'Invitado' : 'Código / PIN')
-                                                    : h.mensaje}
+
+                            {modo === 'camara' ? (
+                                <>
+                                    <div className="acc-stage">
+                                        <div id={idRef.current} style={{ width: '100%', height: '100%' }} />
+                                        {!escaneando && (
+                                            <div className="acc-stage-empty">
+                                                <span className="material-symbols-outlined">qr_code_scanner</span>
+                                                <p className="fw-bold text-white mb-0">Cámara apagada</p>
+                                                <p>Apunta al carnet, al código de la web o al QR del invitado.</p>
+                                                <button type="button" className="btn btn-glow mt-2" onClick={iniciarCamara} disabled={ocupado}>
+                                                    {ocupado ? 'VALIDANDO…' : 'ABRIR CÁMARA'}
+                                                </button>
                                             </div>
-                                        </div>
-                                        <div className="acc-item-time">{h.hora}</div>
+                                        )}
                                     </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                </section>
-            </div>
 
-            <div className="acc-card mt-3">
-                <div className="acc-head">
-                    <div>
-                        <h3 className="acc-title">Cómo validar</h3>
-                        <p className="acc-sub">Un solo escáner reconoce todo lo que llega a portería.</p>
+                                    {errorCamara && <div className="alert alert-warning small mt-3 mb-0 py-2">{errorCamara}</div>}
+
+                                    {escaneando && (
+                                        <button type="button" className="btn btn-outline-success w-100 mt-3" onClick={detener}>
+                                            <span className="material-symbols-outlined small align-middle me-1">stop_circle</span>
+                                            Detener cámara
+                                        </button>
+                                    )}
+                                </>
+                            ) : (
+                                <>
+                                    <label className="form-label" htmlFor="acc-porteria">Código, PIN o documento</label>
+                                    <div className="input-group">
+                                        <input
+                                            id="acc-porteria"
+                                            type="text"
+                                            className="form-control"
+                                            placeholder="PIN de 6 dígitos, documento o código del QR"
+                                            value={texto}
+                                            onChange={(e) => setTexto(e.target.value)}
+                                            onKeyDown={(e) => { if (e.key === 'Enter') validar(texto); }}
+                                        />
+                                        <button type="button" className="btn btn-success fw-bold px-3" onClick={() => validar(texto)} disabled={ocupado || !texto.trim()}>
+                                            {ocupado ? 'VALIDANDO…' : 'VALIDAR'}
+                                        </button>
+                                    </div>
+                                    <p className="small opacity-50 mt-2 mb-0">Se detecta solo: PIN de 6 dígitos, documento del carnet o código del invitado.</p>
+                                </>
+                            )}
+
+                            {fase === 'listo' && resultado && (
+                                <div className={`alert ${resultado.ok ? 'alert-success' : 'alert-danger'} mt-3 mb-0`}>
+                                    <div className="fw-bold">
+                                        {resultado.ok ? (resultado.duplicado ? 'Acceso repetido' : 'Acceso registrado') : 'No se pudo validar'}
+                                    </div>
+                                    <div className="small">{resultado.mensaje}</div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="col-12 col-lg-5">
+                        <div className="glass-box p-4 h-100">
+                            <h4 className="fw-bold mb-1">Persona</h4>
+                            <p className="small opacity-75 mb-3">La última validación de esta sesión.</p>
+
+                            <div className="row g-2 mb-3">
+                                <div className="col-6">
+                                    <div className="p-3 bg-dark bg-opacity-25 rounded border border-success border-opacity-10 h-100">
+                                        <span className="form-label d-block mb-1 opacity-50">VÁLIDOS</span>
+                                        <div className="fw-bold">{validos}</div>
+                                    </div>
+                                </div>
+                                <div className="col-6">
+                                    <div className="p-3 bg-dark bg-opacity-25 rounded border border-success border-opacity-10 h-100">
+                                        <span className="form-label d-block mb-1 opacity-50">RECHAZADOS</span>
+                                        <div className="fw-bold">{rechazados}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {resultado?.persona ? (
+                                <div className="acc-persona mb-3">
+                                    <div className="acc-avatar">
+                                        {resultado.persona.foto
+                                            ? <img src={resultado.persona.foto} alt="" />
+                                            : inicialesDe(resultado.persona.nombre?.split(' ')[0], resultado.persona.nombre?.split(' ')[1])}
+                                    </div>
+                                    <div style={{ minWidth: 0, flex: 1 }}>
+                                        <strong className="d-block text-truncate">{resultado.persona.nombre}</strong>
+                                        <small className="opacity-75 d-block text-truncate">
+                                            {resultado.persona.identificacion || 'Sin documento'} · {resultado.persona.rol || 'Usuario'}
+                                        </small>
+                                    </div>
+                                    <span className="small fw-bold">{resultado.hora}</span>
+                                </div>
+                            ) : (
+                                <p className="small opacity-50 mb-3">Aún no has validado a nadie en esta sesión.</p>
+                            )}
+
+                            <h5 className="fw-bold mb-1">Validados ahora</h5>
+                            <p className="small opacity-75 mb-2">Últimos escaneos de esta sesión.</p>
+
+                            {historial.length === 0 ? (
+                                <p className="text-center small opacity-50 py-3 mb-0">Nada por aquí todavía</p>
+                            ) : historial.map((h, i) => (
+                                <div className="acc-fila" key={`${h.hora}-${i}`}>
+                                    <div className="acc-avatar" style={{ width: 32, height: 32, fontSize: '0.7rem' }}>
+                                        {h.ok ? (h.persona ? inicialesDe(h.persona.nombre?.split(' ')[0], h.persona.nombre?.split(' ')[1]) : 'OK') : '!'}
+                                    </div>
+                                    <div style={{ minWidth: 0 }}>
+                                        <strong className="d-block text-truncate">{h.persona?.nombre || (h.ok ? 'Acceso' : 'Código rechazado')}</strong>
+                                        <small className="d-block text-truncate">
+                                            {h.ok
+                                                ? (h.canal === 'carnet' ? 'Carnet' : h.canal === 'invitado' ? 'Invitado' : 'Código / PIN')
+                                                : h.mensaje}
+                                        </small>
+                                    </div>
+                                    <span className="acc-fila-hora">{h.hora}</span>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 </div>
-                <ol className="acc-steps">
-                    <li><b>1</b><span><strong>Carnet digital:</strong> escanea el QR del usuario y queda su Entrada registrada al instante.</span></li>
-                    <li><b>2</b><span><strong>Código de la web:</strong> el usuario genera un QR o PIN en la puerta y tú lo validas aquí.</span></li>
-                    <li><b>3</b><span><strong>Invitado:</strong> el QR del invitado se consume una sola vez y caduca a la hora.</span></li>
-                </ol>
-            </div>
+
+                <div className="glass-box p-4 mt-4">
+                    <h4 className="fw-bold mb-1">Cómo validar</h4>
+                    <p className="small opacity-75 mb-3">Un solo escáner reconoce todo lo que llega a portería.</p>
+                    <ul className="list-unstyled small opacity-75 mb-0">
+                        <li className="d-flex gap-2 mb-1"><span className="material-symbols-outlined text-success" style={{ fontSize: '18px' }}>check_circle</span><span><strong>Carnet digital:</strong> escanea el QR del usuario y queda su Entrada registrada al instante.</span></li>
+                        <li className="d-flex gap-2 mb-1"><span className="material-symbols-outlined text-success" style={{ fontSize: '18px' }}>check_circle</span><span><strong>Código de la web:</strong> el usuario genera un QR o PIN en la puerta y tú lo validas aquí.</span></li>
+                        <li className="d-flex gap-2"><span className="material-symbols-outlined text-success" style={{ fontSize: '18px' }}>check_circle</span><span><strong>Invitado:</strong> el QR del invitado se consume una sola vez y caduca a la hora.</span></li>
+                    </ul>
+                </div>
             </div>
         </div>
     );

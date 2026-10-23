@@ -1,190 +1,30 @@
 @charset "UTF-8";
 
 /* ==========================================================================
-   ACCESOS · mismo tema original
+   ACCESOS · piezas compartidas
    --------------------------------------------------------------------------
-   Solo organiza el contenido de las pantallas de acceso (escanear el QR de
-   portería, mostrar el código propio y validar en portería). Conserva el
-   vidrio, los bordes verdes y el botón neón de siempre: no introduce un tema
-   nuevo, únicamente ordena y reparte el espacio.
+   Solo lo que Bootstrap no trae: el visor de cámara, la franja de estado del
+   día y las filas de movimientos. Todo lo demás usa las clases de siempre
+   (`glass-box`, `section-header`, `badge`, `btn`, `progress`) para que estas
+   pantallas se vean igual que el resto de la app.
    ========================================================================== */
 
-.acc-grid {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    gap: 18px;
-    align-items: start;
-    width: 100%;
-}
-
-/* Vista del panel: una columna con el escáner y otra con el resumen del día */
 .acc-view {
     width: 100%;
-    max-width: 1120px;
+    max-width: 1180px;
     margin: 0 auto;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
 }
 
-.acc-pagehead h2 {
-    margin: 0;
-    font-size: clamp(1.4rem, 1.1rem + 0.8vw, 1.7rem);
-    font-weight: 800;
-    letter-spacing: -0.01em;
-    color: var(--text-color);
-}
+.acc-view .section-header p { margin-top: 4px; }
 
-.acc-pagehead p {
-    margin: 6px 0 0;
-    font-size: 0.9rem;
-    opacity: 0.7;
-}
-
-.acc-grid--acceso {
-    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
-    align-items: stretch;
-}
-
-.acc-grid--acceso .acc-stage {
-    flex: 1 1 auto;
-    height: auto;
-    min-height: 240px;
-}
-
-.acc-side {
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
-    min-width: 0;
-}
-
-/* Estado del día dentro de su tarjeta */
-.acc-dia {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 14px 16px;
-    border-radius: 16px;
-    background: rgba(2, 217, 20, 0.07);
-    border: 1px solid rgba(2, 217, 20, 0.3);
-}
-
-.acc-dia .material-symbols-outlined { font-size: 26px; flex: 0 0 auto; }
-.acc-dia strong { display: block; font-size: 0.95rem; color: var(--text-color); }
-.acc-dia span { display: block; font-size: 0.8rem; opacity: 0.7; margin-top: 2px; }
-
-.acc-grid--una { grid-template-columns: minmax(0, 1fr); max-width: 760px; margin: 0 auto; }
-
-/* Columna de la puerta: la tarjeta ocupa el alto disponible */
-.acc-col { display: flex; min-width: 0; }
-.acc-col > * { flex: 1 1 auto; }
-
-/* Contenedor de la puerta de entrada (pantalla pública) */
-.puerta-shell {
-    position: relative;
-    width: 100%;
-    max-width: 1040px;
-    margin: 0 auto;
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
-}
-
-.puerta-shell .puerta-head { max-width: 640px; margin: 0 auto; }
-
-.acc-card {
-    background: var(--glass-bg);
-    border: 1px solid rgba(2, 217, 20, 0.25);
-    border-radius: 22px;
-    padding: 22px;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    min-width: 0;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
-}
-
-body.light-mode .acc-card {
-    border-color: rgba(22, 163, 74, 0.3);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
-}
-
-.acc-head {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 12px;
-    flex-wrap: wrap;
-}
-
-/* Botón de tema dentro de la cabecera de la tarjeta (puerta) */
-.acc-head .auth-theme-btn {
-    position: static;
-    width: 36px;
-    height: 36px;
-    flex: 0 0 auto;
-    margin-left: auto;
-}
-
-.acc-title {
-    margin: 0;
-    font-size: 1.14rem;
-    font-weight: 800;
-    color: var(--text-color);
-    letter-spacing: 0.1px;
-}
-
-.acc-sub {
-    margin: 4px 0 0;
-    font-size: 0.84rem;
-    color: var(--text-color);
-    opacity: 0.68;
-}
-
-/* Pestañas Cámara / Código / etc. */
-.acc-tabs {
-    display: inline-flex;
-    gap: 4px;
-    padding: 4px;
-    border-radius: 999px;
-    background: rgba(2, 217, 20, 0.07);
-    border: 1px solid rgba(2, 217, 20, 0.22);
-    align-self: flex-start;
-    max-width: 100%;
-    flex-wrap: wrap;
-}
-
-.acc-tab {
-    border: 0;
-    background: transparent;
-    color: var(--text-color);
-    opacity: 0.68;
-    font-size: 0.78rem;
-    font-weight: 700;
-    padding: 7px 14px;
-    border-radius: 999px;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: background-color 0.2s ease, color 0.2s ease, opacity 0.2s ease;
-}
-
-.acc-tab:hover { opacity: 1; }
-
-.acc-tab.is-on {
-    background: var(--primary-color);
-    color: #04140a;
-    opacity: 1;
-}
-
-/* Visor de cámara */
+/* Visor de cámara: mismo marco oscuro y borde verde que el resto de tarjetas */
 .acc-stage {
     position: relative;
     border-radius: 18px;
     overflow: hidden;
-    background: #05070a;
-    border: 1px solid rgba(2, 217, 20, 0.28);
-    height: 250px;
+    background: #000000;
+    border: 1px solid rgba(2, 217, 20, 0.25);
+    height: 280px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -204,213 +44,86 @@ body.light-mode .acc-card {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 6px;
-    padding: 18px;
+    gap: 8px;
+    padding: 20px;
     text-align: center;
-    color: rgba(255, 255, 255, 0.82);
-}
-
-/* Guía del escáner: recuadro punteado que invita a apuntar el QR */
-.acc-stage-guide {
-    position: absolute;
-    inset: 13%;
-    border: 1.5px dashed rgba(2, 217, 20, 0.32);
-    border-radius: 16px;
-    pointer-events: none;
+    color: rgba(255, 255, 255, 0.75);
 }
 
 .acc-stage-empty .material-symbols-outlined {
     font-size: 42px;
     color: var(--primary-color);
-    opacity: 0.9;
 }
 
-.acc-stage-empty strong { font-size: 0.9rem; color: #ffffff; }
-.acc-stage-empty span { font-size: 0.77rem; opacity: 0.78; max-width: 32ch; }
+.acc-stage-empty p { margin: 0; font-size: 0.82rem; max-width: 34ch; }
 
-.acc-corners { position: absolute; inset: 15%; pointer-events: none; }
-
-.acc-corners i {
-    position: absolute;
-    width: 26px;
-    height: 26px;
-    border: 2px solid var(--primary-color);
-    opacity: 0.9;
+/* Franja del estado del día (entrada registrada / sin entrada) */
+.acc-dia {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: rgba(2, 217, 20, 0.07);
+    border: 1px solid rgba(2, 217, 20, 0.25);
 }
 
-.acc-corners i:nth-child(1) { top: 0; left: 0; border-right: 0; border-bottom: 0; border-top-left-radius: 8px; }
-.acc-corners i:nth-child(2) { top: 0; right: 0; border-left: 0; border-bottom: 0; border-top-right-radius: 8px; }
-.acc-corners i:nth-child(3) { bottom: 0; left: 0; border-right: 0; border-top: 0; border-bottom-left-radius: 8px; }
-.acc-corners i:nth-child(4) { bottom: 0; right: 0; border-left: 0; border-top: 0; border-bottom-right-radius: 8px; }
+.acc-dia .material-symbols-outlined { font-size: 24px; flex: 0 0 auto; color: var(--primary-color); }
+.acc-dia--fuera .material-symbols-outlined { color: #ffc107; }
+.acc-dia strong { display: block; font-size: 0.92rem; color: var(--text-color); }
+.acc-dia span { display: block; font-size: 0.78rem; opacity: 0.7; }
 
-.acc-line {
-    position: absolute;
-    left: 15%;
-    right: 15%;
-    height: 2px;
-    background: var(--primary-color);
-    opacity: 0.7;
-    animation: accScan 2.4s cubic-bezier(0.77, 0, 0.175, 1) infinite;
-    pointer-events: none;
+/* Filas de movimientos (mismo aire que las tablas del panel) */
+.acc-fila {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(2, 217, 20, 0.12);
 }
 
-/* Fila de código manual */
-.acc-row { display: flex; gap: 8px; }
-.acc-row .form-control { flex: 1 1 auto; min-width: 0; }
-.acc-row .btn { flex: 0 0 auto; }
+.acc-fila:last-child { border-bottom: 0; padding-bottom: 0; }
+.acc-fila strong { font-size: 0.86rem; }
+.acc-fila small { opacity: 0.65; }
+.acc-fila .acc-fila-hora { margin-left: auto; font-size: 0.82rem; font-weight: 700; font-variant-numeric: tabular-nums; }
 
-/* Código propio (QR + PIN) */
-.acc-code { display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; }
-
-.acc-qr {
-    width: 196px;
-    height: 196px;
+/* QR del código propio: reutiliza el marco blanco del carnet */
+.acc-qr-box {
+    width: 190px;
+    height: 190px;
     background: #ffffff;
+    border: 3px solid var(--primary-color);
     border-radius: 16px;
     padding: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 3px solid var(--primary-color);
+    margin: 0 auto;
 }
 
-.acc-qr img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.acc-qr-box img { width: 100%; height: 100%; object-fit: contain; display: block; }
 
-.acc-qr--vacio {
+.acc-qr-box--vacio {
     background: rgba(255, 255, 255, 0.04);
-    border: 2px dashed rgba(2, 217, 20, 0.4);
+    border: 2px dashed rgba(2, 217, 20, 0.35);
     color: var(--text-color);
-    flex-direction: column;
-    gap: 8px;
-    font-size: 0.78rem;
     opacity: 0.85;
 }
 
-body.light-mode .acc-qr--vacio { background: rgba(22, 163, 74, 0.05); }
-
-.acc-pin { display: flex; gap: 6px; justify-content: center; }
-
-.acc-pin b {
-    width: 34px;
-    height: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 10px;
-    background: rgba(2, 217, 20, 0.08);
-    border: 1px solid rgba(2, 217, 20, 0.35);
-    color: var(--text-color);
-    font-size: 1.2rem;
-    font-weight: 800;
-    font-variant-numeric: tabular-nums;
-}
-
-.acc-bar {
-    width: 100%;
-    max-width: 280px;
-    height: 4px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.14);
-    overflow: hidden;
-}
-
-body.light-mode .acc-bar { background: rgba(0, 0, 0, 0.12); }
-
-.acc-bar i { display: block; height: 100%; background: var(--primary-color); transition: width 0.9s linear; }
-.acc-bar.is-low i { background: #ffc107; }
-
-.acc-time { font-size: 0.78rem; opacity: 0.7; margin: 0; }
-
-/* Estado / espera */
-.acc-status {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    padding: 12px 16px;
-    border-radius: 16px;
-    background: var(--glass-bg);
-    border: 1px solid rgba(2, 217, 20, 0.28);
-    color: var(--text-color);
-    font-size: 0.82rem;
-    text-align: center;
-}
-
-.acc-dot {
-    width: 8px;
-    height: 8px;
-    flex: 0 0 auto;
-    border-radius: 50%;
-    background: var(--primary-color);
-    animation: accPulse 1.6s cubic-bezier(0.77, 0, 0.175, 1) infinite;
-}
-
-/* Confirmación */
-.acc-ok {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-    text-align: center;
-    padding: 10px 6px 4px;
-}
-
-.acc-ok-mark {
-    width: 54px;
-    height: 54px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(2, 217, 20, 0.14);
-    border: 1px solid rgba(2, 217, 20, 0.5);
-    color: var(--primary-color);
-    margin-bottom: 4px;
-}
-
-.acc-ok-mark .material-symbols-outlined { font-size: 30px; }
-.acc-ok h3 { margin: 0; font-size: 1rem; font-weight: 800; color: var(--text-color); }
-.acc-ok p { margin: 0; font-size: 0.8rem; opacity: 0.75; }
-
-/* Avisos */
-.acc-alert {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    padding: 12px 14px;
-    border-radius: 14px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(2, 217, 20, 0.2);
-    border-left: 3px solid rgba(2, 217, 20, 0.4);
-    color: var(--text-color);
-    font-size: 0.82rem;
-}
-
-body.light-mode .acc-alert { background: rgba(0, 0, 0, 0.04); }
-
-.acc-alert strong { display: block; font-size: 0.84rem; margin-bottom: 2px; color: var(--text-color); }
-.acc-alert .material-symbols-outlined { font-size: 20px; margin-top: 1px; }
-.acc-alert--ok { border-left-color: var(--primary-color); }
-.acc-alert--ok .material-symbols-outlined { color: var(--primary-color); }
-.acc-alert--err { border-left-color: #ff6b6b; }
-.acc-alert--err .material-symbols-outlined { color: #ff6b6b; }
-.acc-alert--warn { border-left-color: #ffc107; }
-.acc-alert--warn .material-symbols-outlined { color: #ffc107; }
-
-/* Persona validada / filas */
+/* Persona validada en portería */
 .acc-persona {
     display: flex;
     align-items: center;
     gap: 12px;
     padding: 12px;
-    border-radius: 16px;
+    border-radius: 14px;
     background: rgba(2, 217, 20, 0.07);
-    border: 1px solid rgba(2, 217, 20, 0.28);
+    border: 1px solid rgba(2, 217, 20, 0.25);
 }
 
 .acc-avatar {
-    width: 44px;
-    height: 44px;
+    width: 40px;
+    height: 40px;
     flex: 0 0 auto;
     border-radius: 50%;
     overflow: hidden;
@@ -420,136 +133,48 @@ body.light-mode .acc-alert { background: rgba(0, 0, 0, 0.04); }
     background: rgba(2, 217, 20, 0.16);
     border: 1px solid rgba(2, 217, 20, 0.4);
     color: var(--primary-color);
-    font-weight: 800;
-    font-size: 0.85rem;
+    font-weight: 700;
+    font-size: 0.8rem;
 }
 
 .acc-avatar img { width: 100%; height: 100%; object-fit: cover; }
 
-.acc-persona-name { display: block; font-size: 0.9rem; font-weight: 700; color: var(--text-color); }
-.acc-persona-sub { display: block; font-size: 0.75rem; opacity: 0.65; }
-
-.acc-list { display: flex; flex-direction: column; }
-
-.acc-item {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    align-items: center;
-    gap: 12px;
-    padding: 10px 0;
-    border-bottom: 1px solid rgba(2, 217, 20, 0.14);
+@media (max-width: 991.98px) {
+    .acc-stage { height: auto; aspect-ratio: 4 / 3; }
+    .acc-qr-box { width: 168px; height: 168px; }
 }
 
-.acc-item:last-child { border-bottom: 0; padding-bottom: 0; }
-.acc-item-name { font-size: 0.9rem; font-weight: 600; color: var(--text-color); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.acc-item-sub { font-size: 0.75rem; opacity: 0.6; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.acc-item-time { font-size: 0.82rem; font-weight: 700; color: var(--text-color); font-variant-numeric: tabular-nums; text-align: right; }
-
-.acc-tag {
-    display: inline-flex;
-    align-items: center;
-    height: 24px;
-    padding: 0 10px;
-    border-radius: 999px;
-    font-size: 0.7rem;
-    font-weight: 700;
-    border: 1px solid rgba(2, 217, 20, 0.35);
-    color: var(--primary-color);
-    background: rgba(2, 217, 20, 0.08);
-    white-space: nowrap;
-}
-
-body.light-mode .acc-tag { color: #16a34a; }
-
-.acc-empty {
+/* Puerta de entrada (pantalla pública) */
+.puerta-shell {
+    position: relative;
+    width: 100%;
+    max-width: 1040px;
+    margin: 0 auto;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 6px;
-    padding: 14px 12px;
-    text-align: center;
-    opacity: 0.6;
-    font-size: 0.82rem;
+    gap: 18px;
 }
 
-.acc-empty .material-symbols-outlined { font-size: 26px; }
+.puerta-shell .puerta-head { max-width: 640px; margin: 0 auto; }
 
-.acc-vacio-linea {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 2px;
-    font-size: 0.82rem;
-    opacity: 0.6;
-}
-
-.acc-vacio-linea .material-symbols-outlined { font-size: 20px; }
-
-/* Pasos */
-.acc-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
-.acc-steps li { display: flex; align-items: flex-start; gap: 10px; font-size: 0.83rem; opacity: 0.88; }
-
-.acc-steps b {
+/* Botón de tema dentro de la cabecera de la tarjeta */
+.acc-head-accion .auth-theme-btn {
+    position: static;
+    width: 36px;
+    height: 36px;
     flex: 0 0 auto;
-    width: 20px;
-    height: 20px;
+}
+
+/* Punto que late mientras la puerta espera la entrada */
+.acc-pulse {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    margin-right: 8px;
     border-radius: 50%;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(2, 217, 20, 0.14);
-    border: 1px solid rgba(2, 217, 20, 0.4);
-    color: var(--text-color);
-    font-size: 0.68rem;
-    font-weight: 800;
-}
-
-.acc-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-.acc-actions .btn { flex: 1 1 auto; }
-
-/* Botones dentro de las tarjetas: mismo lenguaje que el resto de la app */
-.acc-card .btn {
-    border-radius: 12px;
-    text-transform: uppercase;
-    letter-spacing: 0.6px;
-    font-size: 0.8rem;
-    font-weight: 700;
-}
-
-.acc-metas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-
-.acc-meta {
-    padding: 10px 12px;
-    border-radius: 14px;
-    background: rgba(2, 217, 20, 0.06);
-    border: 1px solid rgba(2, 217, 20, 0.22);
-}
-
-.acc-meta span { display: block; font-size: 0.72rem; opacity: 0.6; margin-bottom: 3px; }
-.acc-meta strong { font-size: 0.95rem; color: var(--text-color); font-variant-numeric: tabular-nums; }
-
-/* QR grande de portería */
-.acc-projector {
-    width: min(100%, 320px);
-    aspect-ratio: 1;
-    background: #ffffff;
-    border-radius: 20px;
-    padding: 14px;
-    border: 3px solid var(--primary-color);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto;
-}
-
-.acc-projector.is-out { border-color: #ffc107; }
-.acc-projector img { width: 100%; height: 100%; object-fit: contain; display: block; }
-
-@keyframes accScan {
-    0% { top: 18%; opacity: 0; }
-    12% { opacity: 0.7; }
-    88% { opacity: 0.7; }
-    100% { top: 82%; opacity: 0; }
+    background: var(--primary-color);
+    vertical-align: middle;
+    animation: accPulse 1.6s cubic-bezier(0.77, 0, 0.175, 1) infinite;
 }
 
 @keyframes accPulse {
@@ -558,24 +183,23 @@ body.light-mode .acc-tag { color: #16a34a; }
 }
 
 @media (max-width: 991.98px) {
-    .acc-grid,
-    .acc-grid--acceso { grid-template-columns: minmax(0, 1fr); gap: 14px; }
-    .acc-card { padding: 16px; border-radius: 18px; gap: 12px; }
-    .acc-stage,
-    .acc-grid--acceso .acc-stage { height: auto; aspect-ratio: 1 / 1; min-height: 0; }
-    .acc-qr { width: 176px; height: 176px; }
-    .acc-title { font-size: 1.02rem; }
-    .acc-pin b { width: 30px; height: 40px; font-size: 1.05rem; }
     .puerta-shell { padding: 0 4px; }
     .puerta-shell .puerta-head h1 { font-size: 1.35rem; }
-    .acc-pagehead h2 { font-size: 1.4rem; }
-}
-
-@media (max-width: 380px) {
-    .acc-tab { padding: 7px 10px; font-size: 0.74rem; }
-    .acc-pin b { width: 27px; height: 36px; font-size: 0.98rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .acc-dot, .acc-line { animation: none; }
+    .acc-pulse { animation: none; }
+}
+
+/* En el panel el visor ocupa el alto que sobre de la tarjeta */
+.acc-view .acc-stage {
+    flex: 1 1 auto;
+    min-height: 280px;
+}
+
+/* Las tarjetas de acceso usan todo el ancho de su columna (glass-box topa en 450) */
+.acc-view .glass-box,
+.puerta-shell .row .glass-box {
+    max-width: none;
+    margin: 0;
 }

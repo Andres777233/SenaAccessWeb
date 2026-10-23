@@ -147,8 +147,8 @@ body::before {
     background-repeat: no-repeat;
     background-position: center;
     will-change: transform;
-    transform: scale(1.08) translate3d(0, 0, 0);
-    animation: moverFondo 60s ease-in-out infinite alternate;
+    transform: scale(1.14) translate3d(0, 0, 0);
+    animation: moverFondo 26s ease-in-out infinite alternate;
     transition: background 0.4s ease;
 }
 
@@ -282,10 +282,10 @@ body:has(.auth-page) .theme-toggle-btn {
 
 @keyframes moverFondo {
     0% {
-        transform: scale(1.08) translate3d(-1.4%, -0.8%, 0);
+        transform: scale(1.14) translate3d(-4%, -2.5%, 0);
     }
     100% {
-        transform: scale(1.08) translate3d(1.4%, 0.8%, 0);
+        transform: scale(1.14) translate3d(4%, 2.5%, 0);
     }
 }
 

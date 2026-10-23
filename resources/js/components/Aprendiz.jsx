@@ -7,6 +7,7 @@ import StatsDashboard from './StatsDashboard';
 import Excusas from './Excusas';
 import DosPasos from './DosPasos';
 import MiHuella from './MiHuella';
+import SimulacionHuella from './SimulacionHuella';
 import UserQrCarnet from './UserQrCarnet';
 import EscanearAcceso from './EscanearAcceso';
 import RecorteFoto from './RecorteFoto';
@@ -479,6 +480,7 @@ const Aprendiz = () => {
                         </div>
                         <DosPasos />
                         <MiHuella />
+                                <SimulacionHuella />
                     </div>
                 );
             default:

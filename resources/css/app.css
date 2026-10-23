@@ -2681,3 +2681,139 @@ body.light-mode .codigo-acceso {
         gap: 0.75rem;
     }
 }
+
+/* ---- Acciones flotantes del panel (campana + tema) ---- */
+.acciones-flotantes {
+    position: fixed;
+    top: 84px;
+    right: 20px;
+    z-index: 1030;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.accion-flotante-wrap { position: relative; }
+
+.accion-flotante {
+    position: relative;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1.5px solid var(--primary-color);
+    background: var(--glass-bg);
+    color: var(--primary-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25), 0 0 14px rgba(2, 217, 20, 0.18);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.2s ease;
+}
+
+.accion-flotante:hover {
+    transform: scale(1.08);
+    background: rgba(2, 217, 20, 0.1);
+}
+
+.accion-flotante:active { transform: scale(0.96); }
+.accion-flotante .material-symbols-outlined { font-size: 22px; }
+
+.accion-flotante-badge {
+    position: absolute;
+    top: -3px;
+    right: -3px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    border-radius: 999px;
+    background: #dc3545;
+    color: #ffffff;
+    font-size: 0.62rem;
+    font-weight: 700;
+    line-height: 18px;
+    text-align: center;
+    border: 2px solid var(--bg-color);
+}
+
+.accion-flotante-panel {
+    position: absolute;
+    top: 0;
+    right: 56px;
+    width: min(340px, calc(100vw - 110px));
+    max-height: 380px;
+    overflow-y: auto;
+    padding: 8px;
+    border-radius: 16px;
+    background: var(--dropdown-bg);
+    border: 1px solid rgba(2, 217, 20, 0.3);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+    animation: fadeInUp 0.18s ease-out;
+}
+
+.accion-flotante-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 4px 6px 8px;
+    border-bottom: 1px solid rgba(2, 217, 20, 0.15);
+    margin-bottom: 4px;
+}
+
+.accion-flotante-head strong { font-size: 0.82rem; }
+
+.accion-flotante-item {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    width: 100%;
+    padding: 9px 10px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--text-color);
+    text-align: left;
+    cursor: pointer;
+}
+
+.accion-flotante-item:hover { background: rgba(2, 217, 20, 0.09); }
+.accion-flotante-item.is-new .accion-flotante-item-titulo { color: var(--primary-color); }
+.accion-flotante-item-titulo { font-size: 0.8rem; font-weight: 700; }
+.accion-flotante-item-texto { font-size: 0.75rem; opacity: 0.75; }
+.accion-flotante-item-fecha { font-size: 0.65rem; opacity: 0.45; }
+
+@media (max-width: 991.98px) {
+    /* En celular los dos botones viven dentro de la barra superior, entre la
+       marca y el botón de salir: no tapan el contenido. */
+    .acciones-flotantes {
+        top: 10px;
+        right: 56px;
+        flex-direction: row !important;
+        align-items: center;
+        gap: 6px;
+        z-index: 1040;
+    }
+
+    .accion-flotante { width: 34px; height: 34px; }
+    .accion-flotante .material-symbols-outlined { font-size: 19px; }
+    .accion-flotante-badge {
+        top: -4px;
+        right: -4px;
+        min-width: 16px;
+        height: 16px;
+        line-height: 16px;
+        font-size: 0.56rem;
+    }
+
+    .accion-flotante-panel {
+        position: fixed;
+        top: 58px;
+        right: 12px;
+        left: 12px;
+        width: auto;
+        max-height: 60vh;
+    }
+}

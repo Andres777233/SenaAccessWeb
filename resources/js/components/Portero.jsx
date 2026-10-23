@@ -12,6 +12,7 @@ import AccesoQr from './AccesoQr';
 import EquipmentForm from './EquipmentForm';
 import DosPasos from './DosPasos';
 import MiHuella from './MiHuella';
+import SimulacionHuella from './SimulacionHuella';
 import RecorteFoto from './RecorteFoto';
 import { showAlert, showConfirm } from './CustomAlert';
 import downloadComprobante from '../utils/comprobante';
@@ -598,6 +599,7 @@ const Portero = () => {
                         </div>
                         <DosPasos />
                         <MiHuella />
+                                <SimulacionHuella />
                     </div>
                 );
             default: return null;

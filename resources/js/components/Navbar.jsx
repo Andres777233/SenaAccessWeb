@@ -2,58 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
+// Navbar del panel: marca + menú + perfil + salir. La campana y el cambio de
+// tema viven en los botones flotantes (AccionesFlotantes), como en el diseño
+// de referencia; así la barra queda limpia.
 const Navbar = ({ currentUser, view, setView, userFilter, setUserFilter, links = [] }) => {
     const navigate = useNavigate();
-    const [notifications, setNotifications] = useState([]);
-    const [unread, setUnread] = useState(0);
-    // Tema claro/oscuro (mismo criterio que el boton flotante global).
-    const [temaClaro, setTemaClaro] = useState(() => document.body.classList.contains('light-mode'));
-
-    const toggleTema = () => {
-        const claro = !document.body.classList.contains('light-mode');
-        document.body.classList.toggle('light-mode', claro);
-        localStorage.setItem('theme', claro ? 'light' : 'dark');
-        setTemaClaro(claro);
-        // Avisa al boton global (paginas publicas) para que no quede desfasado.
-        window.dispatchEvent(new CustomEvent('tema-cambiado', { detail: { tema: claro ? 'light' : 'dark' } }));
-    };
-
-    const fetchNotifications = async () => {
-        try {
-            const [listResponse, countResponse] = await Promise.all([
-                axios.get('/api/notifications'),
-                axios.get('/api/notifications/unread-count')
-            ]);
-            setNotifications(listResponse.data);
-            setUnread(countResponse.data.unread || 0);
-        } catch (error) {
-            console.error('Error cargando notificaciones:', error);
-        }
-    };
-
-    useEffect(() => {
-        fetchNotifications();
-    }, []);
-
-    const handleMarkRead = async (id) => {
-        try {
-            await axios.put(`/api/notifications/${id}/read`);
-            setNotifications(prev => prev.map(n => n.id_notificacion === id ? { ...n, is_read: true } : n));
-            setUnread(prev => Math.max(0, prev - 1));
-        } catch (error) {
-            console.error('Error marcando notificación:', error);
-        }
-    };
-
-    const handleMarkAllRead = async () => {
-        try {
-            await axios.put('/api/notifications/read-all');
-            setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
-            setUnread(0);
-        } catch (error) {
-            console.error('Error marcando notificaciones:', error);
-        }
-    };
 
     const handleLogout = async () => {
         try {
@@ -119,7 +72,7 @@ const Navbar = ({ currentUser, view, setView, userFilter, setUserFilter, links =
                         </div>
                     </div>
 
-                    {/* Enlaces de Navegación Dinámicos (a la izquierda, estética Sebastián) */}
+                    {/* Enlaces de Navegación Dinámicos */}
                     <ul className="navbar-nav me-auto mb-2 mb-lg-0 gap-2">
                         {links.map((link, index) => {
                             if (link.dropdown) {
@@ -175,68 +128,11 @@ const Navbar = ({ currentUser, view, setView, userFilter, setUserFilter, links =
                         })}
                     </ul>
 
-                    {/* Columna derecha: Perfil y Acciones */}
+                    {/* Columna derecha: Perfil y Salir */}
                     <div className="navbar-actions d-flex align-items-center justify-content-lg-end gap-3 pt-2 pt-lg-0 border-top border-lg-0 border-success border-opacity-10">
-                        {/* Campana de notificaciones */}
-                        <div className="dropdown position-relative">
-                            <button
-                                className="btn btn-link p-1 position-relative text-success"
-                                type="button"
-                                data-bs-toggle="dropdown"
-                                onClick={fetchNotifications}
-                                title="Notificaciones"
-                            >
-                                <span className="material-symbols-outlined" style={{ fontSize: '28px' }}>notifications</span>
-                                {unread > 0 && (
-                                    <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-dark" style={{ fontSize: '0.6rem' }}>
-                                        {unread > 9 ? '9+' : unread}
-                                    </span>
-                                )}
-                            </button>
-                            <ul className="dropdown-menu dropdown-menu-end glass-box border-success border-opacity-25 mt-2 shadow-lg p-2" style={{ width: 'min(340px, calc(100vw - 32px))', maxHeight: '400px', overflowY: 'auto' }}>
-                                <li className="d-flex justify-content-between align-items-center px-2 py-1 mb-1 border-bottom border-success border-opacity-10">
-                                    <span className="fw-bold small">Notificaciones</span>
-                                    {unread > 0 && (
-                                        <button className="btn btn-sm btn-outline-success py-0" onClick={handleMarkAllRead}>
-                                            <span className="material-symbols-outlined small me-1">done_all</span> Marcar todas
-                                        </button>
-                                    )}
-                                </li>
-                                {notifications.length > 0 ? notifications.map(n => (
-                                    <li key={n.id_notificacion}>
-                                        <button
-                                            className={`dropdown-item py-2 d-flex flex-column ${n.is_read ? '' : 'fw-bold'}`}
-                                            onClick={() => handleMarkRead(n.id_notificacion)}
-                                        >
-                                            <span className="small">{n.notification_title}</span>
-                                            <span className="small opacity-75" style={{ fontSize: '0.78rem' }}>{n.notification_body}</span>
-                                            <span className="opacity-50" style={{ fontSize: '0.65rem' }}>{new Date(n.created_at).toLocaleString()}</span>
-                                        </button>
-                                    </li>
-                                )) : (
-                                    <li className="text-center py-3 opacity-50 small">No tienes notificaciones</li>
-                                )}
-                            </ul>
-                        </div>
-
-                        {/* Tema claro/oscuro: junto a la campana, antes del perfil */}
-                        <button
-                            className="btn btn-link p-1 text-success theme-nav-btn"
-                            type="button"
-                            onClick={toggleTema}
-                            title={temaClaro ? 'Activar modo oscuro' : 'Activar modo claro'}
-                            aria-label={temaClaro ? 'Activar modo oscuro' : 'Activar modo claro'}
-                        >
-                            <span className="material-symbols-outlined" style={{ fontSize: '24px' }}>
-                                {temaClaro ? 'dark_mode' : 'light_mode'}
-                            </span>
-                        </button>
-
-                        <div className="vr d-none d-lg-block opacity-25" style={{ height: '30px' }}></div>
-
                         <div
                             className="profile-nav-trigger d-flex align-items-center gap-2 cursor-pointer p-1 px-2 rounded-pill hover-bg"
-                            onClick={() => setView('profile')}
+                            onClick={() => { setView('profile'); cerrarMenu(); }}
                             style={{ cursor: 'pointer', transition: 'all 0.2s' }}
                         >
                             <div className="text-end d-none d-md-block">
@@ -251,6 +147,8 @@ const Navbar = ({ currentUser, view, setView, userFilter, setUserFilter, links =
                                 )}
                             </div>
                         </div>
+
+                        <div className="vr d-none d-lg-block opacity-25" style={{ height: '30px' }}></div>
 
                         <button className="btn-logout-minimal" onClick={handleLogout} title="Cerrar Sesión">
                             <span className="material-symbols-outlined">logout</span>

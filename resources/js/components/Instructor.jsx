@@ -12,6 +12,7 @@ import UserQrCarnet from './UserQrCarnet';
 import EscanearAcceso from './EscanearAcceso';
 import DosPasos from './DosPasos';
 import MiHuella from './MiHuella';
+import SimulacionHuella from './SimulacionHuella';
 import RecorteFoto from './RecorteFoto';
 import { showAlert } from './CustomAlert';
 import downloadComprobante from '../utils/comprobante';
@@ -449,6 +450,7 @@ const Instructor = () => {
                         </div>
                         <DosPasos />
                         <MiHuella />
+                                <SimulacionHuella />
                     </div>
                 );
             default: return null;

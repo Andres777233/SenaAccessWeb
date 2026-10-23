@@ -13,6 +13,7 @@ import QrInvitado from './QrInvitado';
 import QrScannerModal from './QrScannerModal';
 import DosPasos from './DosPasos';
 import MiHuella from './MiHuella';
+import SimulacionHuella from './SimulacionHuella';
 import RecorteFoto from './RecorteFoto';
 import { showAlert, showConfirm } from './CustomAlert';
 import downloadComprobante from '../utils/comprobante';
@@ -1362,6 +1363,7 @@ const handleCancelEdit = () => {
                         </div>
                         <DosPasos />
                         <MiHuella />
+                                <SimulacionHuella />
                     </div>
                 );
             case 'novedad_form':

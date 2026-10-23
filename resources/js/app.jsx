@@ -18,6 +18,7 @@ import ChatbotWidget from './components/ChatbotWidget';
 import PuertaAcceso from './components/PuertaAcceso';
 import HuellaSimulacion from './components/HuellaSimulacion';
 import NotFound from './components/NotFound';
+import AccionesFlotantes from './components/AccionesFlotantes';
 // Paneles pesados por rol: lazy para que la primera carga solo baje el chunk
 // de la ruta visitada (antes las 12 rutas viajaban en un solo app-*.js).
 const Admin = lazy(() => import('./components/Admin'));
@@ -78,6 +79,14 @@ const ChatbotGate = () => {
     const location = useLocation();
     const oculto = ['/puerta-acceso', '/huella', '/login'].includes(location.pathname);
     return (!oculto && !!localStorage.getItem('access_token')) ? <ChatbotWidget /> : null;
+};
+
+// Campana y tema flotantes: solo dentro de los paneles con sesión.
+const PANELES = ['/admin', '/aprendiz', '/instructor', '/portero'];
+const AccionesFlotantesGate = () => {
+    const location = useLocation();
+    const enPanel = PANELES.some((ruta) => location.pathname.startsWith(ruta));
+    return (enPanel && !!localStorage.getItem('access_token')) ? <AccionesFlotantes /> : null;
 };
 
 // Los paneles son lazy: tras un deploy el chunk viejo puede faltar y React
@@ -169,6 +178,9 @@ const App = () => {
 
             {/* Chatbot flotante: visible solo con sesión y fuera de las pantallas de acceso */}
             <ChatbotGate />
+
+            {/* Campana + tema flotantes dentro de los paneles */}
+            <AccionesFlotantesGate />
 
             <div style={{color: 'var(--text-color)', position: 'fixed', bottom: 10, right: 10, background: 'var(--glass-bg)', padding: '5px', zIndex: 9999, borderRadius: '5px', fontSize: '12px'}}>
             </div>

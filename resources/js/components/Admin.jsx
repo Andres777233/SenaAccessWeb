@@ -648,7 +648,7 @@ const handleCancelEdit = () => {
     const renderView = () => {
         switch (view) {
             case 'dashboard':
-                return <StatsDashboard currentUser={currentUser} onNavegar={setView} />;
+                return <StatsDashboard currentUser={currentUser} />;
             case 'users':
                 return (
                     <div className="fade-in-up">
@@ -1409,7 +1409,6 @@ const handleCancelEdit = () => {
                 userFilter={userFilter}
                 setUserFilter={setUserFilter}
                 links={adminLinks}
-                primaryViews={['dashboard', 'novedad_historial', 'users', 'ambientes']}
             />
 
             <main className="container-fluid px-3 px-md-5 py-2 flex-grow-1">

@@ -344,7 +344,7 @@ const Portero = () => {
 
         switch (view) {
             case 'dashboard':
-                return <StatsDashboard currentUser={currentUser} onNavegar={setView} />;
+                return <StatsDashboard currentUser={currentUser} />;
             case 'historial':
                 return (
                     <div className="fade-in-up">
@@ -619,7 +619,7 @@ const Portero = () => {
             <Navbar currentUser={currentUser} view={view} setView={(newView) => {
                 setView(newView);
                 setEditingProfile(false);
-            }} links={porteroLinks} primaryViews={['dashboard', 'validar_qr', 'equipos', 'historial']} />
+            }} links={porteroLinks} />
             <main className="container-fluid px-3 px-md-5 py-4 flex-grow-1">{renderView()}</main>
             <Footer />
         </div>

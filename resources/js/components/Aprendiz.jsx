@@ -306,7 +306,7 @@ const Aprendiz = () => {
 
         switch (view) {
             case 'dashboard':
-                return <StatsDashboard currentUser={currentUser} onNavegar={setView} />;
+                return <StatsDashboard currentUser={currentUser} />;
             case 'comprobantes':
                 return (
                     <div className="fade-in-up">
@@ -505,7 +505,6 @@ const Aprendiz = () => {
                     setEditingProfile(false);
                 }}
                 links={aprendizLinks}
-                primaryViews={['dashboard', 'qr_carnet', 'escanear_acceso', 'historial']}
             />
 
             <main className="container-fluid px-3 px-md-5 py-2 flex-grow-1">

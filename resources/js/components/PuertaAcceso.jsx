@@ -7,8 +7,8 @@ import CodigoAcceso from './CodigoAcceso';
 import { useEsperarEntrada } from '../utils/useEsperarEntrada';
 
 // Puerta de entrada: tras el login, quien no tenga Entrada de hoy debe
-// registrarla antes de entrar a su panel. La pantalla NO tiene botón de
-// "ya marqué": consulta el estado cada pocos segundos y, en cuanto portería
+// registrarla antes de entrar a su panel. No hay botón de "ya marqué":
+// la pantalla consulta el estado cada pocos segundos y, en cuanto portería
 // registra la entrada (escaneando el QR o el código del usuario), pasa sola
 // al panel, igual que hace la app Android.
 const PuertaAcceso = () => {
@@ -30,7 +30,7 @@ const PuertaAcceso = () => {
                         : (role === 'admin' || role === 'portero') ? '/portero'
                             : '/loading'
         );
-        window.setTimeout(() => navigate(destino), 850);
+        window.setTimeout(() => navigate(destino), 900);
     }, [navigate]);
 
     const { error, detectada, revisar } = useEsperarEntrada({
@@ -38,7 +38,6 @@ const PuertaAcceso = () => {
         onEntrada: entrarAlPanel,
     });
 
-    // Aviso de que la pantalla ya está escuchando (solo la primera vez).
     useEffect(() => {
         const id = window.setTimeout(() => {
             setMensaje((m) => m || 'Escuchando… en cuanto portería registre tu entrada, esta pantalla te lleva a tu panel.');
@@ -62,8 +61,8 @@ const PuertaAcceso = () => {
 
                     {detectada || entrando ? (
                         <div className="glass-box puerta-card text-center">
-                            <div className="v2-success">
-                                <div className="v2-success-mark">
+                            <div className="acc-ok">
+                                <div className="acc-ok-mark">
                                     <span className="material-symbols-outlined">check</span>
                                 </div>
                                 <h2 className="h4 fw-bold mt-2">Entrada registrada</h2>
@@ -86,33 +85,37 @@ const PuertaAcceso = () => {
 
                             {esRolOperativo && (
                                 <div className="alert alert-success small text-center py-2">
-                                    Tu rol no necesita marcar entrada. <button type="button" className="btn btn-sm btn-link p-0 align-baseline" onClick={entrarAlPanel}>Ir a mi panel</button>
+                                    Tu rol no necesita marcar entrada.
+                                    {' '}
+                                    <button type="button" className="btn btn-sm btn-link p-0 align-baseline" onClick={entrarAlPanel}>
+                                        Ir a mi panel
+                                    </button>
                                 </div>
                             )}
 
                             {/* Selector solo en celular: en escritorio se ven las dos tarjetas */}
                             <div className="d-flex d-lg-none justify-content-center mb-3">
-                                <div className="v2-segmented" role="tablist" aria-label="Cómo registrar tu entrada">
-                                    <button type="button" role="tab" aria-selected={tab === 'escanear'} className={tab === 'escanear' ? 'is-on' : ''} onClick={() => setTab('escanear')}>
+                                <div className="acc-tabs" role="tablist" aria-label="Cómo registrar tu entrada">
+                                    <button type="button" role="tab" aria-selected={tab === 'escanear'} className={`acc-tab ${tab === 'escanear' ? 'is-on' : ''}`} onClick={() => setTab('escanear')}>
                                         Escanear QR
                                     </button>
-                                    <button type="button" role="tab" aria-selected={tab === 'codigo'} className={tab === 'codigo' ? 'is-on' : ''} onClick={() => setTab('codigo')}>
+                                    <button type="button" role="tab" aria-selected={tab === 'codigo'} className={`acc-tab ${tab === 'codigo' ? 'is-on' : ''}`} onClick={() => setTab('codigo')}>
                                         Mi código
                                     </button>
                                 </div>
                             </div>
 
-                            <div className="row g-3 justify-content-center puerta-columnas">
-                                <div className={`col-12 col-lg-6 ${tab === 'escanear' ? '' : 'd-none d-lg-block'}`}>
-                                    <EscanearAcceso contexto="puerta" onRegistrado={alRegistrar} ocultarCabecera />
+                            <div className="acc-grid">
+                                <div className={`acc-col ${tab === 'escanear' ? '' : 'd-none d-lg-flex'}`}>
+                                    <EscanearAcceso contexto="puerta" onRegistrado={alRegistrar} />
                                 </div>
-                                <div className={`col-12 col-lg-6 ${tab === 'codigo' ? '' : 'd-none d-lg-block'}`}>
-                                    <CodigoAcceso contexto="puerta" onRegistrado={alRegistrar} />
+                                <div className={`acc-col ${tab === 'codigo' ? '' : 'd-none d-lg-flex'}`}>
+                                    <CodigoAcceso contexto="puerta" />
                                 </div>
                             </div>
 
-                            <div className="puerta-estado mt-3">
-                                <span className="v2-pulse" aria-hidden="true" />
+                            <div className="acc-status mt-3">
+                                <span className="acc-dot" aria-hidden="true" />
                                 <span className="small">
                                     {error && !mensaje ? error : (mensaje || 'Verificando tu entrada…')}
                                 </span>

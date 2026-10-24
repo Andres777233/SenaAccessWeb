@@ -38,7 +38,6 @@ const Instructor = () => {
     const navigate = useNavigate();
     const [currentUser, setCurrentUser] = useState(null);
     const [view, setView] = useState('dashboard');
-    const [users, setUsers] = useState([]);
     const [ingresos, setIngresos] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTermIngresos, setSearchTermIngresos] = useState('');
@@ -46,7 +45,6 @@ const Instructor = () => {
     const [filterDesde, setFilterDesde] = useState('');
     const [filterHasta, setFilterHasta] = useState('');
     const [myEquipmentList, setMyEquipmentList] = useState([]);
-    const [novedades, setNovedades] = useState([]);
     const [exportAbierto, setExportAbierto] = useState(false);
     const [exportFormato, setExportFormato] = useState('pdf');
     const [exportando, setExportando] = useState(false);
@@ -54,20 +52,6 @@ const Instructor = () => {
     const [exportEquiposFormato, setExportEquiposFormato] = useState('pdf');
     const [exportEquiposExportando, setExportEquiposExportando] = useState(false);
     const [editingProfile, setEditingProfile] = useState(false);
-    const [profileErrors, setProfileErrors] = useState({});
-    const [fotoBlob, setFotoBlob] = useState(null);
-    const [fotoPreview, setFotoPreview] = useState(null);
-    const [archivoRecorte, setArchivoRecorte] = useState(null);
-    const [codigo2fa, setCodigo2fa] = useState('');
-    const [codigoSolicitado, setCodigoSolicitado] = useState(false);
-    const [formData, setFormData] = useState({
-        user_identification: '',
-        user_name: '',
-        user_lastname: '',
-        user_email: '',
-        user_password: ''
-    });
-
     useEffect(() => {
         const fetchData = async () => {
             try {
@@ -77,26 +61,14 @@ const Instructor = () => {
                     return;
                 }
 
-                const [usersResponse, ingresosResponse, userMeResponse, myEquipmentResponse, novedadesResponse] = await Promise.all([
-                    axios.get('/api/admin/users'),
+                const [ingresosResponse, userMeResponse, myEquipmentResponse] = await Promise.all([
                     axios.get('/api/my-ingresos'),
                     axios.get('/api/user'),
-                    axios.get('/api/my-equipment'),
-                    axios.get('/api/my-novedades')
+                    axios.get('/api/my-equipment')
                 ]);
-                setUsers(usersResponse.data);
                 setIngresos(ingresosResponse.data);
                 setCurrentUser(userMeResponse.data);
                 setMyEquipmentList(myEquipmentResponse.data);
-                setNovedades(novedadesResponse.data);
-                setFormData({
-                    user_identification: userMeResponse.data.user_identification || '',
-                    user_name: userMeResponse.data.user_name,
-                    user_lastname: userMeResponse.data.user_lastname,
-                    user_email: userMeResponse.data.user_email,
-                    user_password: '',
-                    profile_photo_path: userMeResponse.data.profile_photo_path || null
-                });
             } catch (error) {
                 console.error('Error cargando datos: ', error);
                 if (error.response && error.response.status === 401) {
@@ -206,78 +178,7 @@ const Instructor = () => {
     };
 
 
-    const handleChange = (e) => {
-        setFormData({
-            ...formData,
-            [e.target.name]: e.target.value
-        });
-        if (profileErrors[e.target.name]) {
-            setProfileErrors(prev => {
-                const next = { ...prev };
-                delete next[e.target.name];
-                return next;
-            });
-        }
-    };
-
-    // Guarda el perfil en PUT /api/my-profile (multipart + _method=PUT).
-    // Si cambia la clave con 2FA activo, el backend responde 422 con
-    // errors.two_factor_code y envia el codigo al correo: se muestra el
-    // campo del codigo y al reenviar se incluye two_factor_code.
-    const handleUpdateProfile = async (e) => {
-        e.preventDefault();
-        try {
-            const data = new FormData();
-            data.append('user_identification', formData.user_identification);
-            data.append('user_name', formData.user_name);
-            data.append('user_lastname', formData.user_lastname);
-            data.append('user_email', formData.user_email);
-            if (formData.user_password) data.append('user_password', formData.user_password);
-            if (codigo2fa) data.append('two_factor_code', codigo2fa);
-            if (fotoBlob) data.append('image', fotoBlob, 'foto.jpg');
-            data.append('_method', 'PUT');
-
-            const response = await axios.post('/api/my-profile', data, {
-                headers: {
-                    'Content-Type': 'multipart/form-data'
-                }
-            });
-
-            setCurrentUser(response.data);
-            showAlert('Perfil actualizado con éxito');
-            setProfileErrors({});
-            setEditingProfile(false);
-            setFotoBlob(null);
-            setFotoPreview(null);
-            setArchivoRecorte(null);
-            setCodigo2fa('');
-            setCodigoSolicitado(false);
-        } catch (error) {
-            if (error.response?.data?.errors) {
-                setProfileErrors(error.response.data.errors);
-            }
-            if (error.response?.data?.errors?.two_factor_code) {
-                setCodigoSolicitado(true);
-                showAlert(error.response?.data?.message || 'Revisa tu correo e ingresa el código de 6 dígitos.');
-            } else {
-                showAlert('Error al actualizar perfil: ' + (error.response?.data?.message || 'Error desconocido'), 'error');
-            }
-        }
-    };
-
-    // Limpia el formulario de perfil (foto recortada y codigo 2FA incluidos).
-    const cancelarEdicionPerfil = () => {
-        setEditingProfile(false);
-        setFotoBlob(null);
-        setFotoPreview(null);
-        setArchivoRecorte(null);
-        setCodigo2fa('');
-        setCodigoSolicitado(false);
-    };
-
-    const profileFieldError = (name) => (
-        profileErrors[name] ? <div className="text-danger small mt-1"><span className="material-symbols-outlined small me-1">error</span>{profileErrors[name][0]}</div> : null
-    );
+    const cancelarEdicionPerfil = () => setEditingProfile(false);
 
     const renderView = () => {
         if (editingProfile) {

@@ -54,20 +54,6 @@ const Portero = () => {
 
     // Perfil propio (PUT /api/my-profile, multipart + _method=PUT).
     const [editingProfile, setEditingProfile] = useState(false);
-    const [profileErrors, setProfileErrors] = useState({});
-    const [fotoBlob, setFotoBlob] = useState(null);
-    const [fotoPreview, setFotoPreview] = useState(null);
-    const [archivoRecorte, setArchivoRecorte] = useState(null);
-    const [codigo2fa, setCodigo2fa] = useState('');
-    const [codigoSolicitado, setCodigoSolicitado] = useState(false);
-    const [formData, setFormData] = useState({
-        user_identification: '',
-        user_name: '',
-        user_lastname: '',
-        user_email: '',
-        user_password: ''
-    });
-
     useEffect(() => {
         const fetchData = async () => {
             try {
@@ -89,14 +75,6 @@ const Portero = () => {
                     total: ingresosResponse.data.total || 0
                 });
                 setEquipmentList(Array.isArray(equipmentResponse.data) ? equipmentResponse.data : []);
-                setFormData({
-                    user_identification: userMeResponse.data.user_identification || '',
-                    user_name: userMeResponse.data.user_name,
-                    user_lastname: userMeResponse.data.user_lastname,
-                    user_email: userMeResponse.data.user_email,
-                    user_password: '',
-                    profile_photo_path: userMeResponse.data.profile_photo_path || null
-                });
             } catch (error) {
                 console.error('Error cargando datos: ', error);
                 if (error.response && (error.response.status === 401 || error.response.status === 403)) {
@@ -275,67 +253,8 @@ const Portero = () => {
         }
     };
 
-    const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
-        if (profileErrors[e.target.name]) {
-            setProfileErrors(prev => {
-                const next = { ...prev };
-                delete next[e.target.name];
-                return next;
-            });
-        }
-    };
+    const cancelarEdicionPerfil = () => setEditingProfile(false);
 
-    // Guarda el perfil en PUT /api/my-profile. Si cambia la clave con 2FA
-    // activo, el backend pide el código de 6 dígitos del correo.
-    const handleUpdateProfile = async (e) => {
-        e.preventDefault();
-        try {
-            const data = new FormData();
-            data.append('user_identification', formData.user_identification);
-            data.append('user_name', formData.user_name);
-            data.append('user_lastname', formData.user_lastname);
-            data.append('user_email', formData.user_email);
-            if (formData.user_password) data.append('user_password', formData.user_password);
-            if (codigo2fa) data.append('two_factor_code', codigo2fa);
-            if (fotoBlob) data.append('image', fotoBlob, 'foto.jpg');
-            data.append('_method', 'PUT');
-
-            const response = await axios.post('/api/my-profile', data, {
-                headers: { 'Content-Type': 'multipart/form-data' }
-            });
-            setCurrentUser(response.data);
-            showAlert('Perfil actualizado con éxito');
-            setProfileErrors({});
-            setEditingProfile(false);
-            setFotoBlob(null);
-            setFotoPreview(null);
-            setArchivoRecorte(null);
-            setCodigo2fa('');
-            setCodigoSolicitado(false);
-        } catch (error) {
-            if (error.response?.data?.errors) setProfileErrors(error.response.data.errors);
-            if (error.response?.data?.errors?.two_factor_code) {
-                setCodigoSolicitado(true);
-                showAlert(error.response?.data?.message || 'Revisa tu correo e ingresa el código de 6 dígitos.');
-            } else {
-                showAlert('Error al actualizar perfil: ' + (error.response?.data?.message || 'Error desconocido'), 'error');
-            }
-        }
-    };
-
-    const cancelarEdicionPerfil = () => {
-        setEditingProfile(false);
-        setFotoBlob(null);
-        setFotoPreview(null);
-        setArchivoRecorte(null);
-        setCodigo2fa('');
-        setCodigoSolicitado(false);
-    };
-
-    const profileFieldError = (name) => (
-        profileErrors[name] ? <div className="text-danger small mt-1"><span className="material-symbols-outlined small me-1">error</span>{profileErrors[name][0]}</div> : null
-    );
 
     // Nav de portería: el ingreso (carnet/código/PIN) va separado de los
     // permisos de salida y del QR que se proyecta en la puerta.

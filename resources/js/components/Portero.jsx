@@ -13,7 +13,9 @@ import EquipmentForm from './EquipmentForm';
 import DosPasos from './DosPasos';
 import MiHuella from './MiHuella';
 import SimulacionHuella from './SimulacionHuella';
-import RecorteFoto from './RecorteFoto';
+import PerfilSena from './PerfilSena';
+import EditarMiPerfil from './EditarMiPerfil';
+import ModalExportar from './ModalExportar';
 import { showAlert, showConfirm } from './CustomAlert';
 import downloadComprobante from '../utils/comprobante';
 import { mensajeDeError } from '../utils/mensajes';
@@ -39,6 +41,16 @@ const Portero = () => {
     // Inventario de equipos (GET /api/admin/equipment).
     const [equipmentList, setEquipmentList] = useState([]);
     const [searchTermEquipment, setSearchTermEquipment] = useState('');
+    const [estadoEquipo, setEstadoEquipo] = useState('');
+
+    // Exportaciones (historial y equipos).
+    const [exportAbierto, setExportAbierto] = useState(false);
+    const [exportFormato, setExportFormato] = useState('pdf');
+    const [exportando, setExportando] = useState(false);
+    const [exportEquiposAbierto, setExportEquiposAbierto] = useState(false);
+    const [exportEquiposFormato, setExportEquiposFormato] = useState('pdf');
+    const [exportEquiposExportando, setExportEquiposExportando] = useState(false);
+    const filtrosIniciados = React.useRef(false);
 
     // Perfil propio (PUT /api/my-profile, multipart + _method=PUT).
     const [editingProfile, setEditingProfile] = useState(false);
@@ -121,6 +133,99 @@ const Portero = () => {
         } finally {
             setHistorialLoading(false);
         }
+    };
+
+    // Los filtros de tipo/fecha se aplican solos (con un respiro de 350 ms).
+    useEffect(() => {
+        if (!filtrosIniciados.current) {
+            filtrosIniciados.current = true;
+            return undefined;
+        }
+        const t = setTimeout(() => fetchIngresos(1), 350);
+        return () => clearTimeout(t);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [filterTipo, filterDesde, filterHasta]);
+
+    const descargarBlob = (data, nombre) => {
+        const url = window.URL.createObjectURL(new Blob([data]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = nombre;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+    };
+
+    const abrirExportar = () => {
+        setExportFormato('pdf');
+        setExportAbierto(true);
+    };
+
+    const descargarExportacion = async () => {
+        try {
+            setExportando(true);
+            const params = new URLSearchParams();
+            if (searchTermIngresos) params.append('q', searchTermIngresos);
+            if (filterTipo) params.append('tipo', filterTipo);
+            if (filterDesde) params.append('desde', filterDesde);
+            if (filterHasta) params.append('hasta', filterHasta);
+            params.append('formato', exportFormato);
+            const resp = await axios.get(`/api/admin/ingresos/export?${params.toString()}`, { responseType: 'blob' });
+            const ext = exportFormato === 'xlsx' ? 'xlsx' : 'pdf';
+            descargarBlob(resp.data, `historial_accesos_${new Date().toISOString().slice(0, 10)}.${ext}`);
+            setExportAbierto(false);
+            showAlert('Exportación generada');
+        } catch (_) {
+            showAlert('No se pudo generar la exportación. Intenta de nuevo.', 'error');
+        } finally {
+            setExportando(false);
+        }
+    };
+
+    const abrirExportarEquipos = () => {
+        setExportEquiposFormato('pdf');
+        setExportEquiposAbierto(true);
+    };
+
+    const descargarExportacionEquipos = async () => {
+        try {
+            setExportEquiposExportando(true);
+            const params = new URLSearchParams();
+            if (searchTermEquipment) params.append('q', searchTermEquipment);
+            if (estadoEquipo) params.append('estado', estadoEquipo);
+            params.append('formato', exportEquiposFormato);
+            const resp = await axios.get(`/api/admin/equipment/export?${params.toString()}`, { responseType: 'blob' });
+            const ext = exportEquiposFormato === 'docx' ? 'doc' : 'pdf';
+            descargarBlob(resp.data, `inventario_equipos_${new Date().toISOString().slice(0, 10)}.${ext}`);
+            setExportEquiposAbierto(false);
+            showAlert('Exportación generada');
+        } catch (_) {
+            showAlert('No se pudo generar la exportación. Intenta de nuevo.', 'error');
+        } finally {
+            setExportEquiposExportando(false);
+        }
+    };
+
+    const fechaInput = (offsetDias = 0) => new Date(Date.now() + offsetDias * 86400000)
+        .toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
+
+    const presetRango = (dias) => {
+        setFilterDesde(fechaInput(-(dias - 1)));
+        setFilterHasta(fechaInput(0));
+    };
+
+    const presetDia = (offset) => {
+        setFilterDesde(fechaInput(offset));
+        setFilterHasta(fechaInput(offset));
+    };
+
+    const limpiarFiltrosHistorial = () => {
+        setSearchTermIngresos('');
+        setFilterTipo('');
+        setFilterDesde('');
+        setFilterHasta('');
+        fetchIngresos(1);
     };
 
     const fetchEquipment = async () => {
@@ -232,114 +337,41 @@ const Portero = () => {
         profileErrors[name] ? <div className="text-danger small mt-1"><span className="material-symbols-outlined small me-1">error</span>{profileErrors[name][0]}</div> : null
     );
 
-    // Nav espeja el dock del portero móvil (Inicio·Validar·Equipos·Historial).
-    // EXCUSAS valida PIN y VALIDAR QR el QR de invitado (en el móvil van unificados).
+    // Nav de portería: el ingreso (carnet/código/PIN) va separado de los
+    // permisos de salida y del QR que se proyecta en la puerta.
     const porteroLinks = [
-        { label: 'Dashboard', icon: 'dashboard', view: 'dashboard' },
-        { label: 'Excusas', icon: 'key', view: 'excusas' },
-        { label: 'Validar QR', icon: 'qr_code_scanner', view: 'validar_qr' },
+        { label: 'Inicio', icon: 'dashboard', view: 'dashboard' },
+        { label: 'Ingreso', icon: 'qr_code_scanner', view: 'validar_qr' },
+        { label: 'Permisos', icon: 'key', view: 'excusas' },
         { label: 'Equipos', icon: 'inventory_2', view: 'equipos' },
         { label: 'Historial', icon: 'history', view: 'historial' },
         { label: 'Mi carnet', icon: 'id_card', view: 'qr_carnet' },
-        { label: 'Acceso QR', icon: 'qr_code_2', view: 'acceso_qr' }
+        { label: 'QR de portería', icon: 'qr_code_2', view: 'acceso_qr' }
     ];
 
     const filteredEquipment = equipmentList.filter(item => {
         const search = searchTermEquipment.toLowerCase();
+        if (estadoEquipo && item.equipo_status !== estadoEquipo) return false;
         return (
-            `${item.equipo_type || ''} ${item.equipo_brand || ''} ${item.equipo_serial || ''}`.toLowerCase().includes(search) ||
+            `${item.equipo_type || ''} ${item.equipo_brand || ''} ${item.equipo_model || ''} ${item.equipo_serial || ''}`.toLowerCase().includes(search) ||
             `${item.user?.user_name || ''} ${item.user?.user_lastname || ''}`.toLowerCase().includes(search) ||
-            (item.user?.user_email || '').toLowerCase().includes(search)
+            (item.user?.user_email || '').toLowerCase().includes(search) ||
+            (item.user?.user_identification || '').toLowerCase().includes(search)
         );
     });
 
     const renderView = () => {
         if (editingProfile) {
             return (
-                <div className="fade-in-up">
-                    <div className="glass-box p-4 mb-5 mx-auto fade-in-up" style={{ maxWidth: '600px' }}>
-                        <div className="section-header">
-                            <h3 className="mb-0">Editar Mi Perfil</h3>
-                        </div>
-                        <div className="admin-scrollable-container" style={{ maxHeight: '55vh' }}>
-                            <form onSubmit={handleUpdateProfile}>
-                                <div className="text-center mb-3">
-                                    <div className="rounded-circle bg-success mx-auto d-flex align-items-center justify-content-center mb-2 shadow overflow-hidden" style={{ width: '100px', height: '100px', fontSize: '2rem', fontWeight: 'bold' }}>
-                                        {fotoPreview ? (
-                                            <img src={fotoPreview} alt="Nueva foto" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                        ) : formData.profile_photo_path ? (
-                                            <img src={formData.profile_photo_path} alt="Foto actual" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                        ) : (
-                                            <>{formData.user_name?.[0]}{formData.user_lastname?.[0]}</>
-                                        )}
-                                    </div>
-                                    <label className="btn btn-outline-success btn-sm">
-                                        <span className="material-symbols-outlined small me-1">photo_camera</span> Cambiar foto
-                                        <input type="file" accept="image/*" hidden onChange={(e) => {
-                                            if (e.target.files?.[0]) setArchivoRecorte(e.target.files[0]);
-                                            e.target.value = '';
-                                        }} />
-                                    </label>
-                                    {profileFieldError('image')}
-                                </div>
-                                {archivoRecorte && (
-                                    <RecorteFoto
-                                        archivo={archivoRecorte}
-                                        alCancelar={() => setArchivoRecorte(null)}
-                                        alConfirmar={(blob) => {
-                                            setFotoBlob(blob);
-                                            setFotoPreview(URL.createObjectURL(blob));
-                                            setArchivoRecorte(null);
-                                        }}
-                                    />
-                                )}
-                                <div className="row">
-                                    <div className="col-12 mb-3">
-                                        <label className="form-label opacity-75 small">N° Documento</label>
-                                        <input type="text" name="user_identification" className={`form-control ${profileErrors.user_identification ? 'is-invalid' : ''}`} value={formData.user_identification} onChange={handleChange} required />
-                                        {profileFieldError('user_identification')}
-                                    </div>
-                                    <div className="col-12 mb-3">
-                                        <label className="form-label opacity-75 small">Nombre</label>
-                                        <input type="text" name="user_name" className={`form-control ${profileErrors.user_name ? 'is-invalid' : ''}`} value={formData.user_name} onChange={handleChange} required />
-                                        {profileFieldError('user_name')}
-                                    </div>
-                                    <div className="col-12 mb-3">
-                                        <label className="form-label opacity-75 small">Apellido</label>
-                                        <input type="text" name="user_lastname" className={`form-control ${profileErrors.user_lastname ? 'is-invalid' : ''}`} value={formData.user_lastname} onChange={handleChange} required />
-                                        {profileFieldError('user_lastname')}
-                                    </div>
-                                    <div className="col-12 mb-3">
-                                        <label className="form-label opacity-75 small">Email Institucional</label>
-                                        <input type="email" name="user_email" className={`form-control ${profileErrors.user_email ? 'is-invalid' : ''}`} value={formData.user_email} onChange={handleChange} required />
-                                        {profileFieldError('user_email')}
-                                    </div>
-                                    <div className="col-12 mb-3">
-                                        <label className="form-label opacity-75 small">Nueva Contraseña (Opcional)</label>
-                                        <input type="password" name="user_password" placeholder="Mínimo 6 caracteres..." className={`form-control ${profileErrors.user_password ? 'is-invalid' : ''}`} value={formData.user_password} onChange={handleChange} />
-                                        {profileFieldError('user_password')}
-                                        <small className="opacity-50">Si tienes verificación en dos pasos activa, al guardar se enviará un código de 6 dígitos a tu correo.</small>
-                                    </div>
-                                    {codigoSolicitado && (
-                                        <div className="col-12 mb-3">
-                                            <label className="form-label opacity-75 small">Código de 6 dígitos (enviado a tu correo)</label>
-                                            <input type="text" inputMode="numeric" maxLength="6" placeholder="123456" className={`form-control ${profileErrors.two_factor_code ? 'is-invalid' : ''}`} value={codigo2fa} onChange={(e) => setCodigo2fa(e.target.value.replace(/\D/g, '').slice(0, 6))} />
-                                            {profileFieldError('two_factor_code')}
-                                        </div>
-                                    )}
-                                </div>
-                                <div className="d-flex gap-2 mt-4">
-                                    <button type="submit" className="btn btn-success action-btn flex-grow-1 py-2">
-                                        <span className="material-symbols-outlined">save</span> Guardar Cambios
-                                    </button>
-                                    <button type="button" className="btn btn-outline-secondary action-btn px-4" onClick={cancelarEdicionPerfil}>
-                                        Cancelar
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
+                <EditarMiPerfil
+                    usuario={currentUser}
+                    mostrarFichaPrograma={false}
+                    onCancelar={cancelarEdicionPerfil}
+                    onGuardado={(usuario) => {
+                        setCurrentUser(usuario);
+                        setEditingProfile(false);
+                    }}
+                />
             );
         }
 
@@ -348,62 +380,76 @@ const Portero = () => {
                 return <StatsDashboard currentUser={currentUser} />;
             case 'historial':
                 return (
-                    <div className="fade-in-up">
-                        <div className="glass-box p-4 mb-5 mx-auto" style={{ maxWidth: '1200px' }}>
-                            <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
-                                <div className="section-header mb-0">
-                                    <h3 className="mb-0">Historial de Accesos</h3>
-                                    <p className="opacity-50 small mb-0">Total: {ingresosMeta.total} registros</p>
-                                </div>
-                                <div className="input-group search-input-group" style={{ maxWidth: '350px' }}>
-                                    <span className="input-group-text">
-                                        <span className="material-symbols-outlined">search</span>
-                                    </span>
-                                    <input
-                                        type="text"
-                                        className="form-control"
-                                        placeholder="Buscar usuario o lugar..."
-                                        value={searchTermIngresos}
-                                        onChange={(e) => setSearchTermIngresos(e.target.value)}
-                                        onKeyDown={(e) => { if (e.key === 'Enter') fetchIngresos(1); }}
-                                    />
-                                </div>
+                    <div className="fade-in-up mx-auto" style={{ maxWidth: '1200px' }}>
+                        <div className="page-cabecera">
+                            <div>
+                                <h3 className="page-titulo mb-1">Historial de accesos</h3>
+                                <p className="page-subtitulo mb-0">{ingresosMeta.total} registro{ingresosMeta.total === 1 ? '' : 's'}</p>
                             </div>
+                            <div className="page-acciones">
+                                <button className="btn btn-outline-success action-btn" onClick={abrirExportar}>
+                                    <span className="material-symbols-outlined">download</span> Exportar
+                                </button>
+                            </div>
+                        </div>
 
-                            <div className="row g-2 mb-3 align-items-end">
-                                <div className="col-12 col-md-3">
-                                    <label className="form-label opacity-75 small mb-1">Tipo</label>
-                                    <select className="form-select" value={filterTipo} onChange={(e) => setFilterTipo(e.target.value)}>
-                                        <option value="">Todos</option>
-                                        <option value="Entrada">Entrada</option>
-                                        <option value="Salida">Salida</option>
-                                    </select>
-                                </div>
-                                <div className="col-6 col-md-3">
-                                    <label className="form-label opacity-75 small mb-1">Desde</label>
+                        <div className="filtros-barra">
+                            <div className="buscador-sena">
+                                <span className="material-symbols-outlined">search</span>
+                                <input
+                                    type="text"
+                                    placeholder="Buscar por usuario, documento o lugar…"
+                                    value={searchTermIngresos}
+                                    onChange={(e) => setSearchTermIngresos(e.target.value)}
+                                    onKeyDown={(e) => { if (e.key === 'Enter') fetchIngresos(1); }}
+                                    aria-label="Buscar en el historial"
+                                />
+                                {searchTermIngresos && (
+                                    <button type="button" className="buscador-limpiar" onClick={() => { setSearchTermIngresos(''); fetchIngresos(1); }} aria-label="Limpiar búsqueda">
+                                        <span className="material-symbols-outlined">close</span>
+                                    </button>
+                                )}
+                            </div>
+                            <div className="filtros-chips">
+                                {[
+                                    { key: '', label: 'Todos' },
+                                    { key: 'Entrada', label: 'Entradas' },
+                                    { key: 'Salida', label: 'Salidas' }
+                                ].map((f) => (
+                                    <button
+                                        key={f.key || 'todos'}
+                                        type="button"
+                                        className={`chip-sena ${filterTipo === f.key ? 'activo' : ''}`}
+                                        onClick={() => setFilterTipo(f.key)}
+                                    >
+                                        {f.label}
+                                    </button>
+                                ))}
+                                <button type="button" className="chip-sena" onClick={() => presetDia(0)}>Hoy</button>
+                                <button type="button" className="chip-sena" onClick={() => presetDia(-1)}>Ayer</button>
+                                <button type="button" className="chip-sena" onClick={() => presetRango(7)}>7 días</button>
+                                <button type="button" className="chip-sena" onClick={limpiarFiltrosHistorial}>Limpiar</button>
+                            </div>
+                            <div className="filtros-fechas">
+                                <label>
+                                    Desde
                                     <input type="date" className="form-control" value={filterDesde} onChange={(e) => setFilterDesde(e.target.value)} />
-                                </div>
-                                <div className="col-6 col-md-3">
-                                    <label className="form-label opacity-75 small mb-1">Hasta</label>
+                                </label>
+                                <label>
+                                    Hasta
                                     <input type="date" className="form-control" value={filterHasta} onChange={(e) => setFilterHasta(e.target.value)} />
-                                </div>
-                                <div className="col-12 col-md-3 d-flex gap-2">
-                                    <button className="btn btn-success action-btn flex-grow-1" onClick={() => fetchIngresos(1)}>
-                                        <span className="material-symbols-outlined small">filter_alt</span> Filtrar
-                                    </button>
-                                    <button className="btn btn-outline-secondary action-btn" onClick={() => { setSearchTermIngresos(''); setFilterTipo(''); setFilterDesde(''); setFilterHasta(''); fetchIngresos(1); }}>
-                                        <span className="material-symbols-outlined small">restart_alt</span>
-                                    </button>
-                                </div>
+                                </label>
                             </div>
+                        </div>
 
-                            <div className="table-responsive admin-scrollable-container" style={{ maxHeight: '50vh' }}>
+                        <div className="glass-box p-0" style={{ maxWidth: 'none' }}>
+                            <div className="table-responsive admin-scrollable-container" style={{ maxHeight: '60vh' }}>
                                 <table className="table admin-table table-cards mb-0">
                                     <thead>
                                         <tr>
                                             <th>Usuario</th>
-                                            <th>Fecha y Hora</th>
-                                            <th>Ubicación / Punto</th>
+                                            <th>Fecha y hora</th>
+                                            <th>Ubicación / punto</th>
                                             <th>Tipo</th>
                                         </tr>
                                     </thead>
@@ -436,14 +482,14 @@ const Portero = () => {
                                                 </td>
                                             </tr>
                                         )) : (
-                                            <tr><td colSpan="4" className="text-center py-4 opacity-50">No se encontraron registros de ingreso.</td></tr>
+                                            <tr><td colSpan="4" className="text-center py-4 opacity-50">No se encontraron registros con esos filtros.</td></tr>
                                         )}
                                     </tbody>
                                 </table>
                             </div>
 
                             {ingresosMeta.last_page > 1 && (
-                                <div className="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
+                                <div className="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2 p-3">
                                     <span className="small opacity-50">Página {ingresosMeta.current_page} de {ingresosMeta.last_page}</span>
                                     <div className="d-flex gap-2">
                                         <button className="btn btn-outline-success btn-sm" disabled={ingresosMeta.current_page <= 1} onClick={() => fetchIngresos(ingresosMeta.current_page - 1)}>
@@ -473,39 +519,67 @@ const Portero = () => {
                 );
             case 'equipos':
                 return (
-                    <div className="fade-in-up">
-                        <div className="glass-box p-4 mb-5 mx-auto" style={{ maxWidth: '1200px' }}>
-                            <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
-                                <div className="section-header mb-0">
-                                    <h3 className="mb-0">Inventario de Equipos</h3>
-                                    <p className="opacity-50 small mb-0">Total: {filteredEquipment.length} equipo(s)</p>
-                                </div>
-                                <div className="d-flex gap-2 flex-wrap align-items-center">
-                                <button className="btn btn-success action-btn" onClick={() => setView('equipo_entry')}>
-                                    <span className="material-symbols-outlined small">add_circle</span> Registrar equipo
-                                </button>
-                                <div className="input-group search-input-group" style={{ maxWidth: '300px' }}>
-                                    <span className="input-group-text">
-                                        <span className="material-symbols-outlined">search</span>
-                                    </span>
-                                    <input
-                                        type="text"
-                                        className="form-control"
-                                        placeholder="Buscar equipo, dueño o serial..."
-                                        value={searchTermEquipment}
-                                        onChange={(e) => setSearchTermEquipment(e.target.value)}
-                                    />
-                                </div>
-                                </div>
+                    <div className="fade-in-up mx-auto" style={{ maxWidth: '1200px' }}>
+                        <div className="page-cabecera">
+                            <div>
+                                <h3 className="page-titulo mb-1">Equipos</h3>
+                                <p className="page-subtitulo mb-0">{filteredEquipment.length} equipo{filteredEquipment.length === 1 ? '' : 's'}</p>
                             </div>
-                            <div className="table-responsive admin-scrollable-container" style={{ maxHeight: '50vh' }}>
+                            <div className="page-acciones">
+                                <button className="btn btn-outline-success action-btn" onClick={abrirExportarEquipos}>
+                                    <span className="material-symbols-outlined">download</span> Exportar
+                                </button>
+                                <button className="btn btn-success action-btn" onClick={() => setView('equipo_entry')}>
+                                    <span className="material-symbols-outlined">add_circle</span> Registrar equipo
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="filtros-barra">
+                            <div className="buscador-sena">
+                                <span className="material-symbols-outlined">search</span>
+                                <input
+                                    type="text"
+                                    placeholder="Buscar equipo, dueño, documento o serial…"
+                                    value={searchTermEquipment}
+                                    onChange={(e) => setSearchTermEquipment(e.target.value)}
+                                    aria-label="Buscar equipos"
+                                />
+                                {searchTermEquipment && (
+                                    <button type="button" className="buscador-limpiar" onClick={() => setSearchTermEquipment('')} aria-label="Limpiar búsqueda">
+                                        <span className="material-symbols-outlined">close</span>
+                                    </button>
+                                )}
+                            </div>
+                            <div className="filtros-chips">
+                                {[
+                                    { key: '', label: 'Todos' },
+                                    { key: 'Prestado', label: 'En uso' },
+                                    { key: 'Disponible', label: 'Devueltos' }
+                                ].map((f) => (
+                                    <button
+                                        key={f.key || 'todos'}
+                                        type="button"
+                                        className={`chip-sena ${estadoEquipo === f.key ? 'activo' : ''}`}
+                                        onClick={() => setEstadoEquipo(f.key)}
+                                    >
+                                        {f.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="glass-box p-0" style={{ maxWidth: 'none' }}>
+                            <div className="table-responsive admin-scrollable-container" style={{ maxHeight: '60vh' }}>
                                 <table className="table admin-table table-cards mb-0">
                                     <thead>
                                         <tr>
                                             <th>Equipo</th>
                                             <th>Dueño</th>
                                             <th>Serial</th>
+                                            <th>Propiedad</th>
                                             <th>Estado</th>
+                                            <th>Ingreso</th>
                                             <th>Acciones</th>
                                         </tr>
                                     </thead>
@@ -513,20 +587,30 @@ const Portero = () => {
                                         {filteredEquipment.length > 0 ? filteredEquipment.map(item => (
                                             <tr key={item.id_ingreso_equipo}>
                                                 <td data-label="Equipo">
-                                                    <span className="fw-bold">{item.equipo_type}</span>{' '}
-                                                    <span className="small opacity-75">{item.equipo_brand} {item.equipo_model}</span>
+                                                    <div className="d-flex flex-column">
+                                                        <span className="fw-bold">{item.equipo_type}</span>
+                                                        <span className="small opacity-50">{item.equipo_brand} {item.equipo_model || ''}</span>
+                                                    </div>
                                                 </td>
                                                 <td data-label="Dueño">
                                                     <div className="d-flex flex-column">
                                                         <span>{item.user?.user_name} {item.user?.user_lastname}</span>
-                                                        <span className="small opacity-50">{item.user?.user_email}</span>
+                                                        <span className="small opacity-50">{item.user?.user_identification || item.user?.user_email}</span>
                                                     </div>
                                                 </td>
                                                 <td data-label="Serial"><code>{item.equipo_serial}</code></td>
+                                                <td data-label="Propiedad">
+                                                    <span className={`badge badge-soft-${item.equipo_propiedad === 'Propio' ? 'info' : 'secondary'} px-2 py-1`}>
+                                                        {item.equipo_propiedad === 'Propio' ? 'Propio' : 'Prestado'}
+                                                    </span>
+                                                </td>
                                                 <td data-label="Estado">
                                                     <span className={`badge px-3 py-2 ${item.equipo_status === 'Disponible' ? 'bg-success' : 'bg-warning'} bg-opacity-10 border border-opacity-25 ${item.equipo_status === 'Disponible' ? 'text-success border-success' : 'text-warning border-warning'}`} style={{ fontSize: '0.75rem' }}>
-                                                        {item.equipo_status}
+                                                        {item.equipo_status === 'Disponible' ? 'Devuelto' : 'En uso'}
                                                     </span>
+                                                </td>
+                                                <td data-label="Ingreso" className="small opacity-75">
+                                                    {item.entry_datetime ? new Date(item.entry_datetime).toLocaleString() : '—'}
                                                 </td>
                                                 <td data-label="Acciones">
                                                     <div className="d-flex gap-1 flex-wrap">
@@ -545,7 +629,7 @@ const Portero = () => {
                                                 </td>
                                             </tr>
                                         )) : (
-                                            <tr><td colSpan="5" className="text-center py-4 opacity-50">No hay equipos registrados.</td></tr>
+                                            <tr><td colSpan="7" className="text-center py-4 opacity-50">No hay equipos con esos filtros.</td></tr>
                                         )}
                                     </tbody>
                                 </table>
@@ -561,46 +645,12 @@ const Portero = () => {
                 return <AccesoQr />;
             case 'profile':
                 return (
-                    <div className="fade-in-up glass-box p-5 mx-auto" style={{ maxWidth: '600px' }}>
-                        <div className="text-center mb-4">
-                            <div className="rounded-circle bg-success mx-auto d-flex align-items-center justify-content-center mb-3 shadow overflow-hidden" style={{ width: '100px', height: '100px', fontSize: '2.5rem', fontWeight: 'bold' }}>
-                                {currentUser?.profile_photo_path ? (
-                                    <img src={currentUser.profile_photo_path} alt="Profile" loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                ) : (
-                                    <>{currentUser?.user_name[0]}{currentUser?.user_lastname[0]}</>
-                                )}
-                            </div>
-                            <h3 className="mb-1">{currentUser?.user_name} {currentUser?.user_lastname}</h3>
-                            <span className="badge bg-success bg-opacity-25 text-success border border-success border-opacity-50 px-3 py-1">
-                                {currentUser?.role?.rol_name || 'Usuario'}
-                            </span>
-                        </div>
-
-                        <div className="row text-start mt-4 g-4">
-                            <div className="col-12">
-                                <label className="form-label opacity-50 small mb-1">Identificación</label>
-                                <div className="p-3 bg-dark bg-opacity-25 rounded border border-success border-opacity-10">
-                                    {currentUser?.user_identification || 'No registrada'}
-                                </div>
-                            </div>
-                            <div className="col-12">
-                                <label className="form-label opacity-50 small mb-1">Correo Institucional</label>
-                                <div className="p-3 bg-dark bg-opacity-25 rounded border border-success border-opacity-10">
-                                    {currentUser?.user_email}
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="mt-5 pt-3 border-top border-success border-opacity-10">
-                            <button className="btn btn-outline-success w-100 py-3 d-flex align-items-center justify-content-center gap-2" onClick={() => setEditingProfile(true)}>
-                                <span className="material-symbols-outlined">edit</span>
-                                Editar Información de Mi Perfil
-                            </button>
-                        </div>
-                        <DosPasos />
-                        <MiHuella />
-                                <SimulacionHuella />
-                    </div>
+                    <PerfilSena
+                        usuario={currentUser}
+                        rol={currentUser?.role?.rol_name || 'Admin'}
+                        onEditar={() => setEditingProfile(true)}
+                        seguridad={<><DosPasos /><MiHuella /><SimulacionHuella /></>}
+                    />
                 );
             default: return null;
         }
@@ -624,6 +674,28 @@ const Portero = () => {
             }} links={porteroLinks} />
             <main className="container-fluid px-3 px-md-5 py-4 flex-grow-1">{renderView()}</main>
             <Footer />
+            <ModalExportar
+                abierto={exportAbierto}
+                titulo="Exportar historial"
+                detalle="Se aplican los filtros activos. Elige PDF o Excel."
+                formatos={['pdf', 'xlsx']}
+                formato={exportFormato}
+                onFormato={setExportFormato}
+                onCerrar={() => setExportAbierto(false)}
+                onExportar={descargarExportacion}
+                exportando={exportando}
+            />
+            <ModalExportar
+                abierto={exportEquiposAbierto}
+                titulo="Exportar equipos"
+                detalle="Se aplican la búsqueda y el estado activos. Elige PDF o Word."
+                formatos={['pdf', 'docx']}
+                formato={exportEquiposFormato}
+                onFormato={setExportEquiposFormato}
+                onCerrar={() => setExportEquiposAbierto(false)}
+                onExportar={descargarExportacionEquipos}
+                exportando={exportEquiposExportando}
+            />
         </div>
     );
 };

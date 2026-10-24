@@ -136,7 +136,7 @@ const EscanearAcceso = ({ contexto = 'panel', onRegistrado, accion = null }) => 
         <div className="glass-box p-4 h-100 d-flex flex-column">
             <div className="d-flex align-items-start justify-content-between gap-3 acc-head-accion">
                 <div>
-                    <h4 className="fw-bold mb-1">{contexto === 'puerta' ? 'Escanea el QR de portería' : 'Marcar entrada / salida'}</h4>
+                    <h4 className="fw-bold mb-1">{contexto === 'puerta' ? 'Escanea el QR de portería' : 'Escanea el QR de portería'}</h4>
                     <p className="small opacity-75 mb-0">
                         {contexto === 'puerta'
                             ? 'Con la cámara del equipo o pegando el código.'
@@ -237,7 +237,7 @@ const EscanearAcceso = ({ contexto = 'panel', onRegistrado, accion = null }) => 
         <div className="fade-in-up">
             <div className="acc-view">
                 <div className="section-header">
-                    <h3 className="mb-0">Marcar acceso</h3>
+                    <h3 className="mb-0">Salida QR</h3>
                     <p className="small opacity-75 mb-0">Registra tu entrada o salida con el QR de portería. Queda en tu historial al instante.</p>
                 </div>
 

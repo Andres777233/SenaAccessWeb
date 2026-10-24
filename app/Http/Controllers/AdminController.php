@@ -172,7 +172,7 @@ class AdminController extends Controller
         return response()->json($resultado);
     }
 
-    public function exportIngresos(Request $request)
+    public function exportIngresos(Request $request, ?int $soloUsuario = null)
     {
         $request->validate([
             'desde' => 'nullable|date',
@@ -180,6 +180,10 @@ class AdminController extends Controller
         ]);
 
         $query = Ingreso::with('user');
+
+        if ($soloUsuario) {
+            $query->where('fk_id_user', $soloUsuario);
+        }
 
         if ($request->filled('tipo')) {
             $query->where('ingreso_type', $request->tipo);
@@ -345,6 +349,12 @@ class AdminController extends Controller
             }
             fclose($handle);
         }, $base . '.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
+    // Exporta el historial del usuario autenticado (mismos formatos/filtros).
+    public function exportMyIngresos(Request $request)
+    {
+        return $this->exportIngresos($request, $request->user()->id_usuario);
     }
 
     public function stats()

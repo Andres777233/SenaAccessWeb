@@ -87,8 +87,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Rutas de usuario general (Aprendiz)
     Route::get('/my-ingresos', [AdminController::class, 'getMyIngresos']);
+    Route::get('/my-ingresos/export', [AdminController::class, 'exportMyIngresos']);
     Route::get('/my-stats', [AdminController::class, 'myStats']);
     Route::get('/my-equipment', [EquipmentController::class, 'getMyEquipment']);
+    Route::get('/my-equipment/export', [EquipmentController::class, 'exportMyEquipment']);
     Route::get('/my-equipment/{id}/comprobante', [EquipmentController::class, 'comprobante']);
     Route::post('/my-equipment', [EquipmentController::class, 'store']);
     Route::put('/my-profile', [AdminController::class, 'updateMyProfile']);
@@ -127,6 +129,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/equipment/{id}/return', [EquipmentController::class, 'markReturn'])->middleware('admin_or_portero');
         Route::middleware('admin_or_portero')->group(function () {
             Route::get('/equipment', [EquipmentController::class, 'index']);
+            Route::get('/equipment/export', [EquipmentController::class, 'exportIndex']);
             Route::delete('/equipment/{id}', [EquipmentController::class, 'deleteEquipment']);
         });
     });

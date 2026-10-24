@@ -158,8 +158,19 @@ const QrInvitado = () => {
         <div className="fade-in-up">
             <div className="acc-view">
                 <div className="section-header">
-                    <h3 className="mb-0">Validar acceso</h3>
-                    <p className="small opacity-75 mb-0">Carnet del usuario, código de la web y QR de invitado en un solo lugar.</p>
+                    <h3 className="mb-0">Validar ingreso</h3>
+                    <p className="small opacity-75 mb-0">Carnet, carnet digital, código de ingreso (QR/PIN) y QR de invitado en un solo lugar.</p>
+                </div>
+
+                <div className="aviso-sena">
+                    <span className="material-symbols-outlined">info</span>
+                    <div>
+                        <strong>Ojo con el código de SALIDA</strong>
+                        <p className="mb-0">
+                            Si validas un código de salida, el usuario no podrá registrar una nueva ENTRADA
+                            hasta 24 horas después. Revisa el sentido del código antes de validar.
+                        </p>
+                    </div>
                 </div>
 
                 <div className="row g-4">
@@ -167,8 +178,8 @@ const QrInvitado = () => {
                         <div className="glass-box p-4 h-100">
                             <div className="d-flex align-items-start justify-content-between gap-2 mb-3">
                                 <div>
-                                    <h4 className="fw-bold mb-1">Escáner de portería</h4>
-                                    <p className="small opacity-75 mb-0">Apunta al carnet, al código de la web o al QR del invitado.</p>
+                                    <h4 className="fw-bold mb-1">Escáner de ingreso</h4>
+                                    <p className="small opacity-75 mb-0">Apunta al carnet, al código de ingreso o al QR del invitado.</p>
                                 </div>
                                 <span className="badge bg-success bg-opacity-25 text-success border border-success border-opacity-50">
                                     {validos} VÁLIDOS HOY
@@ -192,7 +203,7 @@ const QrInvitado = () => {
                                             <div className="acc-stage-empty">
                                                 <span className="material-symbols-outlined">qr_code_scanner</span>
                                                 <p className="fw-bold text-white mb-0">Cámara apagada</p>
-                                                <p>Apunta al carnet, al código de la web o al QR del invitado.</p>
+                                                <p>Apunta al carnet, al código de ingreso o al QR del invitado.</p>
                                                 <button type="button" className="btn btn-glow mt-2" onClick={iniciarCamara} disabled={ocupado}>
                                                     {ocupado ? 'VALIDANDO…' : 'ABRIR CÁMARA'}
                                                 </button>
@@ -310,7 +321,7 @@ const QrInvitado = () => {
                     <p className="small opacity-75 mb-3">Un solo escáner reconoce todo lo que llega a portería.</p>
                     <ul className="list-unstyled small opacity-75 mb-0">
                         <li className="d-flex gap-2 mb-1"><span className="material-symbols-outlined text-success" style={{ fontSize: '18px' }}>check_circle</span><span><strong>Carnet digital:</strong> escanea el QR del usuario y queda su Entrada registrada al instante.</span></li>
-                        <li className="d-flex gap-2 mb-1"><span className="material-symbols-outlined text-success" style={{ fontSize: '18px' }}>check_circle</span><span><strong>Código de la web:</strong> el usuario genera un QR o PIN en la puerta y tú lo validas aquí.</span></li>
+                        <li className="d-flex gap-2 mb-1"><span className="material-symbols-outlined text-success" style={{ fontSize: '18px' }}>check_circle</span><span><strong>Ingreso:</strong> el usuario genera un QR o PIN en la puerta y tú lo validas aquí.</span></li>
                         <li className="d-flex gap-2"><span className="material-symbols-outlined text-success" style={{ fontSize: '18px' }}>check_circle</span><span><strong>Invitado:</strong> el QR del invitado se consume una sola vez y caduca a la hora.</span></li>
                     </ul>
                 </div>

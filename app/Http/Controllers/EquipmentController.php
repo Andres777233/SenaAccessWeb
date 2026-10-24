@@ -78,6 +78,89 @@ class EquipmentController extends Controller
         return response()->json($ingresos); //RESPUESTA DE LA CONSULTA DE LOS REGISTROS
     }
 
+    // Exporta el inventario completo (portería/admin) en PDF o Word.
+    public function exportIndex(Request $request)
+    {
+        return $this->exportarEquipos($request);
+    }
+
+    // Exporta solo los equipos del usuario autenticado (instructor/aprendiz).
+    public function exportMyEquipment(Request $request)
+    {
+        return $this->exportarEquipos($request, $request->user()->id_usuario);
+    }
+
+    private function exportarEquipos(Request $request, ?int $soloUsuario = null)
+    {
+        $request->validate([
+            'estado' => 'nullable|in:Disponible,Prestado',
+        ]);
+
+        $query = IngresoEquipo::with('user')->orderBy('entry_datetime', 'desc');
+
+        if ($soloUsuario) {
+            $query->where('fk_id_usuario', $soloUsuario);
+        }
+
+        if ($request->filled('estado')) {
+            $query->where('equipo_status', $request->estado);
+        }
+
+        if ($request->filled('q')) {
+            $q = $request->q;
+            $query->where(function ($sub) use ($q) {
+                $sub->where('equipo_type', 'like', "%{$q}%")
+                    ->orWhere('equipo_brand', 'like', "%{$q}%")
+                    ->orWhere('equipo_model', 'like', "%{$q}%")
+                    ->orWhere('equipo_serial', 'like', "%{$q}%")
+                    ->orWhereHas('user', function ($u) use ($q) {
+                        $u->where('user_name', 'like', "%{$q}%")
+                            ->orWhere('user_lastname', 'like', "%{$q}%")
+                            ->orWhere('user_email', 'like', "%{$q}%")
+                            ->orWhere('user_identification', 'like', "%{$q}%");
+                    });
+            });
+        }
+
+        $equipos = $query->limit(5000)->get();
+
+        $filas = $equipos->map(function ($e) {
+            $accesorios = collect($e->equipo_accesorios ?? [])
+                ->map(fn ($a) => is_array($a) ? ($a['tipo'] ?? null) : ($a->tipo ?? null))
+                ->filter()
+                ->implode(', ');
+
+            return [
+                'equipo' => $e->equipo_type,
+                'marca' => trim(($e->equipo_brand ?? '') . ' ' . ($e->equipo_model ?? '')),
+                'serial' => $e->equipo_serial,
+                'propiedad' => $e->equipo_propiedad === 'Propio' ? 'Propio' : 'Prestado',
+                'estado' => $e->equipo_status === 'Disponible' ? 'Devuelto' : 'En uso',
+                'dueno' => trim(($e->user->user_name ?? '') . ' ' . ($e->user->user_lastname ?? '')),
+                'documento' => $e->user->user_identification ?? '',
+                'accesorios' => $accesorios !== '' ? $accesorios : '—',
+                'ingreso' => $e->entry_datetime ? Carbon::parse($e->entry_datetime)->format('Y-m-d H:i') : '—',
+                'devolucion' => $e->equipo_return_datetime ? Carbon::parse($e->equipo_return_datetime)->format('Y-m-d H:i') : '—',
+            ];
+        })->all();
+
+        $base = 'inventario_equipos_' . Carbon::now('America/Bogota')->format('Y-m-d_His');
+        $titulo = $soloUsuario ? 'Mis equipos' : 'Inventario de equipos';
+
+        $formato = strtolower($request->input('formato', 'pdf'));
+        if ($formato === 'docx' || $formato === 'doc') {
+            return response()
+                ->view('exports.equipos_word', compact('filas', 'titulo'))
+                ->header('Content-Type', 'application/msword; charset=UTF-8')
+                ->header('Content-Disposition', 'attachment; filename="' . $base . '.doc"');
+        }
+
+        $pdf = Pdf::loadView('exports.equipos_pdf', compact('filas', 'titulo'))
+            ->setPaper('a4', 'landscape');
+
+        return $pdf->download($base . '.pdf');
+    }
+
     public function comprobante($id)
     {
         $ingreso = IngresoEquipo::with('user.role')->findOrFail($id);

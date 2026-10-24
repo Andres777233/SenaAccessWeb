@@ -49,6 +49,8 @@ const InstructorExcusas = () => {
     const [formErrors, setFormErrors] = useState({});
     const [creando, setCreando] = useState(false);
     const [ultima, setUltima] = useState(null); // Excusa recién creada (tarjeta PIN protagonista).
+    const [filtroEstado, setFiltroEstado] = useState('todos');
+    const [busquedaLista, setBusquedaLista] = useState('');
 
     const fetchLista = useCallback(async () => {
         try {
@@ -104,6 +106,17 @@ const InstructorExcusas = () => {
     const fieldError = (name) => (
         formErrors[name] ? <div className="text-danger small mt-1"><span className="material-symbols-outlined small me-1">error</span>{formErrors[name][0]}</div> : null
     );
+
+    const listaVisibles = lista.filter((item) => {
+        if (filtroEstado === 'vencidos') {
+            if (!['expirada', 'anulada'].includes(item.estado)) return false;
+        } else if (filtroEstado !== 'todos' && item.estado !== filtroEstado) {
+            return false;
+        }
+        const q = busquedaLista.trim().toLowerCase();
+        if (!q) return true;
+        return `${nombrePersona(item.aprendiz)} ${item.pin || ''} ${item.motivo || ''}`.toLowerCase().includes(q);
+    });
 
     const handleCrear = async (e) => {
         e.preventDefault();
@@ -184,18 +197,42 @@ const InstructorExcusas = () => {
                     </div>
                     <div className="mb-3">
                         <label className="form-label opacity-75 small">Aprendiz</label>
-                        <select
-                            className={`form-control ${formErrors.fk_id_aprendiz ? 'is-invalid' : ''}`}
-                            value={aprendizId}
-                            onChange={(e) => { setAprendizId(e.target.value); setFormErrors(prev => { const n = { ...prev }; delete n.fk_id_aprendiz; return n; }); }}
-                        >
-                            <option value="" disabled>Seleccione un aprendiz...</option>
-                            {filtrados.map(a => (
-                                <option key={a.id_usuario} value={a.id_usuario}>
-                                    {a.user_name} {a.user_lastname}{a.user_coursenumber ? ` — Ficha ${a.user_coursenumber}` : ''}
-                                </option>
-                            ))}
-                        </select>
+                        <div className="aprendices-picker">
+                            {filtrados.length > 0 ? filtrados.map((a) => {
+                                const activo = String(a.id_usuario) === String(aprendizId);
+                                return (
+                                    <button
+                                        type="button"
+                                        key={a.id_usuario}
+                                        className={`aprendiz-opcion ${activo ? 'activo' : ''}`}
+                                        onClick={() => {
+                                            setAprendizId(String(a.id_usuario));
+                                            setFormErrors(prev => {
+                                                const n = { ...prev };
+                                                delete n.fk_id_aprendiz;
+                                                return n;
+                                            });
+                                        }}
+                                    >
+                                        <span className="selector-avatar">
+                                            {a.profile_photo_path ? <img src={a.profile_photo_path} alt="" loading="lazy" /> : <>{a.user_name?.[0]}{a.user_lastname?.[0]}</>}
+                                        </span>
+                                        <span className="selector-datos">
+                                            <strong>{a.user_name} {a.user_lastname}</strong>
+                                            <small>
+                                                {a.user_identification || 'Sin documento'}
+                                                {a.user_coursenumber ? ` · Ficha ${a.user_coursenumber}` : ''}
+                                            </small>
+                                        </span>
+                                        <span className="material-symbols-outlined selector-check">
+                                            {activo ? 'check_circle' : 'radio_button_unchecked'}
+                                        </span>
+                                    </button>
+                                );
+                            }) : (
+                                <p className="selector-vacio mb-0">No hay aprendices con esa búsqueda.</p>
+                            )}
+                        </div>
                         {fieldError('fk_id_aprendiz')}
                     </div>
                     <div className="mb-3">
@@ -248,11 +285,49 @@ const InstructorExcusas = () => {
                 )}
             </div>
 
-            <div className="glass-box p-4 mb-5 mx-auto" style={{ maxWidth: '1000px' }}>
-                <div className="section-header">
-                    <h3 className="mb-0">Mis Permisos</h3>
-                    <p className="opacity-50 small">Total: {lista.length} permiso(s)</p>
+            <div className="glass-box p-4 mb-5 mx-auto" style={{ maxWidth: '1100px' }}>
+                <div className="page-cabecera mb-3">
+                    <div>
+                        <h3 className="page-titulo mb-1">Mis permisos</h3>
+                        <p className="page-subtitulo mb-0">{listaVisibles.length} de {lista.length} permiso(s)</p>
+                    </div>
                 </div>
+
+                <div className="filtros-barra">
+                    <div className="buscador-sena">
+                        <span className="material-symbols-outlined">search</span>
+                        <input
+                            type="text"
+                            placeholder="Buscar por aprendiz, PIN o motivo…"
+                            value={busquedaLista}
+                            onChange={(e) => setBusquedaLista(e.target.value)}
+                            aria-label="Buscar permisos"
+                        />
+                        {busquedaLista && (
+                            <button type="button" className="buscador-limpiar" onClick={() => setBusquedaLista('')} aria-label="Limpiar búsqueda">
+                                <span className="material-symbols-outlined">close</span>
+                            </button>
+                        )}
+                    </div>
+                    <div className="filtros-chips">
+                        {[
+                            { key: 'todos', label: 'Todos' },
+                            { key: 'pendiente', label: 'Pendientes' },
+                            { key: 'usada', label: 'Usados' },
+                            { key: 'vencidos', label: 'Vencidos' }
+                        ].map((f) => (
+                            <button
+                                key={f.key}
+                                type="button"
+                                className={`chip-sena ${filtroEstado === f.key ? 'activo' : ''}`}
+                                onClick={() => setFiltroEstado(f.key)}
+                            >
+                                {f.label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
                 <div className="admin-scrollable-container" style={{ maxHeight: '55vh' }}>
                     {loading ? (
                         <div className="text-center py-5">
@@ -260,7 +335,7 @@ const InstructorExcusas = () => {
                                 <span className="visually-hidden">Cargando...</span>
                             </div>
                         </div>
-                    ) : lista.length > 0 ? (
+                    ) : listaVisibles.length > 0 ? (
                         <table className="table admin-table table-cards mb-0">
                             <thead>
                                 <tr>
@@ -274,7 +349,7 @@ const InstructorExcusas = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {lista.map(item => (
+                                {listaVisibles.map(item => (
                                     <tr key={item.id_excusa}>
                                         <td data-label="PIN" className="fw-bold" style={{ letterSpacing: '0.2rem' }}>{item.pin}</td>
                                         <td data-label="Aprendiz">{nombrePersona(item.aprendiz)}</td>
@@ -296,9 +371,9 @@ const InstructorExcusas = () => {
                             </tbody>
                         </table>
                     ) : (
-                        <div className="text-center py-5 opacity-50">
-                            <span className="material-symbols-outlined" style={{ fontSize: '48px' }}>key_off</span>
-                            <p className="mt-2">Aún no has creado permisos</p>
+                        <div className="estado-vacio">
+                            <span className="material-symbols-outlined">key_off</span>
+                            <p className="mb-0">{lista.length === 0 ? 'Aún no has creado permisos.' : 'No hay permisos con ese filtro.'}</p>
                         </div>
                     )}
                 </div>
@@ -373,8 +448,8 @@ const ExcusasAdmin = () => {
         <div className="fade-in-up">
             <div className="glass-box p-4 mb-4 mx-auto" style={{ maxWidth: '600px' }}>
                 <div className="section-header">
-                    <h3 className="mb-0">Validar PIN en Portería</h3>
-                    <p className="opacity-50 small">El PIN tiene 4 dígitos y vigencia de 15 minutos</p>
+                    <h3 className="mb-0">Validar permiso de salida</h3>
+                    <p className="opacity-50 small">PIN de 4 dígitos · vigencia de 15 minutos · un solo uso</p>
                 </div>
                 <form onSubmit={handleValidar}>
                     <div className="mb-3">
@@ -478,6 +553,7 @@ const MisExcusas = () => {
     const [excusas, setExcusas] = useState([]);
     const [loading, setLoading] = useState(true);
     const [ahora, setAhora] = useState(Date.now());
+    const [filtro, setFiltro] = useState('todos');
 
     const fetchExcusas = useCallback(async () => {
         try {
@@ -515,64 +591,113 @@ const MisExcusas = () => {
         return () => clearInterval(timer);
     }, [excusas]);
 
+    const visibles = excusas.filter((e) => {
+        if (filtro === 'todos') return true;
+        if (filtro === 'vencidos') return ['expirada', 'anulada'].includes(e.estado);
+        return e.estado === filtro;
+    });
+
+    const copiarPin = async (pin) => {
+        try {
+            await navigator.clipboard.writeText(pin);
+            showAlert('PIN copiado. Preséntalo en portería.');
+        } catch (_) {
+            showAlert('No se pudo copiar el PIN: ' + pin, 'error');
+        }
+    };
+
     return (
-        <div className="fade-in-up">
-            <div className="glass-box p-4 mb-5 mx-auto" style={{ maxWidth: '1000px' }}>
-                <div className="section-header">
-                    <h3 className="mb-0">Mis Permisos de Salida</h3>
-                    <p className="opacity-50 small">Total: {excusas.length} permiso(s) — presenta el PIN en portería</p>
-                </div>
-                <div className="admin-scrollable-container" style={{ maxHeight: '60vh' }}>
-                    {loading ? (
-                        <div className="text-center py-5">
-                            <div className="spinner-border text-success" role="status">
-                                <span className="visually-hidden">Cargando...</span>
-                            </div>
-                        </div>
-                    ) : excusas.length > 0 ? (
-                        <table className="table admin-table table-cards mb-0">
-                            <thead>
-                                <tr>
-                                    <th>PIN</th>
-                                    <th>Ambiente</th>
-                                    <th>Instructor</th>
-                                    <th>Motivo</th>
-                                    <th>Estado</th>
-                                    <th>Vigencia</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {excusas.map(item => (
-                                    <tr key={item.id_excusa}>
-                                        <td data-label="PIN" className="fw-bold" style={{ letterSpacing: '0.2rem' }}>{item.pin}</td>
-                                        <td data-label="Ambiente">{nombreAmbiente(item)}</td>
-                                        <td data-label="Instructor">{nombrePersona(item.instructor)}</td>
-                                        <td data-label="Motivo"><small className="opacity-75">{item.motivo}</small></td>
-                                        <td data-label="Estado">
-                                            <span className={`badge ${ESTADO_BADGE[item.estado] || 'badge-soft-secondary'} px-3 py-2`}>{item.estado}</span>
-                                        </td>
-                                        <td data-label="Vigencia">
-                                            {item.estado === 'pendiente' && item.expira_en ? (
-                                                <span className="badge badge-soft-primary px-3 py-2">
-                                                    <span className="material-symbols-outlined me-1" style={{ fontSize: '14px' }}>timer</span>
-                                                    {restoVigencia(item.expira_en, ahora)}
-                                                </span>
-                                            ) : (
-                                                <span className="opacity-50">—</span>
-                                            )}
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    ) : (
-                        <div className="text-center py-5 opacity-50">
-                            <span className="material-symbols-outlined" style={{ fontSize: '48px' }}>key_off</span>
-                            <p className="mt-2">No tienes permisos de salida. Pide a tu instructor que genere uno.</p>
-                        </div>
-                    )}
+        <div className="fade-in-up mx-auto" style={{ maxWidth: '1100px' }}>
+            <div className="page-cabecera">
+                <div>
+                    <h3 className="page-titulo mb-1">Permisos de salida</h3>
+                    <p className="page-subtitulo mb-0">
+                        {excusas.length} permiso{excusas.length === 1 ? '' : 's'} · presenta el PIN en portería
+                    </p>
                 </div>
             </div>
+
+            <div className="filtros-barra">
+                <div className="filtros-chips">
+                    {[
+                        { key: 'todos', label: 'Todos' },
+                        { key: 'pendiente', label: 'Pendientes' },
+                        { key: 'usada', label: 'Usados' },
+                        { key: 'vencidos', label: 'Vencidos' }
+                    ].map((f) => (
+                        <button
+                            key={f.key}
+                            type="button"
+                            className={`chip-sena ${filtro === f.key ? 'activo' : ''}`}
+                            onClick={() => setFiltro(f.key)}
+                        >
+                            {f.label}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {loading ? (
+                <div className="text-center py-5">
+                    <div className="spinner-border text-success" role="status">
+                        <span className="visually-hidden">Cargando…</span>
+                    </div>
+                </div>
+            ) : visibles.length > 0 ? (
+                <div className="grid-permisos">
+                    {visibles.map((item) => {
+                        const pendiente = item.estado === 'pendiente';
+                        return (
+                            <article className={`permiso-card glass-box ${pendiente ? 'pendiente' : ''}`} key={item.id_excusa}>
+                                <div className="permiso-card-head">
+                                    <span className={`badge ${ESTADO_BADGE[item.estado] || 'badge-soft-secondary'} px-3 py-2`}>
+                                        {item.estado}
+                                    </span>
+                                    {pendiente && item.expira_en && (
+                                        <span className="permiso-vigencia">
+                                            <span className="material-symbols-outlined">timer</span>
+                                            {restoVigencia(item.expira_en, ahora)}
+                                        </span>
+                                    )}
+                                </div>
+
+                                <button
+                                    type="button"
+                                    className="permiso-pin"
+                                    onClick={() => copiarPin(item.pin)}
+                                    title="Copiar PIN"
+                                >
+                                    {item.pin}
+                                </button>
+
+                                <div className="permiso-meta">
+                                    <strong>{nombreAmbiente(item)}</strong>
+                                    <span>{nombrePersona(item.instructor)}</span>
+                                </div>
+
+                                <p className="permiso-motivo">{item.motivo}</p>
+
+                                <button
+                                    type="button"
+                                    className="btn btn-outline-success btn-sm action-btn w-100 mt-auto"
+                                    onClick={() => copiarPin(item.pin)}
+                                >
+                                    <span className="material-symbols-outlined small">content_copy</span> Copiar PIN
+                                </button>
+                            </article>
+                        );
+                    })}
+                </div>
+            ) : (
+                <div className="estado-vacio">
+                    <span className="material-symbols-outlined">key_off</span>
+                    <p className="mb-0">
+                        {excusas.length === 0
+                            ? 'No tienes permisos de salida. Pide a tu instructor que genere uno.'
+                            : 'No hay permisos con ese filtro.'}
+                    </p>
+                </div>
+            )}
         </div>
     );
 };

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { showAlert, showConfirm } from './CustomAlert';
+import SelectorUsuarios from './SelectorUsuarios';
 
 const ESTADOS = ['Activo', 'Inactivo', 'Mantenimiento'];
 
@@ -115,18 +116,6 @@ const Ambientes = ({ currentUser, rol }) => {
             setFormErrors(prev => {
                 const next = { ...prev };
                 delete next[name];
-                return next;
-            });
-        }
-    };
-
-    const handleInstructoresChange = (e) => {
-        const ids = Array.from(e.target.selectedOptions, o => Number(o.value));
-        setFormData(prev => ({ ...prev, instructores: ids }));
-        if (formErrors.instructores) {
-            setFormErrors(prev => {
-                const next = { ...prev };
-                delete next.instructores;
                 return next;
             });
         }
@@ -285,6 +274,11 @@ const Ambientes = ({ currentUser, rol }) => {
 
     const nombreUsuario = (u) => `${u?.user_name || ''} ${u?.user_lastname || ''}`.trim() || u?.user_email || '—';
 
+    // Aprendices que aún no están matriculados en el ambiente abierto.
+    const aprendicesDisponibles = aprendices.filter(
+        (a) => !matriculados.some((m) => m.id_usuario === a.id_usuario)
+    );
+
     // El rol Aprendiz no usa este componente: sus salones se consultan desde el panel principal.
     if (!esAdmin && !esInstructor) {
         return (
@@ -394,18 +388,23 @@ const Ambientes = ({ currentUser, rol }) => {
                         {fieldError('hora_fin')}
                     </div>
                     <div className="col-12 mb-3">
-                        <label className="form-label opacity-75 small">Instructores asignados (selección múltiple)</label>
-                        <select
-                            multiple
-                            className={`form-select ${formErrors.instructores ? 'is-invalid' : ''}`}
-                            value={formData.instructores.map(String)}
-                            onChange={handleInstructoresChange}
-                            style={{ minHeight: '110px' }}
-                        >
-                            {instructores.map(u => (
-                                <option key={u.id_usuario} value={u.id_usuario}>{nombreUsuario(u)}</option>
-                            ))}
-                        </select>
+                        <label className="form-label opacity-75 small">Instructores asignados</label>
+                        <SelectorUsuarios
+                            usuarios={instructores}
+                            seleccionados={formData.instructores}
+                            onChange={(ids) => {
+                                setFormData(prev => ({ ...prev, instructores: ids }));
+                                if (formErrors.instructores) {
+                                    setFormErrors(prev => {
+                                        const next = { ...prev };
+                                        delete next.instructores;
+                                        return next;
+                                    });
+                                }
+                            }}
+                            placeholder="Buscar instructor por nombre, correo o documento…"
+                            vacio="No hay instructores registrados."
+                        />
                         {fieldError('instructores')}
                     </div>
                 </div>
@@ -423,49 +422,54 @@ const Ambientes = ({ currentUser, rol }) => {
 
     const renderGestion = () => (
         <div className="glass-box p-4 mb-4 mx-auto" style={{ maxWidth: '1000px' }}>
-            <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-                <div className="section-header mb-0">
-                    <h3 className="mb-0">Gestionar: {seleccionado.ambiente_nombre}</h3>
-                    <p className="opacity-50 small mb-0">Ocupación {ocupacion(seleccionado)}{seleccionado.ambiente_ubicacion ? ` · ${seleccionado.ambiente_ubicacion}` : ''}</p>
+            <div className="page-cabecera mb-3">
+                <div>
+                    <h3 className="page-titulo mb-1">{seleccionado.ambiente_nombre}</h3>
+                    <p className="page-subtitulo mb-0">
+                        Ocupación {ocupacion(seleccionado)}
+                        {seleccionado.ambiente_ubicacion ? ` · ${seleccionado.ambiente_ubicacion}` : ''}
+                    </p>
                 </div>
                 <button className="btn btn-sm btn-outline-secondary action-btn" onClick={() => { setSeleccionado(null); setMatriculados([]); }}>
                     <span className="material-symbols-outlined">close</span> Cerrar
                 </button>
             </div>
-            <div className="row">
+            <div className="row g-4">
                 {esAdmin && (
-                    <div className="col-md-6 mb-3">
+                    <div className="col-lg-6">
                         <label className="form-label opacity-75 small">Instructores del ambiente</label>
-                        <select
-                            multiple
-                            className="form-select"
-                            value={syncInstructores.map(String)}
-                            onChange={(e) => setSyncInstructores(Array.from(e.target.selectedOptions, o => Number(o.value)))}
-                            style={{ minHeight: '130px' }}
-                        >
-                            {instructores.map(u => (
-                                <option key={u.id_usuario} value={u.id_usuario}>{nombreUsuario(u)}</option>
-                            ))}
-                        </select>
+                        <SelectorUsuarios
+                            usuarios={instructores}
+                            seleccionados={syncInstructores}
+                            onChange={setSyncInstructores}
+                            placeholder="Buscar instructor por nombre, correo o documento…"
+                            vacio="No hay instructores registrados."
+                            maxAltura={200}
+                        />
                         <button className="btn btn-success action-btn w-100 mt-2" onClick={handleSyncInstructores}>
-                            <span className="material-symbols-outlined">sync</span> Guardar Asignación
+                            <span className="material-symbols-outlined">sync</span> Guardar asignación
                         </button>
                     </div>
                 )}
-                <div className={esAdmin ? 'col-md-6 mb-3' : 'col-12 mb-3'}>
+                <div className={esAdmin ? 'col-lg-6' : 'col-12'}>
                     <label className="form-label opacity-75 small">Matricular aprendiz</label>
-                    <div className="d-flex gap-2">
-                        <select className="form-select" style={{ minWidth: 0 }} value={nuevoAprendiz} onChange={(e) => setNuevoAprendiz(e.target.value)}>
-                            <option value="" disabled>Seleccione un aprendiz...</option>
-                            {aprendices.map(u => (
-                                <option key={u.id_usuario} value={u.id_usuario}>{nombreUsuario(u)}</option>
-                            ))}
-                        </select>
-                        <button className="btn btn-success action-btn" onClick={handleAgregarAprendiz} title="Agregar aprendiz">
-                            <span className="material-symbols-outlined">person_add</span>
-                        </button>
-                    </div>
-                    <div className="admin-scrollable-container mt-3" style={{ maxHeight: '30vh' }}>
+                    <SelectorUsuarios
+                        usuarios={aprendicesDisponibles}
+                        seleccionados={nuevoAprendiz ? [Number(nuevoAprendiz)] : []}
+                        onChange={(ids) => setNuevoAprendiz(ids[0] ? String(ids[0]) : '')}
+                        placeholder="Buscar aprendiz por nombre, correo, documento o ficha…"
+                        vacio="No quedan aprendices por matricular."
+                        maxAltura={180}
+                    />
+                    <button
+                        className="btn btn-success action-btn w-100 mt-2"
+                        onClick={handleAgregarAprendiz}
+                        disabled={!nuevoAprendiz}
+                    >
+                        <span className="material-symbols-outlined">person_add</span> Agregar aprendiz
+                    </button>
+
+                    <div className="matriculados-lista mt-3">
                         {cargandoMatricula ? (
                             <div className="text-center py-4">
                                 <div className="spinner-border text-success" role="status">
@@ -473,28 +477,29 @@ const Ambientes = ({ currentUser, rol }) => {
                                 </div>
                             </div>
                         ) : matriculados.length > 0 ? (
-                            <table className="table admin-table table-cards mb-0">
-                                <thead>
-                                    <tr>
-                                        <th>Aprendiz</th>
-                                        <th>Correo</th>
-                                        <th>Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {matriculados.map(u => (
-                                        <tr key={u.id_usuario}>
-                                            <td data-label="Aprendiz" className="fw-bold">{nombreUsuario(u)}</td>
-                                            <td data-label="Correo" className="small opacity-75">{u.user_email}</td>
-                                            <td data-label="Acciones">
-                                                <button className="btn btn-sm btn-outline-danger p-1 d-flex align-items-center" title="Quitar del ambiente" onClick={() => handleQuitarAprendiz(u.id_usuario)}>
-                                                    <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>person_remove</span>
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                            matriculados.map((u) => (
+                                <div className="matriculado-fila" key={u.id_usuario}>
+                                    <span className="selector-avatar">
+                                        {u.profile_photo_path ? (
+                                            <img src={u.profile_photo_path} alt="" loading="lazy" />
+                                        ) : (
+                                            <>{u.user_name?.[0]}{u.user_lastname?.[0]}</>
+                                        )}
+                                    </span>
+                                    <span className="matriculado-datos">
+                                        <strong>{nombreUsuario(u)}</strong>
+                                        <small>{u.user_email}</small>
+                                    </span>
+                                    <button
+                                        type="button"
+                                        className="btn btn-sm btn-outline-danger"
+                                        title="Quitar del ambiente"
+                                        onClick={() => handleQuitarAprendiz(u.id_usuario)}
+                                    >
+                                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>person_remove</span>
+                                    </button>
+                                </div>
+                            ))
                         ) : (
                             <div className="text-center py-4 opacity-50">
                                 <span className="material-symbols-outlined" style={{ fontSize: '40px' }}>group_off</span>
@@ -508,109 +513,115 @@ const Ambientes = ({ currentUser, rol }) => {
     );
 
     return (
-        <div className="fade-in-up">
-            <div className="glass-box p-4 mb-5 mx-auto" style={{ maxWidth: '1200px' }}>
-                <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
-                    <div className="section-header mb-0">
-                        <h3 className="mb-0">{esAdmin ? 'Gestión de Ambientes' : 'Mis Salones'}</h3>
-                        <p className="opacity-50 small">Total: {ambientes.length} ambiente(s)</p>
-                    </div>
-                    <div className="d-flex gap-2 flex-wrap">
-                        <div className="input-group search-input-group" style={{ maxWidth: '300px' }}>
-                            <span className="input-group-text">
-                                <span className="material-symbols-outlined">search</span>
-                            </span>
-                            <input
-                                type="text"
-                                className="form-control"
-                                placeholder="Buscar por nombre, ubicación o jornada..."
-                                value={searchTerm}
-                                onChange={handleSearch}
-                            />
-                        </div>
-                        {esAdmin && !mostrarForm && (
-                            <button className="btn btn-success action-btn d-flex align-items-center gap-2" onClick={abrirCrear}>
-                                <span className="material-symbols-outlined">add_circle</span> Nuevo Ambiente
-                            </button>
-                        )}
-                    </div>
+        <div className="fade-in-up mx-auto" style={{ maxWidth: '1200px' }}>
+            <div className="page-cabecera">
+                <div>
+                    <h3 className="page-titulo mb-1">{esAdmin ? 'Ambientes' : 'Mis salones'}</h3>
+                    <p className="page-subtitulo mb-0">
+                        {ambientes.length} ambiente{ambientes.length === 1 ? '' : 's'}
+                    </p>
                 </div>
-
-                {esAdmin && mostrarForm && renderForm()}
-                {seleccionado && renderGestion()}
-
-                <div className="admin-scrollable-container" style={{ maxHeight: '60vh' }}>
-                    {loading ? (
-                        <div className="text-center py-5">
-                            <div className="spinner-border text-success" role="status">
-                                <span className="visually-hidden">Cargando...</span>
-                            </div>
-                        </div>
-                    ) : ambientes.length > 0 ? (
-                        <table className="table admin-table table-cards mb-0">
-                            <thead>
-                                <tr>
-                                    <th>Ambiente</th>
-                                    <th>Ubicación</th>
-                                    <th>Jornada / Horario</th>
-                                    <th>Estado</th>
-                                    <th>Ocupación</th>
-                                    <th>Instructores</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {ambientes.map(ambiente => (
-                                    <tr key={ambiente.id_ambiente}>
-                                        <td data-label="Ambiente" className="fw-bold">{ambiente.ambiente_nombre}</td>
-                                        <td data-label="Ubicación">{ambiente.ambiente_ubicacion || '—'}</td>
-                                        <td data-label="Jornada / Horario">
-                                            {ambiente.ambiente_jornada || '—'}
-                                            {(ambiente.hora_inicio || ambiente.hora_fin) && (
-                                                <small className="opacity-50 d-block">{(ambiente.hora_inicio || '').slice(0, 5)} - {(ambiente.hora_fin || '').slice(0, 5)}</small>
-                                            )}
-                                        </td>
-                                        <td data-label="Estado">{renderBadgeEstado(ambiente.ambiente_estado)}</td>
-                                        <td data-label="Ocupación">
-                                            <span className="badge badge-soft-info px-3 py-2">
-                                                <span className="material-symbols-outlined me-1" style={{ fontSize: '14px' }}>groups</span>
-                                                {ocupacion(ambiente)}
-                                            </span>
-                                        </td>
-                                        <td data-label="Instructores">
-                                            {(ambiente.instructores || []).length > 0
-                                                ? ambiente.instructores.map(i => nombreUsuario(i)).join(', ')
-                                                : <span className="opacity-50">Sin asignar</span>}
-                                        </td>
-                                        <td data-label="Acciones">
-                                            <div className="d-flex gap-2">
-                                                <button className="btn btn-sm btn-outline-success p-1 d-flex align-items-center" title="Gestionar instructores y aprendices" onClick={() => abrirGestion(ambiente)}>
-                                                    <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>manage_accounts</span>
-                                                </button>
-                                                {esAdmin && (
-                                                    <>
-                                                        <button className="btn btn-sm btn-outline-success p-1 d-flex align-items-center" title="Editar" onClick={() => abrirEditar(ambiente)}>
-                                                            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>edit</span>
-                                                        </button>
-                                                        <button className="btn btn-sm btn-outline-danger p-1 d-flex align-items-center" title="Eliminar" onClick={() => handleDelete(ambiente.id_ambiente)}>
-                                                            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>delete</span>
-                                                        </button>
-                                                    </>
-                                                )}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    ) : (
-                        <div className="text-center py-5 opacity-50">
-                            <span className="material-symbols-outlined" style={{ fontSize: '48px' }}>meeting_room</span>
-                            <p className="mt-2">{esAdmin ? 'No hay ambientes registrados' : 'No tienes salones asignados'}</p>
-                        </div>
+                <div className="page-acciones">
+                    {esAdmin && !mostrarForm && (
+                        <button className="btn btn-success action-btn" onClick={abrirCrear}>
+                            <span className="material-symbols-outlined">add_circle</span> Nuevo ambiente
+                        </button>
                     )}
                 </div>
             </div>
+
+            <div className="filtros-barra">
+                <div className="buscador-sena">
+                    <span className="material-symbols-outlined">search</span>
+                    <input
+                        type="text"
+                        placeholder="Buscar por nombre, ubicación o jornada…"
+                        value={searchTerm}
+                        onChange={handleSearch}
+                        aria-label="Buscar ambientes"
+                    />
+                    {searchTerm && (
+                        <button type="button" className="buscador-limpiar" onClick={() => { setSearchTerm(''); fetchAmbientes(''); }} aria-label="Limpiar búsqueda">
+                            <span className="material-symbols-outlined">close</span>
+                        </button>
+                    )}
+                </div>
+            </div>
+
+            {esAdmin && mostrarForm && renderForm()}
+            {seleccionado && renderGestion()}
+
+            {loading ? (
+                <div className="text-center py-5">
+                    <div className="spinner-border text-success" role="status">
+                        <span className="visually-hidden">Cargando...</span>
+                    </div>
+                </div>
+            ) : ambientes.length > 0 ? (
+                <div className="grid-ambientes">
+                    {ambientes.map(ambiente => (
+                        <article className="ambiente-card glass-box" key={ambiente.id_ambiente}>
+                            <div className="ambiente-card-head">
+                                <span className="ambiente-icon material-symbols-outlined">meeting_room</span>
+                                <div className="ambiente-card-titulo">
+                                    <h4 className="mb-0">{ambiente.ambiente_nombre}</h4>
+                                    <p className="mb-0">
+                                        {ambiente.ambiente_ubicacion || 'Sin ubicación'} · {ambiente.ambiente_jornada || 'Sin jornada'}
+                                    </p>
+                                </div>
+                                {renderBadgeEstado(ambiente.ambiente_estado)}
+                            </div>
+
+                            <div className="ambiente-meta">
+                                <span>
+                                    <span className="material-symbols-outlined">schedule</span>
+                                    {(ambiente.hora_inicio || '—').slice(0, 5)} – {(ambiente.hora_fin || '—').slice(0, 5)}
+                                </span>
+                                <span>
+                                    <span className="material-symbols-outlined">groups</span>
+                                    {ocupacion(ambiente)}
+                                </span>
+                            </div>
+
+                            <div className="ambiente-instructores">
+                                {(ambiente.instructores || []).length > 0 ? (
+                                    <>
+                                        {ambiente.instructores.slice(0, 3).map(i => (
+                                            <span key={i.id_usuario} className="ambiente-chip">{nombreUsuario(i)}</span>
+                                        ))}
+                                        {ambiente.instructores.length > 3 && (
+                                            <span className="ambiente-chip">+{ambiente.instructores.length - 3}</span>
+                                        )}
+                                    </>
+                                ) : (
+                                    <span className="ambiente-chip vacio">Sin instructores</span>
+                                )}
+                            </div>
+
+                            <div className="ambiente-acciones">
+                                <button className="btn btn-outline-success btn-sm action-btn flex-grow-1" onClick={() => abrirGestion(ambiente)}>
+                                    <span className="material-symbols-outlined small">manage_accounts</span> Gestionar
+                                </button>
+                                {esAdmin && (
+                                    <>
+                                        <button className="btn btn-outline-success btn-sm action-btn" onClick={() => abrirEditar(ambiente)} title="Editar ambiente">
+                                            <span className="material-symbols-outlined">edit</span>
+                                        </button>
+                                        <button className="btn btn-outline-danger btn-sm action-btn" onClick={() => handleDelete(ambiente.id_ambiente)} title="Eliminar ambiente">
+                                            <span className="material-symbols-outlined">delete</span>
+                                        </button>
+                                    </>
+                                )}
+                            </div>
+                        </article>
+                    ))}
+                </div>
+            ) : (
+                <div className="estado-vacio">
+                    <span className="material-symbols-outlined">meeting_room</span>
+                    <p className="mb-0">{esAdmin ? 'No hay ambientes registrados.' : 'No tienes salones asignados.'}</p>
+                </div>
+            )}
         </div>
     );
 };

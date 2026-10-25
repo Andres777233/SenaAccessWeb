@@ -4,7 +4,6 @@ import axios from 'axios';
 import Footer from './Footer';
 import Navbar from './Navbar';
 import StatsDashboard from './StatsDashboard';
-import Presentes from './Presentes';
 import Excusas from './Excusas';
 import QrInvitado from './QrInvitado';
 import UserQrCarnet from './UserQrCarnet';
@@ -21,7 +20,7 @@ import downloadComprobante from '../utils/comprobante';
 import { mensajeDeError } from '../utils/mensajes';
 
 // Panel de Portería: operación diaria sin gestión de usuarios ni ambientes.
-// Historial y presentes del centro, validar PIN de excusas, inventario de
+// Historial del centro, validar PIN de excusas, inventario de
 // equipos (registrar/devolver/eliminar) y escáner QR de invitados.
 const Portero = () => {
     const navigate = useNavigate();
@@ -423,8 +422,6 @@ const Portero = () => {
                         </div>
                     </div>
                 );
-            case 'presentes':
-                return <Presentes />;
             case 'excusas':
                 return <Excusas currentUser={currentUser} rol="admin" />;
             case 'equipo_entry':

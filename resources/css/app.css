@@ -2990,7 +2990,7 @@ body.light-mode .codigo-acceso {
         transition-duration: 0ms !important;
     }
 
-    .fade-in-up, .hover-glow, .stat-card {
+    .fade-in-up, .stat-card {
         animation: none !important;
     }
 }

@@ -36,7 +36,7 @@ Backend del proyecto SenaAccess: API REST que consume la app Android **y** panel
 | `app/Models/` | `User`, `Role`, `Ingreso`, `IngresoEquipo`, `Ambiente`, `Excusa`, `Novedad`, `Notificacion`, `TokenRecovery`, `TwoFactorChallenge`, `PinAcceso`, `PrediccionModelo`, `Festivo`, `AccesoDiario`, **`Passkey`**, **`WebauthnChallenge`** |
 | `database/migrations/` | **45** migraciones (esquema completo) |
 | `database/seeders/` | `DatabaseSeeder` (roles + 9 cuentas), `DemoDataSeeder` (datos demo, idempotente), `FestivoSeeder` (festivos, cálculo propio de Pascua) |
-| `resources/js/` | SPA: `app.jsx` (rutas y guardas) + `components/` (39 `.jsx`) + `assets/` + `utils/` (`webauthn.js`, `mensajes.js`, `comprobante.js`, `formato.js`, `useEsperarEntrada.js`, `version.js`) + `resources/css/acceso.css` |
+| `resources/js/` | SPA: `app.jsx` (rutas y guardas) + `components/` (38 `.jsx`) + `assets/` + `utils/` (`webauthn.js`, `mensajes.js`, `comprobante.js`, `formato.js`, `useEsperarEntrada.js`, `version.js`) + `resources/css/acceso.css` |
 | `resources/views/` | `welcome.blade.php` (cáscara del SPA), `emails/` (5 plantillas), `comprobantes/`, `exports/` |
 | `public/` | APKs descargables (`SenaAccessV9.1.apk` es el actual), `avatars/`, `email/` (logo del correo), `build/` (bundle de Vite), `static-html-backup/` |
 | raíz | `railway.json`, `nixpacks.toml`, `Dockerfile`, `.railwayignore`, `.dockerignore`, `iniciar-servidor.sh`, `documentacion/`, `AGENTS.md` |
@@ -91,7 +91,7 @@ SPA (`resources/js/app.jsx`): `/admin` → superadmin, `/portero` → admin, `/i
 
 ## Estado actual y pendientes
 
-- Último commit: 2026-10-25 — carnet legible, alta de aprendiz, versión única 9.1 y base de conocimiento alineada (APK actual `SenaAccessV9.1.apk`).
+- Último commit: 2026-10-25 — carnet legible, alta de aprendiz, versión única 9.1, base de conocimiento alineada y Presentes eliminado (APK actual `SenaAccessV9.1.apk`).
 - 2026-10-22 — **accesos ordenados sobre el diseño original**: se descartó el "tema nuevo" (el dueño prefirió el original). Se conservan: navbar con marca separada, menú móvil en filas izquierdas, tarjetas de acceso con pestañas Cámara/Pegar código, escáner con `html5-qrcode`, puerta sin "ya marqué" (auto-entrada por `GET /api/acceso/estado`), `POST /api/acceso/carnet` (portería valida el carnet) y portería con un solo escáner para carnet/código/invitado. Estilos nuevos solo en `resources/css/acceso.css` (clases `acc-*`).
 - Verificado en local el 2026-10-25: `GET /api/health` → `{"status":"ok"}` y `GET /SenaAccessV9.1.apk` → **200** (`application/vnd.android.package-archive`, 46.147.899 bytes, firma debug `6482c042`); la ruta vieja `/SenaAccessV9.0.apk` responde **301** a la nueva.
 - `GET /api/admin/roles` **sin token** devuelve 401 JSON; toda ruta `/api/*` inexistente devuelve 404 JSON.
@@ -244,3 +244,5 @@ Agentes en `.opencode/agent/`, skills en `.opencode/skill/*/SKILL.md` (todo vers
 - 2026-10-23 — Android: `PerfilSenior` (hero de cuenta, información y seguridad con 2FA) y `VistaEditarPerfil` (foto, secciones, botones en fila, sin duplicar ficha/programa) refinados; `assembleDebug` OK, APK 44M pendiente instalar en el moto g86 (no conectado).
 
 - 2026-10-25 — Carnet legible y alta de aprendiz: opacidades válidas (10/25) en `UserQrCarnet`/`Navbar`, rol comparado como número en `Admin.jsx`, `VERSION_APP` 9.1 único (portada/footer), APK 9.1 con redirección desde 9.0, mensajes 422 de ficha/programa en español, base de conocimiento alineada (aprendiz pendiente de aprobación; superadmin sin historial/predicción) y `QrScannerModal` + su CSS eliminados. Presentes se dejó intacta y sin enlazar por decisión del dueño.
+
+- 2026-10-25 — Presentes eliminado por decisión del dueño (revierte la entrada anterior): se borró `Presentes.jsx` y su import/`case` en `Portero.jsx`; el endpoint `GET /api/admin/presentes` se conserva por contrato y pruebas. También se quitó `hover-glow` del reset de movimiento reducido.

@@ -5,12 +5,12 @@ SenaAccess es el sistema de control de acceso del SENA (Servicio Nacional de Apr
 ## Roles
 - **Aprendiz**: consulta su historial, su estado dentro/fuera, sus equipos, sus excusas (permisos de salida), novedades y notificaciones. Marca entrada/salida escaneando el QR de portería o validando un PIN de excusa.
 - **Instructor**: además de lo anterior, administra sus ambientes (agrega o quita aprendices), crea excusas con PIN para sus aprendices, reporta novedades y consulta el historial de sus equipos.
-- **Admin**: rol operativo de portería. Valida QR de entrada/salida, valida PIN de excusas, registra y devuelve equipos, consulta historial y presentes. No gestiona usuarios ni ambientes.
-- **Superadmin**: superusuario. Gestiona usuarios (crear, editar, aprobar, rechazar, eliminar), roles, ambientes y equipos, y ve todo el historial, estadísticas y predicción de afluencia.
+- **Admin**: rol operativo de portería. Valida QR de entrada/salida, valida PIN de excusas, registra y devuelve equipos y consulta historial. No gestiona usuarios ni ambientes.
+- **Superadmin**: superusuario. Gestiona usuarios (crear, editar, aprobar, rechazar, eliminar), roles y ambientes, y ve el resumen del centro y el acceso QR.
 - **Invitado**: cuenta temporal creada con un QR de un solo uso (60 minutos). Registra su entrada al validar el QR y no navega a ningún panel.
 
 ## Flujos principales
-1. **Registro de aprendiz**: desde la pantalla de acceso, botón "Registrarse aquí". Correo permitido: `@gmail.com`, `@hotmail.com`, `@outlook.com` o `@soy.sena.edu.co`. El aprendiz queda activo; solo los instructores y administradores los crea un superadmin.
+1. **Registro de aprendiz**: desde la pantalla de acceso, botón "Registrarse aquí". Correo permitido: `@gmail.com`, `@hotmail.com`, `@outlook.com` o `@soy.sena.edu.co`. El aprendiz queda pendiente de aprobación del superadmin; los instructores y administradores los crea un superadmin.
 2. **Inicio de sesión**: correo y contraseña. Puede exigir verificación en dos pasos (código de 6 dígitos al correo o aprobación "¿Eres tú?" desde un dispositivo confiable). En Android también se puede entrar con huella digital.
 3. **Entrada y salida**: el QR de portería rota cada 30 segundos y está firmado; el servidor decide si registra Entrada o Salida. La salida también puede registrarse con el PIN de una excusa. La app Android tiene una pantalla "Salida" para escanear el QR o escribir el PIN.
 4. **Equipos**: se registran con tipo, marca, modelo, color, serial y accesorios; quedan asociados al dueño y se pueden devolver.

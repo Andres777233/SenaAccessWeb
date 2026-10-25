@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { VERSION_APP } from '../utils/version';
 
 const LandingPage = () => {
     const navigate = useNavigate();
@@ -50,7 +51,7 @@ const LandingPage = () => {
 
                 <div className="mt-5 pt-4 border-top border-success border-opacity-10" style={{ animation: 'fadeInUp 1.6s ease-out' }}>
                     <p className="small theme-text opacity-75 mb-0">Sistema de Gestión de Ambientes y Equipos</p>
-                    <p className="small text-success mt-1 opacity-75">v9.0</p>
+                    <p className="small text-success mt-1 opacity-75">v{VERSION_APP}</p>
                 </div>
             </div>
         </div>

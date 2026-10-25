@@ -97,7 +97,7 @@ const UserQrCarnet = ({ currentUser, onClose, asModal = false }) => {
                             <h6 className="mb-0 fw-bold" style={{ letterSpacing: '1px', fontSize: '0.9rem' }}>
                                 SENA <span className="text-success neon-text">ACCESS</span>
                             </h6>
-                            <span className="badge bg-success bg-opacity-15 text-success border border-success border-opacity-25" style={{ fontSize: '0.6rem' }}>
+                            <span className="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25" style={{ fontSize: '0.6rem' }}>
                                 CARNET DIGITAL OFICIAL
                             </span>
                         </div>
@@ -124,7 +124,7 @@ const UserQrCarnet = ({ currentUser, onClose, asModal = false }) => {
                     <h4 className="fw-bold mb-1" style={{ fontSize: '1.35rem' }}>
                         {currentUser?.user_name} {currentUser?.user_lastname}
                     </h4>
-                    <span className="badge bg-success bg-opacity-20 text-success border border-success border-opacity-40 px-3 py-1 mb-3" style={{ fontSize: '0.75rem', textTransform: 'uppercase' }}>
+                    <span className="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-1 mb-3" style={{ fontSize: '0.75rem', textTransform: 'uppercase' }}>
                         {currentUser?.role?.rol_name || 'Usuario'}
                     </span>
 
@@ -148,26 +148,26 @@ const UserQrCarnet = ({ currentUser, onClose, asModal = false }) => {
                     {/* Metadatos del Aprendiz / Usuario */}
                     <div className="row g-2 text-start small">
                         <div className="col-6">
-                            <div className="user-info-box p-2 rounded-3">
+                            <div className="p-2 rounded-3">
                                 <span className="opacity-50 d-block" style={{ fontSize: '0.68rem' }}>DOCUMENTO</span>
                                 <span className="fw-bold text-truncate d-block">{currentUser?.user_identification || 'No registrado'}</span>
                             </div>
                         </div>
                         <div className="col-6">
-                            <div className="user-info-box p-2 rounded-3">
+                            <div className="p-2 rounded-3">
                                 <span className="opacity-50 d-block" style={{ fontSize: '0.68rem' }}>FICHA</span>
                                 <span className="fw-bold text-truncate d-block">{currentUser?.user_coursenumber || 'N/A'}</span>
                             </div>
                         </div>
                         <div className="col-6">
-                            <div className="user-info-box p-2 rounded-3">
+                            <div className="p-2 rounded-3">
                                 <span className="opacity-50 d-block" style={{ fontSize: '0.68rem' }}>PROGRAMA</span>
                                 <span className="fw-bold text-truncate d-block">{currentUser?.user_program || 'General'}</span>
                             </div>
                         </div>
                         {/* ── ROL en el contenedor vacío ── */}
                         <div className="col-6">
-                            <div className="user-info-box p-2 rounded-3 d-flex align-items-center gap-2">
+                            <div className="p-2 rounded-3 d-flex align-items-center gap-2">
                                 <span className="material-symbols-outlined text-success" style={{ fontSize: '18px' }}>
                                     {getRolIcon(currentUser?.role?.rol_name)}
                                 </span>
@@ -183,7 +183,7 @@ const UserQrCarnet = ({ currentUser, onClose, asModal = false }) => {
                 </div>
 
                 {/* Pie del Carnet con Acciones */}
-                <div className="carnet-footer p-3 border-top border-success border-opacity-15 d-flex gap-2">
+                <div className="carnet-footer p-3 border-top border-success border-opacity-10 d-flex gap-2">
                     <button
                         type="button"
                         className="btn btn-success btn-sm flex-grow-1 py-2 d-flex align-items-center justify-content-center gap-2"

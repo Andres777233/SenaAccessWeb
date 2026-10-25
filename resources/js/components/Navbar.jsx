@@ -69,7 +69,7 @@ const Navbar = ({ currentUser, view, setView, userFilter, setUserFilter, links =
                         <img src="/Icons/logoSena.png" alt="SENA" style={{ height: '40px' }} />
                         <div>
                             <h5 className="mb-0 fw-bold" style={{ letterSpacing: '1px' }}>SENA <span className="text-success neon-text">ACCESS</span></h5>
-                            <span className="badge bg-success bg-opacity-10 text-success border border-success border-opacity-20" style={{ fontSize: '0.6rem' }}>
+                            <span className="badge bg-success bg-opacity-10 text-success border border-success border-opacity-10" style={{ fontSize: '0.6rem' }}>
                                 {currentUser?.role?.rol_name?.toUpperCase() || 'USER'} PANEL
                             </span>
                         </div>
@@ -132,7 +132,7 @@ const Navbar = ({ currentUser, view, setView, userFilter, setUserFilter, links =
                     </ul>
 
                     {/* Derecha: campana, perfil y salir */}
-                    <div className="navbar-actions d-flex align-items-center justify-content-lg-end gap-2 pt-2 pt-lg-0 border-top border-lg-0 border-success border-opacity-10">
+                    <div className="navbar-actions d-flex align-items-center justify-content-lg-end gap-2 pt-2 pt-lg-0 border-top border-success border-opacity-10">
                         <NotificacionesMenu />
 
                         <div className="vr d-none d-lg-block opacity-25" style={{ height: '30px' }}></div>

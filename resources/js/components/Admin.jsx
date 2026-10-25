@@ -364,7 +364,7 @@ const handleCancelEdit = () => {
     );
 
     // La ficha y el programa solo aplican al rol Aprendiz; admin e instructor no los tienen.
-    const esRolAprendiz = roles.find(r => r.id_rol === formData.fk_id_rol)?.rol_name === 'Aprendiz';
+    const esRolAprendiz = String(roles.find(r => String(r.id_rol) === String(formData.fk_id_rol))?.rol_name || '').toLowerCase() === 'aprendiz';
 
     const renderView = () => {
         switch (view) {

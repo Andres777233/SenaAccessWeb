@@ -1,4 +1,5 @@
 import React from 'react';
+import { VERSION_APP } from '../utils/version';
 
 const Footer = () => {
     // Obtener el año actual para mostrar en el pie de página, esto para mantenerlo actualizado automáticamente cada año sin necesidad de editar el código
@@ -11,7 +12,7 @@ const Footer = () => {
                     <div className="col-12 col-md-auto">
                         <p className="mb-0 fw-bold">
                             <span className="text-success">Sena</span>Access
-                            <span className="ms-2 badge rounded-pill bg-success opacity-75" style={{ fontSize: '0.65rem' }}>v9.0</span>
+                            <span className="ms-2 badge rounded-pill bg-success opacity-75" style={{ fontSize: '0.65rem' }}>v{VERSION_APP}</span>
                         </p>
                     </div>
                     <div className="col-12 col-md-auto d-none d-md-block">

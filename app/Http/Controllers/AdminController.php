@@ -451,6 +451,9 @@ class AdminController extends Controller
             'user_telefono' => 'nullable|string|max:20',
             'fk_id_rol' => 'required|exists:roles,id_rol',
             'image' => 'nullable|image|max:5120',
+        ], [
+            'user_coursenumber.required' => 'La ficha es obligatoria para un aprendiz.',
+            'user_program.required' => 'El programa es obligatorio para un aprendiz.',
         ]);
 
         $profile_photo_path = null; //VALIDA QUE LA IMAGEN NO SE REPITAN
@@ -587,6 +590,9 @@ class AdminController extends Controller
             'user_telefono' => 'nullable|string|max:20',
             'fk_id_rol' => 'required|exists:roles,id_rol',
             'image' => 'nullable|image|max:5120',
+        ], [
+            'user_coursenumber.required' => 'La ficha es obligatoria para un aprendiz.',
+            'user_program.required' => 'El programa es obligatorio para un aprendiz.',
         ]);
 
         // Un superadmin no puede degradarse si es el último que queda.

@@ -141,7 +141,7 @@ const CustomAlert = () => {
                     {isSuccess ? '¡Éxito!' : isError ? '¡Atención!' : '¿Confirmar Acción?'}
                 </h3>
                 
-                <p className="theme-text mb-4 opacity-90" style={{ fontSize: '0.95rem', lineHeight: '1.6', wordBreak: 'break-word' }}>
+                <p className="theme-text mb-4 opacity-75" style={{ fontSize: '0.95rem', lineHeight: '1.6', wordBreak: 'break-word' }}>
                     {state.message}
                 </p>
 

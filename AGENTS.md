@@ -91,7 +91,7 @@ SPA (`resources/js/app.jsx`): `/admin` → superadmin, `/portero` → admin, `/i
 
 ## Estado actual y pendientes
 
-- Último commit: 2026-10-25 — carnet legible, alta de aprendiz, versión única 9.1, base de conocimiento alineada y Presentes eliminado (APK actual `SenaAccessV9.1.apk`).
+- Último commit: 2026-10-25 — carnet legible, alta de aprendiz, versión única 9.1, base de conocimiento alineada, Presentes eliminado, Def1 sincronizado y QR-MOVIL al día (APK actual `SenaAccessV9.1.apk`).
 - 2026-10-22 — **accesos ordenados sobre el diseño original**: se descartó el "tema nuevo" (el dueño prefirió el original). Se conservan: navbar con marca separada, menú móvil en filas izquierdas, tarjetas de acceso con pestañas Cámara/Pegar código, escáner con `html5-qrcode`, puerta sin "ya marqué" (auto-entrada por `GET /api/acceso/estado`), `POST /api/acceso/carnet` (portería valida el carnet) y portería con un solo escáner para carnet/código/invitado. Estilos nuevos solo en `resources/css/acceso.css` (clases `acc-*`).
 - Verificado en local el 2026-10-25: `GET /api/health` → `{"status":"ok"}` y `GET /SenaAccessV9.1.apk` → **200** (`application/vnd.android.package-archive`, 46.147.899 bytes, firma debug `6482c042`); la ruta vieja `/SenaAccessV9.0.apk` responde **301** a la nueva.
 - `GET /api/admin/roles` **sin token** devuelve 401 JSON; toda ruta `/api/*` inexistente devuelve 404 JSON.
@@ -246,3 +246,5 @@ Agentes en `.opencode/agent/`, skills en `.opencode/skill/*/SKILL.md` (todo vers
 - 2026-10-25 — Carnet legible y alta de aprendiz: opacidades válidas (10/25) en `UserQrCarnet`/`Navbar`, rol comparado como número en `Admin.jsx`, `VERSION_APP` 9.1 único (portada/footer), APK 9.1 con redirección desde 9.0, mensajes 422 de ficha/programa en español, base de conocimiento alineada (aprendiz pendiente de aprobación; superadmin sin historial/predicción) y `QrScannerModal` + su CSS eliminados. Presentes se dejó intacta y sin enlazar por decisión del dueño.
 
 - 2026-10-25 — Presentes eliminado por decisión del dueño (revierte la entrada anterior): se borró `Presentes.jsx` y su import/`case` en `Portero.jsx`; el endpoint `GET /api/admin/presentes` se conserva por contrato y pruebas. También se quitó `hover-glow` del reset de movimiento reducido.
+
+- 2026-10-25 — `SenaAccessWebDef1` sincronizado con main (commit `51a6605`): árbol idéntico salvo `.opencode/`, `opencode.json`, `.opencodeignore` y `AGENTS.md`, con `.dockerignore`/`.railwayignore` sin líneas de agentes. QR-MOVIL actualizado a v9.1 (APK 9.1/code 20, md5 `56aa662d`, página 25/10/2026).

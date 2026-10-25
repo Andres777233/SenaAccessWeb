@@ -220,6 +220,15 @@ class ParidadTest extends TestCase
         $ambiente = \App\Models\Ambiente::create(['ambiente_nombre' => 'Pentest ' . uniqid()]);
         $ambiente->instructores()->sync([$instructor->id_usuario]);
 
+        // El permiso de salida exige que el aprendiz tenga una Entrada
+        // registrada (regla de negocio del controlador).
+        \App\Models\Ingreso::create([
+            'ingreso_datetime' => now('America/Bogota'),
+            'ingreso_place' => $ambiente->ambiente_nombre,
+            'ingreso_type' => 'Entrada',
+            'fk_id_user' => $aprendiz->id_usuario,
+        ]);
+
         try {
             Sanctum::actingAs($instructor);
             $creada = $this->postJson('/api/instructor/excusas', [
@@ -237,6 +246,7 @@ class ParidadTest extends TestCase
             $this->postJson('/api/excusas/validar', ['pin' => 'abcd'])
                 ->assertStatus(400)->assertJsonPath('message', 'PIN inválido.');
         } finally {
+            \App\Models\Ingreso::where('fk_id_user', $aprendiz->id_usuario)->delete();
             \App\Models\Excusa::where('fk_id_instructor', $instructor->id_usuario)->delete();
             $ambiente->instructores()->detach();
             $ambiente->delete();

@@ -4,7 +4,9 @@ import '../css/acceso.css';
 
 import React, { Suspense, lazy, useState, useEffect, Component } from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
+import axios from 'axios';
+import { BrowserRouter, Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-dom';
+import { normalizarRol, rutaPorRol, estaDentroHoy, limpiarSesionLocal } from './utils/sesion';
 
 import Login from './components/Login';
 import Verificacion2Fa from './components/Verificacion2Fa';
@@ -26,38 +28,117 @@ const Instructor = lazy(() => import('./components/Instructor'));
 const Portero = lazy(() => import('./components/Portero'));
 
 // Guard: redirige a /login si no hay token o el rol no coincide con el esperado.
+// El rol se lee en cada render (no al montar App) y se normaliza para aceptar
+// los nombres viejos de porteria.
 const ProtectedRoute = ({ expectedRole, children }) => {
     const token = localStorage.getItem('access_token');
-    const role = localStorage.getItem('user_role')?.toLowerCase();
+    const role = normalizarRol(localStorage.getItem('user_role'));
     if (!token) {
         return <Navigate to="/login" replace />;
     }
     if (expectedRole && role !== expectedRole) {
-        return <Navigate to="/" replace />;
+        const destino = rutaPorRol(role);
+        return <Navigate to={destino === '/login' ? '/' : destino} replace />;
     }
     return children;
 };
 
-// Ruta pública del reto 2FA: si ya hay sesión, redirige por rol como el login.
+// Ruta publica del reto 2FA: un reto pendiente manda sobre cualquier token
+// viejo que haya quedado en el navegador (antes una sesion de admin enviaba
+// a /admin en vez de mostrar la verificacion).
 const Verificacion2FaRoute = () => {
+    const challenge = localStorage.getItem('2fa_challenge_id');
+    if (challenge) {
+        return <Verificacion2Fa />;
+    }
     const token = localStorage.getItem('access_token');
-    const role = localStorage.getItem('user_role')?.toLowerCase();
+    const role = normalizarRol(localStorage.getItem('user_role'));
     if (token) {
-        if (role === 'superadmin') {
-            return <Navigate to="/admin" replace />;
-        }
-        if (role === 'instructor') {
-            return <Navigate to="/instructor" replace />;
-        }
-        if (role === 'aprendiz') {
-            return <Navigate to="/aprendiz" replace />;
-        }
-        if (role === 'admin' || role === 'portero') {
-            return <Navigate to="/portero" replace />;
-        }
-        return <Navigate to="/" replace />;
+        const destino = rutaPorRol(role);
+        return <Navigate to={destino === '/login' ? '/' : destino} replace />;
     }
     return <Verificacion2Fa />;
+};
+
+// La ruta de la puerta se evalúa en un componente: antes el <Navigate> se
+// creaba al montar App (sin token) y rebotaba al login justo después del login.
+const PuertaAccesoRoute = () => {
+    const token = localStorage.getItem('access_token');
+    return token ? <PuertaAcceso /> : <Navigate to="/login" replace />;
+};
+
+// Aprendiz e instructor no pueden saltarse la puerta abriendo /aprendiz o
+// /instructor directamente (o refrescando): si no están dentro, vuelven a la
+// puerta. La regla la decide el servidor con entrada_hoy + dentro.
+const RequiereEntrada = ({ children }) => {
+    const [estado, setEstado] = useState('verificando');
+
+    useEffect(() => {
+        let vigente = true;
+        axios.get('/api/acceso/estado')
+            .then(({ data }) => {
+                if (vigente) setEstado(estaDentroHoy(data) ? 'dentro' : 'fuera');
+            })
+            .catch(() => {
+                if (vigente) setEstado('fuera');
+            });
+        return () => { vigente = false; };
+    }, []);
+
+    if (estado === 'verificando') {
+        return (
+            <div className="app-cargando">
+                <div className="spinner-border text-success" role="status" />
+                <p className="mb-0">Verificando tu entrada...</p>
+            </div>
+        );
+    }
+    if (estado === 'fuera') {
+        return <Navigate to="/puerta-acceso" replace />;
+    }
+    return children;
+};
+
+// Mantiene sincronizadas las pestañas: si en otra pestaña se inicia sesión
+// con otro rol o se cierra sesión, esta no puede quedarse en el panel viejo.
+// También cubre el botón Atrás del navegador cuando restaura desde bfcache.
+const SessionSync = () => {
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        const alCambiarSesion = (evento) => {
+            if (evento.key !== null && !['access_token', 'user_role', '2fa_challenge_id'].includes(evento.key)) {
+                return;
+            }
+            const token = localStorage.getItem('access_token');
+            if (!token) {
+                navigate('/login', { replace: true });
+                return;
+            }
+            const role = normalizarRol(localStorage.getItem('user_role'));
+            const panel = window.location.pathname.split('/')[1];
+            if (panel === 'admin' && role !== 'superadmin') {
+                navigate(rutaPorRol(role), { replace: true });
+            } else if (panel === 'aprendiz' && role !== 'aprendiz') {
+                navigate(rutaPorRol(role), { replace: true });
+            } else if (panel === 'instructor' && role !== 'instructor') {
+                navigate(rutaPorRol(role), { replace: true });
+            } else if (panel === 'portero' && role !== 'admin') {
+                navigate(rutaPorRol(role), { replace: true });
+            }
+        };
+        const alVolverDelCache = (evento) => {
+            if (evento.persisted) window.location.reload();
+        };
+        window.addEventListener('storage', alCambiarSesion);
+        window.addEventListener('pageshow', alVolverDelCache);
+        return () => {
+            window.removeEventListener('storage', alCambiarSesion);
+            window.removeEventListener('pageshow', alVolverDelCache);
+        };
+    }, [navigate]);
+
+    return null;
 };
 
 // Componente principal de la aplicación
@@ -65,8 +146,7 @@ const LogoutHandler = () => {
     const location = useLocation();
     useEffect(() => {
         if (location.search === '?logout=1') {
-            localStorage.removeItem('access_token');
-            localStorage.removeItem('user_role');
+            limpiarSesionLocal();
             window.history.replaceState({}, document.title, '/');
         }
     }, [location]);
@@ -153,6 +233,7 @@ const App = () => {
     return (
         <BrowserRouter>
             <LogoutHandler />
+            <SessionSync />
             {/* Boton de modo claro/oscuro: flotante a la derecha, debajo de la
                 barra. En las pantallas de acceso lo dibuja BotonTema. */}
             <button
@@ -190,10 +271,10 @@ const App = () => {
                     <Route path="/reset-password" element={<ResetPassword />} />
                     <Route path="/loading" element={<Loading />} />
                     <Route path="/huella" element={<HuellaSimulacion />} />
-                    <Route path="/puerta-acceso" element={localStorage.getItem('access_token') ? <PuertaAcceso /> : <Navigate to="/login" replace />} />
+                    <Route path="/puerta-acceso" element={<PuertaAccesoRoute />} />
                     <Route path="/admin" element={<ProtectedRoute expectedRole="superadmin"><Admin /></ProtectedRoute>} />
-                    <Route path="/aprendiz" element={<ProtectedRoute expectedRole="aprendiz"><Aprendiz /></ProtectedRoute>} />
-                    <Route path="/instructor" element={<ProtectedRoute expectedRole="instructor"><Instructor /></ProtectedRoute>} />
+                    <Route path="/aprendiz" element={<ProtectedRoute expectedRole="aprendiz"><RequiereEntrada><Aprendiz /></RequiereEntrada></ProtectedRoute>} />
+                    <Route path="/instructor" element={<ProtectedRoute expectedRole="instructor"><RequiereEntrada><Instructor /></RequiereEntrada></ProtectedRoute>} />
                     <Route path="/portero" element={<ProtectedRoute expectedRole="admin"><Portero /></ProtectedRoute>} />
                     <Route path="*" element={<NotFound />} />
                 </Routes>

@@ -17,6 +17,7 @@ import { showAlert } from './CustomAlert';
 import downloadComprobante from '../utils/comprobante';
 import { descargarArchivo, nombreExportado } from '../utils/exportar';
 import { mensajeDeError } from '../utils/mensajes';
+import { corregirRolDePanel } from '../utils/sesion';
 
 const diaBogota = (valor) => {
     try {
@@ -58,12 +59,15 @@ const Aprendiz = () => {
                     return;
                 }
 
-                const [userMeResponse, ingresosResponse, equipmentResponse] = await Promise.all([ // Realiza múltiples solicitudes al backend para obtener la información del usuario, sus ingresos y los equipos registrados, utilizando Promise.all para optimizar la carga de datos y reducir el tiempo de espera
-                    axios.get('/api/user'),
+                // Primero se valida el rol real; después se piden los datos del
+                // panel. Así una sesión vieja de otro rol no pinta ni consulta
+                // endpoints que no le corresponden.
+                const userMeResponse = await axios.get('/api/user');
+                if (!corregirRolDePanel(userMeResponse.data, 'aprendiz', navigate)) return;
+                const [ingresosResponse, equipmentResponse] = await Promise.all([
                     axios.get('/api/my-ingresos'),
                     axios.get('/api/my-equipment')
                 ]);
-
                 setCurrentUser(userMeResponse.data);
                 setIngresos(ingresosResponse.data);
                 setEquipmentList(equipmentResponse.data);

@@ -18,6 +18,20 @@ class AccesoQrController extends Controller
 {
     private const VENTANA_SEG = 30;
 
+    // Regla de permanencia: se considera "dentro" solo si el ULTIMO
+    // movimiento es Entrada y esa Entrada es de hoy. Una Salida hoy ya no
+    // bloquea una nueva Entrada (reingreso en el mismo dia).
+    private function tieneEntradaAbiertaHoy(int $idUsuario): bool
+    {
+        $ultimo = Ingreso::where('fk_id_user', $idUsuario)
+            ->orderByDesc('id_ingreso')
+            ->first();
+        if (!$ultimo || $ultimo->ingreso_type !== 'Entrada') {
+            return false;
+        }
+        return optional($ultimo->ingreso_datetime)->toDateString() === Carbon::now('America/Bogota')->toDateString();
+    }
+
     // Construye el payload firmado para el tipo y la ventana actual.
     private function payload(string $tipo, int $ventana): string
     {
@@ -80,16 +94,10 @@ class AccesoQrController extends Controller
         $ultimoTipo = $ultimo?->ingreso_type;
 
         if ($json['acceso'] === 'entrada') {
-            // Regla de permanencia: la puerta deja entrar si el ÚLTIMO
-            // movimiento es Entrada (aunque sea de otro día); solo exige QR
-            // tras una Salida. Aquí basta con no duplicar la Entrada de hoy:
-            // si ayer quedó abierta, hoy se registra normal.
-            $hoy = Carbon::now('America/Bogota')->toDateString();
-            $entradaHoy = Ingreso::where('fk_id_user', $user->id_usuario)
-                ->where('ingreso_type', 'Entrada')
-                ->whereDate('ingreso_datetime', $hoy)
-                ->exists();
-            if ($entradaHoy) {
+            // Solo se duplica si la persona sigue dentro (ultimo movimiento
+            // Entrada de hoy). Tras una Salida debe poder reingresar; una
+            // Entrada de ayer abierta tampoco bloquea la de hoy.
+            if ($this->tieneEntradaAbiertaHoy($user->id_usuario)) {
                 return response()->json(['message' => 'Ya registraste tu entrada de hoy.', 'duplicado' => true]);
             }
             $ingreso = Ingreso::create([
@@ -178,12 +186,6 @@ class AccesoQrController extends Controller
         }
 
         $nombre = trim(($user->user_name ?? '') . ' ' . ($user->user_lastname ?? ''));
-        $hoy = Carbon::now('America/Bogota')->toDateString();
-
-        $entradaHoy = Ingreso::where('fk_id_user', $user->id_usuario)
-            ->where('ingreso_type', 'Entrada')
-            ->whereDate('ingreso_datetime', $hoy)
-            ->exists();
 
         $usuario = [
             'id_usuario' => $user->id_usuario,
@@ -193,7 +195,9 @@ class AccesoQrController extends Controller
             'foto' => $user->profile_photo_path,
         ];
 
-        if ($entradaHoy) {
+        // Solo se bloquea si sigue dentro; tras una Salida el carnet abre
+        // una nueva Entrada el mismo dia.
+        if ($this->tieneEntradaAbiertaHoy($user->id_usuario)) {
             return response()->json([
                 'message' => $nombre . ' ya tiene una entrada registrada hoy.',
                 'duplicado' => true,
@@ -263,12 +267,7 @@ class AccesoQrController extends Controller
         $user = $request->user();
 
         if ($pin->tipo === 'entrada') {
-            $hoy = Carbon::now('America/Bogota')->toDateString();
-            $entradaHoy = Ingreso::where('fk_id_user', $user->id_usuario)
-                ->where('ingreso_type', 'Entrada')
-                ->whereDate('ingreso_datetime', $hoy)
-                ->exists();
-            if ($entradaHoy) {
+            if ($this->tieneEntradaAbiertaHoy($user->id_usuario)) {
                 // No se consume el PIN: el usuario puede usarlo cuando de verdad
                 // necesite marcar (antes se perdía sin registrar nada).
                 return response()->json(['message' => 'Ya registraste tu entrada de hoy.', 'duplicado' => true]);

@@ -14,6 +14,7 @@ import PerfilSena from './PerfilSena';
 import EditarMiPerfil from './EditarMiPerfil';
 import { showAlert, showConfirm } from './CustomAlert';
 import { mensajeDeError } from '../utils/mensajes';
+import { corregirRolDePanel } from '../utils/sesion';
 
 // Usuario de la última sesión: permite pintar el panel al instante y
 // refrescarlo con /api/user en segundo plano.
@@ -158,6 +159,9 @@ const Admin = () => {
 
             try {
                 const userMe = await axios.get('/api/user');
+                // Si la sesión real no es de superadmin, se redirige a su panel
+                // (una pestaña vieja no puede quedarse en /admin con otro rol).
+                if (!corregirRolDePanel(userMe.data, 'superadmin', navigate)) return;
                 setCurrentUser(userMe.data);
                 localStorage.setItem('sena_usuario', JSON.stringify(userMe.data));
                 const datosRoles = await rolesP;

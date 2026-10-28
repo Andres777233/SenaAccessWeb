@@ -4,7 +4,7 @@ import axios from 'axios';
 import Footer from './Footer';
 import BotonTema from './BotonTema';
 import { showAlert } from './CustomAlert';
-import { decidirRutaPorRol } from '../utils/sesion';
+import { decidirRutaPorRol, limpiarSesionLocal } from '../utils/sesion';
 
 // Guarda la sesión entregada por validar-codigo o por el polling de estado.
 const guardarSesion2Fa = (data) => {
@@ -36,7 +36,9 @@ const Verificacion2Fa = () => {
     };
 
     const volverAlLogin = () => {
-        localStorage.removeItem('2fa_challenge_id');
+        // Abandonar el reto también cierra cualquier sesión vieja que hubiera
+        // quedado en el navegador: no se puede volver al panel anterior.
+        limpiarSesionLocal();
         navigate('/login');
     };
 

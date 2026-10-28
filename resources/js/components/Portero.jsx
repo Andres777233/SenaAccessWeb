@@ -18,6 +18,7 @@ import ModalExportar from './ModalExportar';
 import { showAlert, showConfirm } from './CustomAlert';
 import downloadComprobante from '../utils/comprobante';
 import { mensajeDeError } from '../utils/mensajes';
+import { corregirRolDePanel } from '../utils/sesion';
 
 // Panel de Portería: operación diaria sin gestión de usuarios ni ambientes.
 // Historial del centro, validar PIN de excusas, inventario de
@@ -61,8 +62,11 @@ const Portero = () => {
                     navigate('/login');
                     return;
                 }
-                const [userMeResponse, ingresosResponse, equipmentResponse] = await Promise.all([
-                    axios.get('/api/user'),
+                // Primero se valida el rol real; luego se piden los datos
+                // operativos, que solo acepta el rol Admin (portería).
+                const userMeResponse = await axios.get('/api/user');
+                if (!corregirRolDePanel(userMeResponse.data, 'admin', navigate)) return;
+                const [ingresosResponse, equipmentResponse] = await Promise.all([
                     axios.get('/api/admin/ingresos?per_page=15'),
                     axios.get('/api/admin/equipment')
                 ]);

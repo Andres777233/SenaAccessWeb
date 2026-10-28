@@ -5,7 +5,7 @@ import QRCode from 'qrcode';
 import Footer from './Footer';
 import BotonTema from './BotonTema';
 import { showAlert } from './CustomAlert';
-import { decidirRutaPorRol } from '../utils/sesion';
+import { decidirRutaPorRol, limpiarSesionLocal } from '../utils/sesion';
 
 const Login = () => {
     // HOOK: useNavigate maneja las redirecciones post-login hacia los paneles de control.
@@ -86,6 +86,11 @@ const Login = () => {
         if (correo) guardarCorreoUsado(correo);
 
         const ruta = await decidirRutaPorRol(datos.role, datos.access_token);
+        if (ruta === '/login') {
+            limpiarSesionLocal();
+            showAlert('Tu cuenta no tiene un rol válido. Contacta al administrador.', 'error');
+            return;
+        }
         // Navegacion SPA: sin recargar toda la pagina (el panel entra de una).
         navigate(ruta, { replace: true });
     };
@@ -94,6 +99,10 @@ const Login = () => {
         e.preventDefault();
         if (enviando) return;
         setEnviando(true);
+        // Nunca se mezcla la sesion nueva con la anterior: sin esto un token
+        // de admin podia sobrevivir al login de aprendiz/instructor y el 2FA
+        // o los guards mostraban el panel equivocado.
+        limpiarSesionLocal();
         try {
             const response = await axios.post('/api/login', {
                 user_email,

@@ -30,6 +30,7 @@ window.axios.interceptors.response.use((response) => {
         localStorage.removeItem('access_token');
         localStorage.removeItem('user_role');
         localStorage.removeItem('sena_usuario');
+        localStorage.removeItem('2fa_challenge_id');
         if (!window.location.pathname.startsWith('/login')) {
             window.location.href = '/login';
         }

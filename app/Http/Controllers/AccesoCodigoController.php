@@ -19,12 +19,17 @@ class AccesoCodigoController extends Controller
         return Carbon::now('America/Bogota')->toDateString();
     }
 
+    // "Dentro" = ultimo movimiento Entrada y de hoy. Tras una Salida se
+    // puede generar/validar un codigo nuevo para reingresar el mismo dia.
     private function tieneEntradaHoy(int $idUsuario): bool
     {
-        return Ingreso::where('fk_id_user', $idUsuario)
-            ->where('ingreso_type', 'Entrada')
-            ->whereDate('ingreso_datetime', $this->hoyBogota())
-            ->exists();
+        $ultimo = Ingreso::where('fk_id_user', $idUsuario)
+            ->orderByDesc('id_ingreso')
+            ->first();
+        if (!$ultimo || $ultimo->ingreso_type !== 'Entrada') {
+            return false;
+        }
+        return optional($ultimo->ingreso_datetime)->toDateString() === $this->hoyBogota();
     }
 
     public function generar(Request $request)

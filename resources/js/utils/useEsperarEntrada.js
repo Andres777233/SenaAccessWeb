@@ -16,7 +16,9 @@ export const useEsperarEntrada = ({ activo = true, cada = 3000, onEntrada } = {}
             const { data } = await axios.get('/api/acceso/estado');
             setEstado(data);
             setError('');
-            if (data?.entrada_hoy && !avisado.current) {
+            // Entrada de hoy Y último movimiento Entrada: tras una Salida la
+            // puerta debe seguir esperando un nuevo registro.
+            if (data?.entrada_hoy && data?.dentro && !avisado.current) {
                 avisado.current = true;
                 setDetectada(true);
                 if (callback.current) callback.current(data);

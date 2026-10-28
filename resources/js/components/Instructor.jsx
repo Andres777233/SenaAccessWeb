@@ -20,6 +20,7 @@ import { showAlert } from './CustomAlert';
 import downloadComprobante from '../utils/comprobante';
 import { descargarArchivo, nombreExportado } from '../utils/exportar';
 import { mensajeDeError } from '../utils/mensajes';
+import { corregirRolDePanel } from '../utils/sesion';
 
 const diaBogota = (valor) => {
     try {
@@ -61,9 +62,12 @@ const Instructor = () => {
                     return;
                 }
 
-                const [ingresosResponse, userMeResponse, myEquipmentResponse] = await Promise.all([
+                // Primero se valida el rol real; después se piden los datos del
+                // panel. Evita pintar este panel con una sesión vieja de otro rol.
+                const userMeResponse = await axios.get('/api/user');
+                if (!corregirRolDePanel(userMeResponse.data, 'instructor', navigate)) return;
+                const [ingresosResponse, myEquipmentResponse] = await Promise.all([
                     axios.get('/api/my-ingresos'),
-                    axios.get('/api/user'),
                     axios.get('/api/my-equipment')
                 ]);
                 setIngresos(ingresosResponse.data);

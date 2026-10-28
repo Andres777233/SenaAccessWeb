@@ -87,6 +87,61 @@ class AccesoPuertaTest extends TestCase
             ->whereDate('ingreso_datetime', $hoy)->exists());
     }
 
+    public function test_estado_distingue_dentro_de_salida(): void
+    {
+        $apr = $this->crearUsuario('Aprendiz');
+        Ingreso::create([
+            'ingreso_datetime' => Carbon::now('America/Bogota'),
+            'ingreso_place' => 'CCyS',
+            'ingreso_type' => 'Entrada',
+            'fk_id_user' => $apr->id_usuario,
+        ]);
+        Sanctum::actingAs($apr);
+
+        $this->getJson('/api/acceso/estado')
+            ->assertOk()
+            ->assertJsonPath('entrada_hoy', true)
+            ->assertJsonPath('dentro', true)
+            ->assertJsonPath('ultimo.tipo', 'Entrada');
+
+        Ingreso::create([
+            'ingreso_datetime' => Carbon::now('America/Bogota')->addMinute(),
+            'ingreso_place' => 'CCyS',
+            'ingreso_type' => 'Salida',
+            'fk_id_user' => $apr->id_usuario,
+        ]);
+
+        $this->getJson('/api/acceso/estado')
+            ->assertOk()
+            ->assertJsonPath('entrada_hoy', true)
+            ->assertJsonPath('dentro', false)
+            ->assertJsonPath('ultimo.tipo', 'Salida');
+    }
+
+    public function test_carnet_permite_reingresar_tras_salida(): void
+    {
+        $apr = $this->crearUsuario('Aprendiz');
+        $ahora = Carbon::now('America/Bogota');
+        Ingreso::create([
+            'ingreso_datetime' => $ahora,
+            'ingreso_place' => 'CCyS',
+            'ingreso_type' => 'Entrada',
+            'fk_id_user' => $apr->id_usuario,
+        ]);
+        Ingreso::create([
+            'ingreso_datetime' => $ahora->copy()->addMinute(),
+            'ingreso_place' => 'CCyS',
+            'ingreso_type' => 'Salida',
+            'fk_id_user' => $apr->id_usuario,
+        ]);
+
+        Sanctum::actingAs($this->crearUsuario('Superadmin'));
+        $this->postJson('/api/acceso/carnet', ['carnet' => $apr->user_identification])
+            ->assertStatus(201)
+            ->assertJsonPath('duplicado', false)
+            ->assertJsonPath('usuario.identificacion', $apr->user_identification);
+    }
+
     public function test_entrada_duplicada_hoy_no_crea_otra(): void
     {
         $apr = $this->crearUsuario('Aprendiz');

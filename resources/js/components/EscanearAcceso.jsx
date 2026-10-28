@@ -129,8 +129,16 @@ const EscanearAcceso = ({ contexto = 'panel', onRegistrado, accion = null }) => 
 
     const escaneando = fase === 'camara';
     const ocupado = fase === 'validando';
-    const entrada = dia?.entrada_hoy;
+    const entradaHoy = Boolean(dia?.entrada_hoy);
+    // Estar "dentro" no es solo haber entrado hoy: si ya hubo Salida, la
+    // puerta debe volver a pedir el QR. El servidor entrega ambos datos.
+    const dentro = Boolean(entradaHoy && dia?.dentro);
     const ultimo = dia?.ultimo;
+    const textoDia = dentro
+        ? `A la(s) ${horaBogota(dia?.entrada?.fecha)}${dia?.entrada?.lugar ? ` · ${dia.entrada.lugar}` : ''}`
+        : entradaHoy
+            ? `Salida a la(s) ${horaBogota(dia?.ultimo?.fecha)}${dia?.ultimo?.lugar ? ` · ${dia.ultimo.lugar}` : ''}`
+            : 'Escanea el QR de portería para abrir tu jornada.';
 
     const tarjetaScanner = (
         <div className="glass-box p-4 h-100 d-flex flex-column">
@@ -251,20 +259,16 @@ const EscanearAcceso = ({ contexto = 'panel', onRegistrado, accion = null }) => 
                                     <h4 className="fw-bold mb-0">Tu día</h4>
                                     <p className="small opacity-75 mb-0">{etiquetaDia()}</p>
                                 </div>
-                                <span className={`badge border ${entrada ? 'bg-success bg-opacity-25 text-success border-success border-opacity-50' : 'bg-secondary bg-opacity-25 text-light border-secondary border-opacity-50'}`}>
-                                    {entrada ? 'DENTRO' : 'SIN ENTRADA'}
+                                <span className={`badge border ${dentro ? 'bg-success bg-opacity-25 text-success border-success border-opacity-50' : entradaHoy ? 'bg-warning bg-opacity-25 text-warning border-warning border-opacity-50' : 'bg-secondary bg-opacity-25 text-light border-secondary border-opacity-50'}`}>
+                                    {dentro ? 'DENTRO' : entradaHoy ? 'FUERA' : 'SIN ENTRADA'}
                                 </span>
                             </div>
 
-                            <div className={`acc-dia mb-3 ${entrada ? '' : 'acc-dia--fuera'}`}>
-                                <span className="material-symbols-outlined">{entrada ? 'login' : 'schedule'}</span>
+                            <div className={`acc-dia mb-3 ${dentro ? '' : 'acc-dia--fuera'}`}>
+                                <span className="material-symbols-outlined">{dentro ? 'login' : entradaHoy ? 'logout' : 'schedule'}</span>
                                 <div>
-                                    <strong>{entrada ? 'Entrada registrada' : 'Aún sin entrada hoy'}</strong>
-                                    <span>
-                                        {entrada
-                                            ? `A la(s) ${horaBogota(dia?.entrada?.fecha)}${dia?.entrada?.lugar ? ` · ${dia.entrada.lugar}` : ''}`
-                                            : 'Escanea el QR de portería para abrir tu jornada.'}
-                                    </span>
+                                    <strong>{dentro ? 'Entrada registrada' : entradaHoy ? 'Salida registrada' : 'Aún sin entrada hoy'}</strong>
+                                    <span>{textoDia}</span>
                                 </div>
                             </div>
 

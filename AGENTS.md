@@ -65,14 +65,14 @@ SPA (`resources/js/app.jsx`): `/admin` → superadmin, `/portero` → admin, `/i
 ## Contrato con el móvil
 
 - **Base pública**: `https://senaaccessweb-production-4c6e.up.railway.app/api/`.
-- El móvil declara **73** endpoints (`datos/red/ServicioApi.kt`) frente a **80** rutas aquí: **el backend manda**. Si cambias una ruta, actualiza también el cliente Android.
+- El móvil declara **70** endpoints (`datos/red/ServicioApi.kt`) frente a **80** rutas aquí: **el backend manda**. Si cambias una ruta, actualiza también el cliente Android.
 - **Login**: `POST /api/login` → `{two_factor_required, two_factor_id}` **o** `{access_token, user, role}`. Envía `device_id` para que el 2FA solo rete fuera del dispositivo confiable.
 - **2FA**: `/2fa/activar|desactivar|estado-config|pendientes|aprobar|validar-codigo|estado/{id}` y `GET /2fa/decidir?challenge_id&dec&sig` (enlace firmado del correo, SÍ/NO).
 - **Correo**: transporte **HTTPS propio** (`BrevoTransport`), porque Railway bloquea todo SMTP saliente → `MAIL_MAILER=brevo`, remitente verificado `mandarinakachivache@gmail.com`. Plantillas en `resources/views/emails/`.
 - **Fotos de perfil**: Cloudinary (`CLOUDINARY_URL` + `CLOUDINARY_UPLOAD_PRESET` en Railway; **sin estas el upload devuelve 500**).
 - **Errores**: JSON con `message`; el móvil los muestra con `detalleHttp` (código + mensaje real). Toda ruta `/api/*` inexistente responde **404 JSON** (no el HTML del SPA) y sin token responde **401 JSON** (nunca 500).
 - **Huella digital en la web (WebAuthn)**: `POST /api/huellas/registro/opciones|registro`, `POST /api/huellas/login/opciones|login`, `GET/DELETE /api/huellas/{id}`. La clave privada vive en el autenticador del dispositivo; el servidor guarda solo la clave pública. En producción define `WEBAUTHN_RP_ID` y `WEBAUTHN_ALLOWED_ORIGINS` (por defecto usa el dominio de la petición).
-- **Estado de acceso (web)**: `GET /api/acceso/estado` → `{entrada_hoy, entrada, dentro, ultimo}`. La puerta lo consulta cada 3 s y entra sola al panel cuando portería registra la entrada (ya no existe el botón "ya marqué, entrar").
+- **Estado de acceso (web)**: `GET /api/acceso/estado` → `{entrada_hoy, entrada, dentro, ultimo}`. La puerta lo consulta cada 3 s y entra sola solo si `entrada_hoy && dentro` (Entrada de hoy sin Salida); tras una Salida se exige un nuevo QR/PIN. Una Entrada de otro día no cuenta.
 - **Carnet en portería**: `POST /api/acceso/carnet` (`{carnet}` con el JSON del QR o el documento) registra la Entrada del dueño y devuelve `{message, duplicado, usuario}`. Es la vía para que el carnet mostrado en la web sirva de verdad como entrada.
 - **Accesos (web)**: el diseño es el original (vidrio verde). `resources/css/acceso.css` solo ordena las pantallas de acceso: `.acc-card`, `.acc-grid`, `.acc-tabs`, `.acc-stage` (cámara `html5-qrcode`, funciona en Firefox), `.acc-qr/.acc-pin` (código propio) y `.acc-list`. La puerta (`/puerta-acceso`) muestra dos tarjetas (escanear / mostrar código), sin botón "ya marqué", y entra sola al detectar la Entrada.
 
@@ -91,7 +91,7 @@ SPA (`resources/js/app.jsx`): `/admin` → superadmin, `/portero` → admin, `/i
 
 ## Estado actual y pendientes
 
-- Último commit: 2026-10-25 — carnet legible, alta de aprendiz, versión única 9.1, base de conocimiento alineada, Presentes eliminado, Def1 sincronizado y QR-MOVIL al día (APK actual `SenaAccessV9.1.apk`).
+- Último commit: 2026-10-28 — correcciones de puerta/roles/2FA (producto 9.2); el APK publicado en `public/` sigue siendo `SenaAccessV9.1.apk` hasta subir el build 9.2 del móvil.
 - 2026-10-22 — **accesos ordenados sobre el diseño original**: se descartó el "tema nuevo" (el dueño prefirió el original). Se conservan: navbar con marca separada, menú móvil en filas izquierdas, tarjetas de acceso con pestañas Cámara/Pegar código, escáner con `html5-qrcode`, puerta sin "ya marqué" (auto-entrada por `GET /api/acceso/estado`), `POST /api/acceso/carnet` (portería valida el carnet) y portería con un solo escáner para carnet/código/invitado. Estilos nuevos solo en `resources/css/acceso.css` (clases `acc-*`).
 - Verificado en local el 2026-10-25: `GET /api/health` → `{"status":"ok"}` y `GET /SenaAccessV9.1.apk` → **200** (`application/vnd.android.package-archive`, 46.147.899 bytes, firma debug `6482c042`); la ruta vieja `/SenaAccessV9.0.apk` responde **301** a la nueva.
 - `GET /api/admin/roles` **sin token** devuelve 401 JSON; toda ruta `/api/*` inexistente devuelve 404 JSON.
@@ -248,3 +248,5 @@ Agentes en `.opencode/agent/`, skills en `.opencode/skill/*/SKILL.md` (todo vers
 - 2026-10-25 — Presentes eliminado por decisión del dueño (revierte la entrada anterior): se borró `Presentes.jsx` y su import/`case` en `Portero.jsx`; el endpoint `GET /api/admin/presentes` se conserva por contrato y pruebas. También se quitó `hover-glow` del reset de movimiento reducido.
 
 - 2026-10-25 — `SenaAccessWebDef1` sincronizado con main (commit `51a6605`): árbol idéntico salvo `.opencode/`, `opencode.json`, `.opencodeignore` y `AGENTS.md`, con `.dockerignore`/`.railwayignore` sin líneas de agentes. QR-MOVIL actualizado a v9.1 (APK 9.1/code 20, md5 `56aa662d`, página 25/10/2026).
+
+- 2026-10-28 — QA de puerta/roles/2FA y reingreso (producto 9.2): `/puerta-acceso` pasa a componente (fin del rebote al login), regla `entrada_hoy && dentro` en login/puerta/badge, guard de entrada en `/aprendiz` y `/instructor`, reto 2FA con prioridad sobre token viejo, limpieza de sesión al iniciar login, sincronización entre pestañas, corrección del rol del panel contra `/api/user` y normalización de roles viejos. Backend: `validar`/`carnet`/`validar-pin` y `AccesoCodigoController` ahora permiten reingresar tras una Salida (solo bloquean si el último movimiento sigue siendo Entrada de hoy). Pruebas `AccesoPuertaTest`: 7 pasan.

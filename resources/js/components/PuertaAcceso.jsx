@@ -5,6 +5,7 @@ import BotonTema from './BotonTema';
 import EscanearAcceso from './EscanearAcceso';
 import CodigoAcceso from './CodigoAcceso';
 import { useEsperarEntrada } from '../utils/useEsperarEntrada';
+import { normalizarRol, rutaPorRol } from '../utils/sesion';
 
 // Puerta de entrada: tras el login, quien no tenga Entrada de hoy debe
 // registrarla antes de entrar a su panel. No hay botón de "ya marqué":
@@ -21,15 +22,9 @@ const PuertaAcceso = () => {
         if (yaNavego.current) return;
         yaNavego.current = true;
         setEntrando(true);
-        const role = (localStorage.getItem('user_role') || '').toLowerCase();
-        const destino = (
-            role === 'superadmin' ? '/admin'
-                : role === 'instructor' ? '/instructor'
-                    : role === 'aprendiz' ? '/aprendiz'
-                        : (role === 'admin' || role === 'portero') ? '/portero'
-                            : '/loading'
-        );
-        window.setTimeout(() => navigate(destino), 900);
+        const role = normalizarRol(localStorage.getItem('user_role'));
+        const destino = rutaPorRol(role);
+        window.setTimeout(() => navigate(destino === '/login' ? '/loading' : destino), 900);
     }, [navigate]);
 
     const { error, detectada, revisar } = useEsperarEntrada({
@@ -49,8 +44,8 @@ const PuertaAcceso = () => {
         revisar();
     };
 
-    const role = (localStorage.getItem('user_role') || '').toLowerCase();
-    const esRolOperativo = role === 'superadmin' || role === 'admin' || role === 'portero';
+    const role = normalizarRol(localStorage.getItem('user_role'));
+    const esRolOperativo = role === 'superadmin' || role === 'admin';
 
     return (
         <div className="auth-page fade-in-up">

@@ -118,6 +118,25 @@ class AccesoPuertaTest extends TestCase
             ->assertJsonPath('ultimo.tipo', 'Salida');
     }
 
+    public function test_register_guest_usa_rol_invitado(): void
+    {
+        $doc = 'G' . substr(uniqid(), -8);
+        $this->postJson('/api/register-guest', [
+            'user_identification' => $doc,
+            'user_name' => 'Invitado',
+            'user_lastname' => 'Prueba',
+            'user_documento_tipo' => 'CC',
+        ])->assertCreated();
+
+        $invitado = Role::where('rol_name', 'Invitado')->value('id_rol');
+        $this->assertDatabaseHas('usuarios', [
+            'user_identification' => $doc,
+            'fk_id_rol' => $invitado,
+        ]);
+
+        DB::table('usuarios')->where('user_identification', $doc)->delete();
+    }
+
     public function test_carnet_permite_reingresar_tras_salida(): void
     {
         $apr = $this->crearUsuario('Aprendiz');

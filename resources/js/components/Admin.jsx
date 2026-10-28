@@ -26,6 +26,15 @@ const usuarioGuardado = () => {
     }
 };
 
+// Una cuenta es invitada por su rol o, en datos viejos, por el correo que
+// genera /register-guest. Sirve para no mostrarla como aprendiz ni pedirle
+// ficha/programa que nunca tuvo.
+const esCuentaInvitado = (user) => {
+    const rol = String(user?.role?.rol_name || '').trim().toLowerCase();
+    const email = String(user?.user_email || '').trim().toLowerCase();
+    return rol === 'invitado' || rol === 'visitante' || rol === 'guest' || email.startsWith('guest_');
+};
+
 const Admin = () => {
     // HOOK: useNavigate se emplea para redirigir al Login si el usuario no tiene una sesión activa o el token expira.
     const navigate = useNavigate();
@@ -544,7 +553,11 @@ const handleCancelEdit = () => {
                                 </div>
 
                                 <div className="grid-usuarios px-3 px-md-4">
-                                    {filteredUsers.length > 0 ? filteredUsers.map(user => (
+                                    {filteredUsers.length > 0 ? filteredUsers.map(user => {
+                                        const invitado = esCuentaInvitado(user);
+                                        const rolVisible = invitado ? 'Invitado' : (user.role?.rol_name || '—');
+                                        const tonoRol = invitado ? 'warning' : user.role?.rol_name === 'Admin' ? 'danger' : 'success';
+                                        return (
                                         <article key={user.id_usuario} className="user-card-new glass-box">
                                             <div className="user-card-header">
                                                 <div className="user-avatar-lg overflow-hidden">
@@ -556,8 +569,8 @@ const handleCancelEdit = () => {
                                                 </div>
                                                 <div className="user-card-identidad">
                                                     <h5 className="mb-1 text-truncate">{user.user_name} {user.user_lastname}</h5>
-                                                    <span className={`badge ${user.role?.rol_name === 'Admin' ? 'bg-danger' : 'bg-success'} bg-opacity-10 text-${user.role?.rol_name === 'Admin' ? 'danger' : 'success'} border border-${user.role?.rol_name === 'Admin' ? 'danger' : 'success'} border-opacity-25`} style={{ fontSize: '0.65rem' }}>
-                                                        {user.role?.rol_name}
+                                                    <span className={`badge bg-${tonoRol} bg-opacity-10 text-${tonoRol} border border-${tonoRol} border-opacity-25`} style={{ fontSize: '0.65rem' }}>
+                                                        {rolVisible}
                                                     </span>
                                                 </div>
                                             </div>
@@ -571,14 +584,23 @@ const handleCancelEdit = () => {
                                                     <span className="material-symbols-outlined">mail</span>
                                                     <span className="text-truncate">{user.user_email}</span>
                                                 </div>
-                                                <div className="user-info-item">
-                                                    <span className="material-symbols-outlined">groups</span>
-                                                    <span className="text-truncate">Ficha: {user.user_coursenumber || '—'}</span>
-                                                </div>
-                                                <div className="user-info-item">
-                                                    <span className="material-symbols-outlined">school</span>
-                                                    <span className="text-truncate">{user.user_program || 'Sin programa'}</span>
-                                                </div>
+                                                {invitado ? (
+                                                    <div className="user-info-item">
+                                                        <span className="material-symbols-outlined">qr_code_2</span>
+                                                        <span className="text-truncate">Invitado temporal con QR de un uso</span>
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        <div className="user-info-item">
+                                                            <span className="material-symbols-outlined">groups</span>
+                                                            <span className="text-truncate">Ficha: {user.user_coursenumber || '—'}</span>
+                                                        </div>
+                                                        <div className="user-info-item">
+                                                            <span className="material-symbols-outlined">school</span>
+                                                            <span className="text-truncate">{user.user_program || 'Sin programa'}</span>
+                                                        </div>
+                                                    </>
+                                                )}
                                                 {user.user_telefono && (
                                                     <div className="user-info-item">
                                                         <span className="material-symbols-outlined">call</span>
@@ -609,7 +631,8 @@ const handleCancelEdit = () => {
                                                 )}
                                             </div>
                                         </article>
-                                    )) : (
+                                        );
+                                    }) : (
                                         <div className="estado-vacio">
                                             <span className="material-symbols-outlined">person_off</span>
                                             <p className="mb-0">No se encontraron usuarios con esos filtros.</p>

@@ -38,9 +38,22 @@ class AdminController extends Controller
 
         if ($request->filled('rol')) {
             $rol = $request->rol;
-            $query->whereHas('role', function ($r) use ($rol) {
-                $r->where('rol_name', $rol);
-            });
+            if (strcasecmp($rol, 'Invitado') === 0) {
+                // Los invitados se reconocen por su rol o, en cuentas viejas,
+                // por el correo que genera /register-guest.
+                $query->where(function ($q) {
+                    $q->whereHas('role', fn ($r) => $r->where('rol_name', 'Invitado'))
+                        ->orWhere('user_email', 'like', 'guest_%');
+                });
+            } elseif (strcasecmp($rol, 'Aprendiz') === 0) {
+                // Un invitado nunca debe contarse como estudiante.
+                $query->whereHas('role', fn ($r) => $r->where('rol_name', 'Aprendiz'))
+                    ->where('user_email', 'not like', 'guest_%');
+            } else {
+                $query->whereHas('role', function ($r) use ($rol) {
+                    $r->where('rol_name', $rol);
+                });
+            }
         }
 
         if ($request->filled('estado')) {

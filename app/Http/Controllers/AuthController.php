@@ -57,7 +57,10 @@ class AuthController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $role = Role::where('rol_name', 'Aprendiz')->first();
+        // El invitado es temporal: rol Invitado (no Aprendiz) para que no
+        // aparezca como estudiante ni entre a los listados académicos.
+        $role = Role::where('rol_name', 'Invitado')->first()
+            ?? Role::where('rol_name', 'Aprendiz')->first();
 
         $user = User::create([
             'user_identification' => $request->user_identification,

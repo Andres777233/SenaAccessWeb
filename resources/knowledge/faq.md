@@ -12,4 +12,5 @@
 - **¿Quién puede ver todos los usuarios?** Solo el superadmin. El Admin de portería ve el historial, pero no gestiona usuarios.
 - **¿Dónde veo si estoy dentro del centro?** En el inicio de la app aparece tu estado DENTRO o FUERA.
 - **¿El asistente puede responder cosas que no son del SENA?** Sí, también responde preguntas generales. Para datos del sistema usa la información real del proyecto.
+- **¿El asistente sabe quién soy?** Sí: toma tu nombre y tu rol de la sesión iniciada. Puede darte tus propios datos, tu estado dentro/fuera, tus equipos y tus excusas. Solo el Superadmin puede consultar la información de otras personas (con documento, nombre o ficha). Nunca muestra contraseñas, tokens ni datos internos de seguridad.
 - **¿Cómo reporto un problema?** Crea una novedad desde tu panel (instructor) o escribe a soporte.

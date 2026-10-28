@@ -20,7 +20,7 @@ SenaAccess es el sistema de control de acceso del SENA (Servicio Nacional de Apr
 8. **Notificaciones**: avisos internos con campana y contador de no leídas.
 9. **Presencia**: lista de personas que están dentro del centro, con su ambiente y hora de entrada.
 10. **Carnet digital**: credencial con QR descargable.
-11. **Asistente virtual (chatbot)**: responde dudas del sistema y también preguntas generales; puede consultar estadísticas, ambientes y documentación del proyecto mediante herramientas.
+11. **Asistente virtual (chatbot)**: responde dudas del sistema y también preguntas generales. Sabe con quién habla (la sesión autenticada le indica nombre y rol) y consulta datos reales con herramientas de solo lectura: sus propios datos, su actividad, sus equipos, sus excusas y sus ambientes. Solo el Superadmin puede consultar a otras personas (por documento CC/CE/TI/PAS, nombre, correo o ficha) y el historial de accesos del centro. Nunca revela contraseñas, hashes, tokens ni cookies.
 
 ## Reglas de negocio
 - No se puede registrar una salida sin una entrada previa.

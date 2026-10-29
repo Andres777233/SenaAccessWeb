@@ -106,12 +106,14 @@ class AsistenteTest extends TestCase
         return $ultimo['parts'][0]['functionResponse']['response'];
     }
 
+    // Sin credencial valida (Bearer del movil o cookie de la web) no hay respuesta.
     public function test_sin_token_devuelve_401(): void
     {
         $this->postJson('/api/chatbot', ['message' => 'hola'])
             ->assertStatus(401);
     }
 
+    // La identidad del prompt sale de la sesion, aunque el mensaje diga otra cosa.
     public function test_el_prompt_incluye_al_usuario_real_y_su_rol(): void
     {
         $aprendiz = $this->crearUsuario('Aprendiz', [
@@ -136,6 +138,7 @@ class AsistenteTest extends TestCase
         $this->assertStringContainsString('2567899', $sistema);
     }
 
+    // El aprendiz consulta lo suyo y no viaja ningun campo sensible.
     public function test_aprendiz_recibe_sus_propios_datos_sin_secretos(): void
     {
         $aprendiz = $this->crearUsuario('Aprendiz', [
@@ -164,6 +167,7 @@ class AsistenteTest extends TestCase
         $this->assertStringNotContainsString('remember_token', $json);
     }
 
+    // Aunque el modelo llame la herramienta, el servidor la niega por rol.
     public function test_aprendiz_no_puede_consultar_a_terceros(): void
     {
         $aprendiz = $this->crearUsuario('Aprendiz');
@@ -193,6 +197,7 @@ class AsistenteTest extends TestCase
         $this->assertStringNotContainsString('9991111', $json);
     }
 
+    // El Superadmin busca por documento y recibe la ficha sin secretos.
     public function test_superadmin_consulta_por_documento_y_no_filtra_secretos(): void
     {
         $superadmin = $this->crearUsuario('Superadmin');
@@ -231,6 +236,7 @@ class AsistenteTest extends TestCase
         $this->assertStringNotContainsString($aprendiz->user_password, $json);
     }
 
+    // La ficha incluye estado DENTRO/FUERA y los ultimos movimientos.
     public function test_superadmin_detalle_usuario_con_estado_y_accesos(): void
     {
         $superadmin = $this->crearUsuario('Superadmin');
@@ -263,6 +269,7 @@ class AsistenteTest extends TestCase
         $this->assertArrayHasKey('excusas_pendientes', $datos);
     }
 
+    // La cuenta temporal creada con QR no consulta nada.
     public function test_invitado_no_tiene_acceso_al_asistente(): void
     {
         $invitado = $this->crearUsuario('Invitado');

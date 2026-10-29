@@ -54,6 +54,8 @@ class ChatbotController extends Controller
         ],
     ];
 
+    // Punto de entrada: valida el mensaje, identifica al usuario de la sesion y
+    // orquesta las rondas de Gemini con las herramientas de su rol.
     public function chat(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -331,6 +333,7 @@ EOT;
         });
     }
 
+    // Solo declara al modelo las herramientas que su rol puede ejecutar.
     private function declaracionesHerramientas(string $rol): array
     {
         $todas = [
@@ -486,6 +489,7 @@ EOT;
         return $permitidas;
     }
 
+    // Unica autoridad de permisos: lo que no esta en la lista de su rol no se ejecuta.
     private function puedeUsar(string $herramienta, string $rol): bool
     {
         $permitidas = self::PERMISOS[$rol] ?? [];
@@ -573,6 +577,7 @@ EOT;
         ];
     }
 
+    // Movimientos propios de los ultimos N dias con el estado DENTRO/FUERA.
     private function miActividad(array $args, User $user): array
     {
         $dias = (int) ($args['dias'] ?? 7);
@@ -589,6 +594,7 @@ EOT;
         ];
     }
 
+    // Consulta reutilizable de ingresos por usuario y rango de fechas.
     private function movimientosDe(int $idUsuario, string $desde, ?string $hasta, int $limite): array
     {
         $query = Ingreso::where('fk_id_user', $idUsuario)
@@ -610,6 +616,7 @@ EOT;
         })->all();
     }
 
+    // Equipos registrados a nombre del usuario autenticado, con su estado.
     private function misEquipos(User $user): array
     {
         $equipos = IngresoEquipo::where('fk_id_usuario', $user->id_usuario)
@@ -680,6 +687,7 @@ EOT;
         ];
     }
 
+    // Ambientes del usuario autenticado segun su rol.
     private function misAmbientes(User $user, string $rol): array
     {
         $ambientes = $this->ambientesSegunRol($user, $rol)->limit(25)->get();
@@ -690,6 +698,7 @@ EOT;
         ];
     }
 
+    // Acota la consulta de ambientes: instructor y aprendiz solo ven los suyos.
     private function ambientesSegunRol(User $user, string $rol)
     {
         $query = Ambiente::with('instructores:id_usuario,user_name,user_lastname')->withCount('aprendices');
@@ -707,6 +716,7 @@ EOT;
         return $query;
     }
 
+    // Da formato comun a los ambientes que se entregan al modelo.
     private function formatearAmbientes($ambientes): array
     {
         return $ambientes->map(function (Ambiente $ambiente) {
@@ -728,6 +738,7 @@ EOT;
         })->values()->all();
     }
 
+    // Cifras globales del centro: no exponen datos personales.
     private function resumenSistema(string $rol): array
     {
         if (!in_array($rol, ['superadmin', 'admin', 'instructor'], true)) {
@@ -759,6 +770,7 @@ EOT;
         ];
     }
 
+    // Ambientes filtrados por sede y acotados al rol.
     private function listarAmbientes(array $args, User $user, string $rol): array
     {
         $query = $this->ambientesSegunRol($user, $rol);
@@ -776,6 +788,7 @@ EOT;
         ];
     }
 
+    // Personas por documento, nombre, correo o ficha. Solo Superadmin.
     private function buscarUsuario(array $args): array
     {
         $texto = trim((string) ($args['texto'] ?? ''));
@@ -817,6 +830,7 @@ EOT;
         return ['total' => count($usuarios), 'usuarios' => $usuarios];
     }
 
+    // Ficha completa de una persona con su estado y movimientos. Solo Superadmin.
     private function detalleUsuario(array $args): array
     {
         $texto = trim((string) ($args['texto'] ?? ''));
@@ -911,6 +925,7 @@ EOT;
         ];
     }
 
+    // Movimientos del centro por rango de fechas y filtros. Solo Superadmin.
     private function historialAccesos(array $args): array
     {
         $hoy = Carbon::now('America/Bogota')->toDateString();
@@ -969,6 +984,7 @@ EOT;
         ];
     }
 
+    // Valida el formato YYYY-MM-DD antes de consultar por fechas.
     private function fechaValida($valor): ?string
     {
         $texto = trim((string) $valor);

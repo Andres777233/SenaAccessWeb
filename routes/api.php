@@ -74,6 +74,9 @@ Route::get('/2fa/estado/{challengeId}', [TwoFactorController::class, 'estado']);
 Route::post('/2fa/reenviar', [TwoFactorController::class, 'reenviar'])->middleware('throttle:login');
 // Botones "¿Eres tú?" del correo (tipo Google): público pero con enlace firmado.
 Route::get('/2fa/decidir', [TwoFactorController::class, 'decidir']);
+// Versión publicada de la app Android: la consultan las apps instaladas para
+// avisar (o exigir) la actualización. Público y con cache de 5 minutos.
+Route::get('/app/version', [AppVersionController::class, 'mostrar'])->middleware('throttle:60,1');
 
 // Huella digital en la web (WebAuthn / passkey):
 // - las opciones y la autenticación son PÚBLICAS (el reto es de un solo uso).
@@ -167,10 +170,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/guest/validar', [GuestController::class, 'validar'])->middleware('admin_or_portero');
     Route::post('/guest/validar-entrada', [GuestController::class, 'validarEntrada'])->middleware('admin_or_portero');
     Route::post('/guest/validar-salida', [GuestController::class, 'validarSalida'])->middleware('admin_or_portero');
-
-    // Versión publicada de la app Android: la usan las apps instaladas para
-    // avisar (o exigir) la actualización. Público y barato (cache 5 min).
-    Route::get('/app/version', [AppVersionController::class, 'mostrar'])->middleware('throttle:60,1');
 
     // Chatbot flotante (Gemini): responde 503 honesto sin GEMINI_API_KEY.
     // Limite por usuario: cada mensaje cuesta una llamada al modelo.

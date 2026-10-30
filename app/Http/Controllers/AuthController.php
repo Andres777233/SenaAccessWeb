@@ -41,8 +41,9 @@ class AuthController extends Controller
 
     /**
      * Registra el acceso de un INVITADO (sin correo ni contraseña): crea un
-     * usuario con rol Aprendiz y un token QR de un solo uso con 60 minutos de
-     * validez. El visitante presenta el QR en recepción para registrar su entrada.
+     * usuario con rol Invitado y un token QR de un solo uso. La visita tiene un
+     * plazo de 6 horas (GuestController::HORAS_VIGENCIA) para entrar y salir;
+     * al registrar la entrada se genera un segundo QR para marcar la salida.
      */
     public function registerGuest(Request $request)
     {
@@ -72,51 +73,28 @@ class AuthController extends Controller
             'email_verified_at' => Carbon::now('America/Bogota'),
             'fk_id_rol' => $role->id_rol ?? null,
             'guest_qr_token' => Str::random(64),
-            'guest_qr_expires_at' => Carbon::now()->addMinutes(60),
+            'guest_qr_expires_at' => Carbon::now()->addHours(GuestController::HORAS_VIGENCIA),
             'guest_qr_used' => false,
+            'guest_exit_used' => false,
             'estado_cuenta' => 'aprobada',
         ]);
 
         return response()->json([
-            'message' => 'Código de invitado generado por 60 minutos',
-            'user' => $user,
+            'message' => 'Código de invitado generado por ' . GuestController::HORAS_VIGENCIA . ' horas',
+            'user' => $user->makeHidden(['guest_qr_token', 'guest_exit_token']),
             'qr_token' => $user->guest_qr_token,
             'qr_expires_at' => $user->guest_qr_expires_at->toIso8601String(),
+            'horas_vigencia' => GuestController::HORAS_VIGENCIA,
         ], 201);
     }
 
     /**
-     * Valida el QR de invitado en recepción: comprueba el token, la expiración
-     * (60 min) y que no haya sido usado. Si es válido registra la Entrada en el
-     * historial de ingresos (tipo "Validación QR") y marca el QR como usado.
+     * Compatibilidad con las apps ya instaladas: el escaneo del QR de invitado
+     * vive ahora en GuestController (entrada + generación del QR de salida).
      */
     public function validateGuestQr(Request $request)
     {
-        $request->validate([
-            'qr_token' => 'required|string|max:64',
-        ]);
-
-        $user = User::where('guest_qr_token', $request->qr_token)->first();
-
-        if (!$user) {
-            return response()->json(['message' => 'Código de invitado no válido.'], 404);
-        }
-        if ($user->guest_qr_used) {
-            return response()->json(['message' => 'Este QR ya fue utilizado.'], 422);
-        }
-        if ($user->guest_qr_expires_at && $user->guest_qr_expires_at->lt(Carbon::now())) {
-            return response()->json(['message' => 'Este QR caducó.'], 422);
-        }
-
-        $user->guest_qr_used = true;
-        $user->save();
-
-        $this->registrarMovimiento($user->id_usuario, 'Validación QR');
-
-        return response()->json([
-            'message' => 'Entrada registrada para el invitado.',
-            'user' => $user,
-        ], 200);
+        return app(GuestController::class)->validarEntrada($request);
     }
 
     /**
@@ -267,7 +245,11 @@ class AuthController extends Controller
         if ($user->two_factor_enabled) {
             $deviceId = $request->input('device_id');
             $esConfiable = $deviceId && $user->trusted_device_id && hash_equals($user->trusted_device_id, $deviceId);
-            if (!$esConfiable) {
+            // Modo 'siempre': el dueño configuró pedir el código en CADA inicio
+            // de sesión. Modo 'dispositivo': solo en teléfonos/navegadores
+            // nuevos (comportamiento original).
+            $modoSiempre = ($user->two_factor_modo ?? 'dispositivo') === 'siempre';
+            if ($modoSiempre || !$esConfiable) {
                 return app(TwoFactorController::class)->iniciarReto($user, $request);
             }
         }

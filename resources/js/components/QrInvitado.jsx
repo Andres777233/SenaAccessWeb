@@ -40,6 +40,15 @@ const QrInvitado = () => {
                 foto: u.profile_photo_path,
             };
         }
+        // Salida de invitado: el backend devuelve el estado de la visita.
+        if (data?.estado?.nombre) {
+            return {
+                nombre: data.estado.nombre,
+                identificacion: '',
+                rol: 'Invitado',
+                foto: null,
+            };
+        }
         return null;
     };
 
@@ -79,7 +88,8 @@ const QrInvitado = () => {
                 }
             } else {
                 canal = 'invitado';
-                data = await pedir('/api/validate-guest-qr', { qr_token: limpio });
+                // Un solo endpoint detecta si el QR es de entrada o de salida.
+                data = await pedir('/api/guest/validar', { qr_token: limpio });
             }
 
             const persona = normalizar(data);

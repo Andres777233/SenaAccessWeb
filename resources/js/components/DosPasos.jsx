@@ -5,6 +5,10 @@ import { showAlert } from './CustomAlert';
 // Bloque "Verificación en dos pasos" reutilizado en los perfiles de Admin, Instructor y Aprendiz.
 const DosPasos = () => {
     const [activado, setActivado] = useState(null);
+    // Modo: 'siempre' (código en cada inicio) o 'dispositivo' (confiar aquí).
+    const [modo, setModo] = useState('dispositivo');
+    const [confiable, setConfiable] = useState(false);
+    const [modoElegido, setModoElegido] = useState('siempre');
     const [cargando, setCargando] = useState(true);
     const [accionClave, setAccionClave] = useState(null); // 'activar' | 'desactivar' | null
     const [password, setPassword] = useState('');
@@ -19,6 +23,8 @@ const DosPasos = () => {
             try {
                 const response = await axios.get('/api/2fa/estado-config');
                 setActivado(response.data.two_factor_enabled);
+                setModo(response.data.modo || 'dispositivo');
+                setConfiable(!!response.data.dispositivo_confiable);
             } catch (error) {
                 console.error('Error al consultar estado 2FA:', error);
             } finally {
@@ -67,8 +73,12 @@ const DosPasos = () => {
         setProcesando(true);
         try {
             const url = accionClave === 'activar' ? '/api/2fa/activar' : '/api/2fa/desactivar';
-            const response = await axios.post(url, { user_password: password });
+            const cuerpo = accionClave === 'activar'
+                ? { user_password: password, modo: modoElegido }
+                : { user_password: password };
+            const response = await axios.post(url, cuerpo);
             setActivado(accionClave === 'activar');
+            if (accionClave === 'activar') setModo(modoElegido);
             setAccionClave(null);
             setPassword('');
             setPasswordError('');
@@ -84,6 +94,34 @@ const DosPasos = () => {
             showAlert('Error: ' + (error.response?.data?.message || 'Error desconocido'), 'error');
         } finally {
             setProcesando(false);
+        }
+    };
+
+    // Cambia cómo se pide el código (cada inicio o solo dispositivos nuevos).
+    const handleCambiarModo = async (nuevo) => {
+        if (procesando || nuevo === modo) return;
+        setProcesando(true);
+        try {
+            const response = await axios.post('/api/2fa/modo', { user_password: password, modo: nuevo });
+            setModo(nuevo);
+            setPassword('');
+            setPasswordError('');
+            showAlert(response.data.message || 'Modo actualizado.');
+        } catch (error) {
+            showAlert(error.response?.data?.message || 'No se pudo cambiar el modo.', 'error');
+        } finally {
+            setProcesando(false);
+        }
+    };
+
+    // Olvida este navegador: el próximo inicio de sesión pedirá el código.
+    const handleOlvidarDispositivo = async () => {
+        try {
+            const response = await axios.delete('/api/2fa/dispositivo');
+            setConfiable(false);
+            showAlert(response.data.message || 'Dispositivo olvidado.');
+        } catch (error) {
+            showAlert(error.response?.data?.message || 'No se pudo olvidar el dispositivo.', 'error');
         }
     };
 
@@ -126,6 +164,32 @@ const DosPasos = () => {
                 <div className="text-center py-2"><div className="spinner-border spinner-border-sm text-success" role="status"></div></div>
             ) : accionClave ? (
                 <form onSubmit={handleConfirmarClave}>
+                    {accionClave === 'activar' && (
+                        <div className="mb-3">
+                            <label className="form-label opacity-75 small d-block">¿Cuándo pedir el código?</label>
+                            <div className="d-flex gap-2 flex-wrap">
+                                <button
+                                    type="button"
+                                    className={`btn btn-sm ${modoElegido === 'siempre' ? 'btn-success' : 'btn-outline-secondary'}`}
+                                    onClick={() => setModoElegido('siempre')}
+                                >
+                                    En cada inicio de sesión
+                                </button>
+                                <button
+                                    type="button"
+                                    className={`btn btn-sm ${modoElegido === 'dispositivo' ? 'btn-success' : 'btn-outline-secondary'}`}
+                                    onClick={() => setModoElegido('dispositivo')}
+                                >
+                                    Solo en dispositivos nuevos
+                                </button>
+                            </div>
+                            <div className="small opacity-50 mt-1">
+                                {modoElegido === 'siempre'
+                                    ? 'Más seguro: cada vez que entres te pedirá el código del correo.'
+                                    : 'Este navegador quedará como confiable y no pedirá código.'}
+                            </div>
+                        </div>
+                    )}
                     <label className="form-label opacity-75 small">
                         Confirma con tu contraseña actual para {accionClave === 'activar' ? 'activar' : 'desactivar'}
                     </label>
@@ -148,9 +212,54 @@ const DosPasos = () => {
                     </div>
                 </form>
             ) : activado ? (
-                <button className="btn btn-outline-danger action-btn w-100 btn-press" onClick={() => { setAccionClave('desactivar'); setPassword(''); setPasswordError(''); }}>
-                    <span className="material-symbols-outlined small">lock_open</span> Desactivar
-                </button>
+                <>
+                    <div className="mb-3">
+                        <label className="form-label opacity-50 small mb-1">CUÁNDO PIDE EL CÓDIGO</label>
+                        <div className="d-flex gap-2 flex-wrap">
+                            <button
+                                type="button"
+                                className={`btn btn-sm ${modo === 'siempre' ? 'btn-success' : 'btn-outline-secondary'}`}
+                                onClick={() => { setPassword(''); setPasswordError(''); setAccionClave(null); setTimeout(() => handleCambiarModo('siempre'), 0); }}
+                                disabled={procesando || modo === 'siempre'}
+                            >
+                                En cada inicio de sesión
+                            </button>
+                            <button
+                                type="button"
+                                className={`btn btn-sm ${modo === 'dispositivo' ? 'btn-success' : 'btn-outline-secondary'}`}
+                                onClick={() => { setPassword(''); setPasswordError(''); setAccionClave(null); setTimeout(() => handleCambiarModo('dispositivo'), 0); }}
+                                disabled={procesando || modo === 'dispositivo'}
+                            >
+                                Solo en dispositivos nuevos
+                            </button>
+                        </div>
+                    </div>
+                    {confiable && (
+                        <button className="btn btn-outline-warning action-btn w-100 btn-press mb-2" onClick={handleOlvidarDispositivo}>
+                            <span className="material-symbols-outlined small">phonelink_erase</span> Olvidar este dispositivo
+                        </button>
+                    )}
+                    <div className="d-flex gap-2 flex-wrap">
+                        <button className="btn btn-outline-danger action-btn flex-grow-1 btn-press" onClick={() => { setAccionClave('desactivar'); setPassword(''); setPasswordError(''); }}>
+                            <span className="material-symbols-outlined small">lock_open</span> Desactivar
+                        </button>
+                        <button className="btn btn-outline-secondary action-btn px-3 btn-press" onClick={() => { setPassword(''); setPasswordError(''); setAccionClave(null); document.getElementById('2fa-cambiar-modo')?.focus(); }}>
+                            <span className="material-symbols-outlined small">tune</span> Cambiar modo
+                        </button>
+                    </div>
+                    <div id="2fa-cambiar-modo" className="mt-3">
+                        <label className="form-label opacity-75 small">Confirma con tu contraseña para cambiar el modo</label>
+                        <input
+                            type="password"
+                            className={`form-control ${passwordError ? 'is-invalid' : ''}`}
+                            value={password}
+                            onChange={(e) => { setPassword(e.target.value); setPasswordError(''); }}
+                            placeholder="Contraseña actual"
+                            autoComplete="current-password"
+                        />
+                        {passwordError && <div className="text-danger small mt-1">{passwordError}</div>}
+                    </div>
+                </>
             ) : (
                 <button className="btn btn-success action-btn w-100 btn-press" onClick={handleActivar}>
                     <span className="material-symbols-outlined small">lock</span> Activar

@@ -40,25 +40,71 @@ const Login = () => {
     });
     const [guestErrors, setGuestErrors] = useState({}); // Errores de validación por campo (invitado)
     const [qrInvitado, setQrInvitado] = useState(null); // { token, expiresAt, dataUrl } tras registro exitoso
-    const [qrRestante, setQrRestante] = useState(''); // Cuenta regresiva mm:ss hasta qr_expires_at
+    // Estado de la visita (lo dice el servidor): pendiente | dentro | salida | expirado.
+    const [visita, setVisita] = useState(null);
+    const [qrSalida, setQrSalida] = useState(null); // { token, expiresAt, dataUrl } tras registrar la entrada
+    const [restante, setRestante] = useState(''); // cuenta regresiva del QR que se está mostrando
 
-    // Cuenta regresiva del QR de invitado (60 min desde su generación).
+    // Consulta el estado de la visita cada 5 s: cuando portería registra la
+    // entrada, esta pantalla cambia sola al QR de salida.
     useEffect(() => {
-        if (!qrInvitado) return;
+        const token = qrInvitado?.token;
+        if (!token) return;
+        let vivo = true;
+        const consultar = async () => {
+            try {
+                const { data } = await axios.get(`/api/guest/estado/${token}`);
+                if (vivo) setVisita(data);
+            } catch (_) {
+                /* sin conexión: se mantiene el estado anterior */
+            }
+        };
+        consultar();
+        const id = setInterval(consultar, 5000);
+        return () => { vivo = false; clearInterval(id); };
+    }, [qrInvitado?.token]);
+
+    // Genera la imagen del QR de salida cuando la visita queda "dentro".
+    useEffect(() => {
+        let vivo = true;
+        const tokenSalida = visita?.qr_salida;
+        if (!tokenSalida) {
+            setQrSalida(null);
+            return;
+        }
+        QRCode.toDataURL(tokenSalida)
+            .then((dataUrl) => {
+                if (vivo) {
+                    setQrSalida({ token: tokenSalida, dataUrl, expiresAt: visita?.qr_salida_expires_at });
+                }
+            })
+            .catch(() => {});
+        return () => { vivo = false; };
+    }, [visita?.qr_salida]);
+
+    // Cuenta regresiva del QR visible: entrada pendiente o salida (6 h de visita).
+    const venceEn = visita?.estado === 'dentro'
+        ? (visita?.qr_salida_expires_at || qrInvitado?.expiresAt)
+        : qrInvitado?.expiresAt;
+    useEffect(() => {
+        if (!venceEn) return;
         const tick = () => {
-            const ms = new Date(qrInvitado.expiresAt).getTime() - Date.now();
+            const ms = new Date(venceEn).getTime() - Date.now();
             if (ms <= 0) {
-                setQrRestante('00:00');
+                setRestante('00:00');
                 return;
             }
-            const m = Math.floor(ms / 60000);
+            const h = Math.floor(ms / 3600000);
+            const m = Math.floor((ms % 3600000) / 60000);
             const s = Math.floor((ms % 60000) / 1000);
-            setQrRestante(`${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`);
+            setRestante(h > 0
+                ? `${h}h ${String(m).padStart(2, '0')}m`
+                : `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`);
         };
         tick();
         const timer = setInterval(tick, 1000);
         return () => clearInterval(timer);
-    }, [qrInvitado]);
+    }, [venceEn]);
 
     // Funcion para manejar el envio del formulario de login
     // device_id: UUID persistente de este navegador; el backend solo pide 2FA en dispositivos nuevos.
@@ -116,6 +162,8 @@ const Login = () => {
                 // mientras el panel valida la sesión.
                 borrarUsuario();
                 guardarReto2Fa(response.data.two_factor_id);
+                // Pista del correo ("j***@sena.edu.co") para la pantalla del código.
+                sessionStorage.setItem('2fa_hint', response.data.email_hint || '');
                 showAlert(response.data.message || 'Verificación en dos pasos requerida.');
                 navigate('/verificacion-2fa');
                 return;
@@ -146,6 +194,8 @@ const Login = () => {
         try {
             const response = await axios.post('/api/register-guest', guestData);
             const dataUrl = await QRCode.toDataURL(response.data.qr_token);
+            setVisita(null);
+            setQrSalida(null);
             setQrInvitado({
                 token: response.data.qr_token,
                 expiresAt: response.data.qr_expires_at,
@@ -164,10 +214,11 @@ const Login = () => {
         }
     };
 
-    // Copia el token del QR al portapapeles.
+    // Copia el token del QR visible al portapapeles.
     const copiarToken = async () => {
+        const token = (visita?.estado === 'dentro' ? qrSalida?.token : qrInvitado?.token) || '';
         try {
-            await navigator.clipboard.writeText(qrInvitado.token);
+            await navigator.clipboard.writeText(token);
             showAlert('Código copiado al portapapeles.');
         } catch (err) {
             showAlert('No se pudo copiar el código.', 'error');
@@ -177,6 +228,9 @@ const Login = () => {
     // Limpia el QR mostrado y deja el formulario listo para otro invitado.
     const registrarOtroInvitado = () => {
         setQrInvitado(null);
+        setQrSalida(null);
+        setVisita(null);
+        setRestante('');
         setGuestErrors({});
         setGuestData({ user_name: '', user_lastname: '', user_identification: '', user_documento_tipo: 'CC' });
     };
@@ -185,31 +239,70 @@ const Login = () => {
         guestErrors[name] ? <div className="text-danger small mt-1"><span className="material-symbols-outlined small me-1">error</span>{guestErrors[name][0]}</div> : null;
 
     if (isGuestMode) {
-        // Tras el registro exitoso: QR + vigencia + token copiable (un solo uso, 60 min).
+        // Pantalla del invitado: SOLO el QR. Primero el de entrada; cuando
+        // portería lo escanea, esta pantalla cambia sola al QR de salida.
         if (qrInvitado) {
+            const estadoVisita = visita?.estado || 'pendiente';
+            const enSalida = estadoVisita === 'dentro';
+            const terminada = estadoVisita === 'salida' || estadoVisita === 'expirado';
+            const qrVisible = enSalida ? qrSalida : qrInvitado;
+
             return (
                 <div className="auth-page fade-in-up">
                     <main className="auth-main">
                     <div className="glass-box auth-card text-center" style={{ maxWidth: '440px' }}>
                 <BotonTema />
-                        <h2 className="fw-bold mb-0">Tu código de ingreso</h2>
-                        <h5 className="fw-light text-success">Preséntalo en portería</h5>
+                        <h2 className="fw-bold mb-0">
+                            {terminada ? 'Visita finalizada' : enSalida ? 'Tu código de salida' : 'Tu código de ingreso'}
+                        </h2>
+                        <h5 className="fw-light text-success">
+                            {terminada ? 'Gracias por visitarnos'
+                                : enSalida ? 'Muéstralo en portería al salir'
+                                    : 'Preséntalo en portería'}
+                        </h5>
                         <hr className="border-success opacity-25" />
-                        <img src={qrInvitado.dataUrl} alt="QR de invitado" className="img-fluid my-3" style={{ maxWidth: '240px' }} />
-                        <div className="fw-bold fs-4">Vence en {qrRestante}</div>
-                        <p className="small opacity-75 mb-2">Un solo uso · válido por 60 minutos</p>
-                        <code className="d-block text-break small p-2 bg-dark bg-opacity-25 rounded mb-3">{qrInvitado.token}</code>
+
+                        {terminada ? (
+                            <div className="my-4">
+                                <span className="material-symbols-outlined text-success" style={{ fontSize: '72px' }}>
+                                    {estadoVisita === 'salida' ? 'task_alt' : 'timer_off'}
+                                </span>
+                                <p className="small opacity-75 mb-0">
+                                    {estadoVisita === 'salida'
+                                        ? 'Tu salida quedó registrada en portería.'
+                                        : 'La visita superó el plazo de 6 horas y se cerró automáticamente.'}
+                                </p>
+                            </div>
+                        ) : (
+                            <>
+                                {qrVisible?.dataUrl ? (
+                                    <img src={qrVisible.dataUrl} alt="QR de la visita" className="img-fluid my-3" style={{ maxWidth: '240px' }} />
+                                ) : (
+                                    <div className="my-4"><span className="spinner-border text-success" role="status" /></div>
+                                )}
+                                <div className="fw-bold fs-4">{restante ? `Vence en ${restante}` : 'Generando…'}</div>
+                                <p className="small opacity-75 mb-2">
+                                    {enSalida
+                                        ? 'Código de salida · un solo uso · se vence al cumplir la visita'
+                                        : 'Código de entrada · un solo uso · la visita dura 6 horas'}
+                                </p>
+                                <code className="d-block text-break small p-2 bg-dark bg-opacity-25 rounded mb-3">{qrVisible?.token || ''}</code>
+                            </>
+                        )}
+
                         <div className="d-grid gap-3">
-                            <button className="btn btn-glow w-100 fw-bold" type="button" onClick={copiarToken}>
-                                COPIAR CÓDIGO
-                            </button>
+                            {!terminada && (
+                                <button className="btn btn-glow w-100 fw-bold" type="button" onClick={copiarToken}>
+                                    COPIAR CÓDIGO
+                                </button>
+                            )}
                             <button className="btn btn-glow w-100" type="button" onClick={registrarOtroInvitado}>
                                 REGISTRAR OTRO
                             </button>
                             <button
                                 type="button"
                                 className="btn btn-glow w-100"
-                                onClick={() => { setIsGuestMode(false); setQrInvitado(null); }}
+                                onClick={() => { setIsGuestMode(false); registrarOtroInvitado(); }}
                             >
                                 VOLVER AL LOGIN
                             </button>
@@ -230,7 +323,7 @@ const Login = () => {
                         <h2 className="fw-bold mb-0">Invitado</h2>
                         <h5 className="fw-light text-success">Ingreso Rapido</h5>
                         <hr className="border-success opacity-25" />
-                        <p className="mt-3 small opacity-75">Ingrese sus datos básicos para registrar su entrada</p>
+                        <p className="mt-3 small opacity-75">Ingrese sus datos básicos para registrar su visita (válida 6 horas).</p>
                     </div>
 
                     <form onSubmit={handleGuestSubmit}>

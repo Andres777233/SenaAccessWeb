@@ -21,6 +21,45 @@ class TwoFactorController extends Controller
     // Vigencia del código de 6 dígitos enviado por correo (fallback).
     public const CODIGO_MINUTOS = 10;
 
+    // Segundos mínimos entre dos reenvíos del mismo reto.
+    public const REENVIO_SEGUNDOS = 60;
+
+    // Modos de verificación: 'siempre' = código en cada inicio de sesión;
+    // 'dispositivo' = solo en teléfonos/navegadores nuevos (confiables).
+    public const MODO_SIEMPRE = 'siempre';
+    public const MODO_DISPOSITIVO = 'dispositivo';
+
+    // Pista del correo sin exponerlo completo: j***@sena.edu.co
+    private function pistaCorreo(?string $email): string
+    {
+        $email = (string) $email;
+        $pos = strpos($email, '@');
+        if ($pos === false || $pos === 0) {
+            return '';
+        }
+        return substr($email, 0, 1) . '***' . substr($email, $pos);
+    }
+
+    // Envía el correo con el código y los botones firmados del reto.
+    private function enviarCodigo(User $user, TwoFactorChallenge $reto, string $codigo): void
+    {
+        try {
+            $base = rtrim(config('app.url'), '/');
+            $firma = fn (string $dec) => hash_hmac('sha256', $reto->challenge_id . '|' . $dec, config('app.key'));
+            $aprobarUrl = $base . '/api/2fa/decidir?challenge_id=' . $reto->challenge_id . '&dec=aprobar&sig=' . $firma('aprobar');
+            $denegarUrl = $base . '/api/2fa/decidir?challenge_id=' . $reto->challenge_id . '&dec=denegar&sig=' . $firma('denegar');
+            Mail::to($user->user_email)->send(new TwoFactorCodeMail(
+                $codigo,
+                $aprobarUrl,
+                $denegarUrl,
+                $reto->challenge_id,
+                trim(($user->user_name ?? '') . ' ' . ($user->user_lastname ?? ''))
+            ));
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error("Error enviando codigo 2FA a {$user->user_email}: " . $e->getMessage());
+        }
+    }
+
     /**
      * Crea un reto de segundo factor cuando el usuario tiene 2FA activado.
      * Es llamado desde AuthController@login: NO se emite token hasta que el
@@ -42,23 +81,11 @@ class TwoFactorController extends Controller
             'device_id' => $request->input('device_id'),
         ]);
 
-        // Fallback: código de 6 dígitos al correo + botones "¿Eres tú?" tipo Google.
+        // Código de 6 dígitos al correo + botones "¿Eres tú?" tipo Google.
         // El envío no puede colgar el login.
-        try {
-            $base = rtrim(config('app.url'), '/');
-            $firma = fn (string $dec) => hash_hmac('sha256', $reto->challenge_id . '|' . $dec, config('app.key'));
-            $aprobarUrl = $base . '/api/2fa/decidir?challenge_id=' . $reto->challenge_id . '&dec=aprobar&sig=' . $firma('aprobar');
-            $denegarUrl = $base . '/api/2fa/decidir?challenge_id=' . $reto->challenge_id . '&dec=denegar&sig=' . $firma('denegar');
-            Mail::to($user->user_email)->send(new TwoFactorCodeMail(
-                $codigo,
-                $aprobarUrl,
-                $denegarUrl,
-                $reto->challenge_id,
-                trim(($user->user_name ?? '') . ' ' . ($user->user_lastname ?? ''))
-            ));
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error("Error enviando codigo 2FA a {$user->user_email}: " . $e->getMessage());
-        }
+        $this->enviarCodigo($user, $reto, $codigo);
+        // Marca de tiempo del envío: controla la ventana de reenvío.
+        Cache::put('2fa_reenvio:' . $reto->challenge_id, Carbon::now()->timestamp, now()->addMinutes(self::RETO_MINUTOS));
 
         // Aviso in-app: el otro dispositivo (con sesión) lo ve y puede aprobar/denegar.
         try {
@@ -78,6 +105,10 @@ class TwoFactorController extends Controller
             'two_factor_id' => $reto->challenge_id,
             'two_factor_method' => 'in_app_or_email',
             'code_sent' => $reto->code_hash !== null,
+            // Ayudas para la pantalla de verificación (web y móvil).
+            'email_hint' => $this->pistaCorreo($user->user_email),
+            'code_expires_at' => $reto->code_expires_at?->toIso8601String(),
+            'segundos_para_reenvio' => self::REENVIO_SEGUNDOS,
         ], 200);
     }
 
@@ -86,8 +117,12 @@ class TwoFactorController extends Controller
      */
     public function estadoConfig(Request $request)
     {
+        $user = $request->user();
+
         return response()->json([
-            'two_factor_enabled' => (bool) $request->user()->two_factor_enabled,
+            'two_factor_enabled' => (bool) $user->two_factor_enabled,
+            'modo' => $user->two_factor_modo ?: self::MODO_DISPOSITIVO,
+            'dispositivo_confiable' => (bool) $user->trusted_device_id,
         ], 200);
     }
 
@@ -98,6 +133,7 @@ class TwoFactorController extends Controller
     {
         $validated = $request->validate([
             'user_password' => 'required|string',
+            'modo' => 'nullable|in:siempre,dispositivo',
         ]);
 
         $user = $request->user();
@@ -108,9 +144,20 @@ class TwoFactorController extends Controller
             return response()->json(['message' => 'Contraseña incorrecta.'], 422);
         }
 
-        $user->forceFill(['two_factor_enabled' => true])->save();
+        // Por defecto se pide el código en CADA inicio de sesión: así la
+        // verificación se nota. 'dispositivo' mantiene el comportamiento de
+        // confiar en el teléfono/navegador ya verificado.
+        $modo = $validated['modo'] ?? self::MODO_SIEMPRE;
 
-        return response()->json(['message' => 'Verificación en dos pasos activada.', 'two_factor_enabled' => true], 200);
+        $user->forceFill(['two_factor_enabled' => true, 'two_factor_modo' => $modo])->save();
+
+        return response()->json([
+            'message' => $modo === self::MODO_SIEMPRE
+                ? 'Verificación en dos pasos activada: se pedirá el código en cada inicio de sesión.'
+                : 'Verificación en dos pasos activada: este dispositivo quedará como confiable.',
+            'two_factor_enabled' => true,
+            'modo' => $modo,
+        ], 200);
     }
 
     /**
@@ -137,6 +184,97 @@ class TwoFactorController extends Controller
             ->update(['estado' => 'rechazado', 'resolved_at' => Carbon::now()]);
 
         return response()->json(['message' => 'Verificación en dos pasos desactivada.', 'two_factor_enabled' => false], 200);
+    }
+
+    /**
+     * Reenvía el código de 6 dígitos del reto (público: lo pide la pantalla de
+     * verificación que aún no tiene sesión). Un reenvío por minuto y por reto.
+     */
+    public function reenviar(Request $request)
+    {
+        $validated = $request->validate(['challenge_id' => 'required|string']);
+
+        $reto = TwoFactorChallenge::where('challenge_id', $validated['challenge_id'])->first();
+
+        if (!$reto || $reto->estado !== 'pendiente') {
+            return response()->json(['message' => 'El intento de acceso ya fue resuelto o no existe.'], 400);
+        }
+        if ($reto->expires_at->isPast()) {
+            return response()->json(['message' => 'El intento de acceso expiró. Vuelve a iniciar sesión.'], 400);
+        }
+
+        $llave = '2fa_reenvio:' . $reto->challenge_id;
+        $ultimo = (int) Cache::get($llave, 0);
+        $espera = self::REENVIO_SEGUNDOS - (Carbon::now()->timestamp - $ultimo);
+        if ($ultimo && $espera > 0) {
+            return response()->json([
+                'message' => "Espera {$espera} segundos para pedir otro código.",
+                'segundos_para_reenvio' => $espera,
+            ], 429);
+        }
+
+        $usuario = User::find($reto->fk_id_usuario);
+        if (!$usuario) {
+            return response()->json(['message' => 'Usuario no encontrado.'], 404);
+        }
+
+        $codigo = (string) random_int(100000, 999999);
+        $reto->code_hash = Hash::make($codigo);
+        $reto->code_expires_at = Carbon::now()->addMinutes(self::CODIGO_MINUTOS);
+        $reto->save();
+
+        $this->enviarCodigo($usuario, $reto, $codigo);
+        Cache::put($llave, Carbon::now()->timestamp, now()->addMinutes(self::RETO_MINUTOS));
+        Cache::forget('2fa_intentos:' . $reto->challenge_id);
+
+        return response()->json([
+            'message' => 'Código reenviado.',
+            'email_hint' => $this->pistaCorreo($usuario->user_email),
+            'code_expires_at' => $reto->code_expires_at?->toIso8601String(),
+            'segundos_para_reenvio' => self::REENVIO_SEGUNDOS,
+        ], 200);
+    }
+
+    /**
+     * Olvida el dispositivo confiable: el próximo inicio de sesión en este
+     * teléfono/navegador volverá a pedir el código.
+     */
+    public function olvidarDispositivo(Request $request)
+    {
+        $user = $request->user();
+        $user->forceFill(['trusted_device_id' => null])->save();
+
+        return response()->json([
+            'message' => 'Dispositivo olvidado: el próximo inicio de sesión pedirá el código.',
+            'dispositivo_confiable' => false,
+        ], 200);
+    }
+
+    /**
+     * Cambia el modo de verificación (cada inicio de sesión o solo en
+     * dispositivos nuevos). Exige la contraseña actual.
+     */
+    public function cambiarModo(Request $request)
+    {
+        $validated = $request->validate([
+            'user_password' => 'required|string',
+            'modo' => 'required|in:siempre,dispositivo',
+        ]);
+
+        $user = $request->user();
+
+        if (!Hash::check($validated['user_password'], $user->user_password)) {
+            return response()->json(['message' => 'Contraseña incorrecta.'], 422);
+        }
+
+        $user->forceFill(['two_factor_modo' => $validated['modo']])->save();
+
+        return response()->json([
+            'message' => $validated['modo'] === self::MODO_SIEMPRE
+                ? 'Listo: se pedirá el código en cada inicio de sesión.'
+                : 'Listo: este dispositivo quedará como confiable.',
+            'modo' => $validated['modo'],
+        ], 200);
     }
 
     /**

@@ -15,6 +15,8 @@ use App\Http\Controllers\ChatbotController;
 use App\Http\Controllers\AccesoQrController;
 use App\Http\Controllers\AccesoCodigoController;
 use App\Http\Controllers\PrediccionController;
+use App\Http\Controllers\GuestController;
+use App\Http\Controllers\AppVersionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -40,10 +42,14 @@ Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:lo
 Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:forgot-password');
 // Throttle por código: permite probar el código sin abrir fuerza bruta.
 Route::post('/reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:reset-password');
-// Invitados (público): el visitante genera su QR de un solo uso (60 min) y
-// recepción lo valida escaneándolo, registrando su Entrada en el historial.
-Route::post('/validate-guest-qr', [AuthController::class, 'validateGuestQr'])->middleware('throttle:login');
+// Invitados: el visitante genera su QR (visita de 6 horas) y recepción lo
+// escanea para registrar la Entrada; al entrar se genera otro QR para la
+// Salida. El invitado solo ve sus QR (no tiene panel).
 Route::post('/register-guest', [AuthController::class, 'registerGuest'])->middleware('throttle:guest');
+// Público: la pantalla del invitado consulta su estado (pendiente/dentro/salida).
+Route::get('/guest/estado/{qrToken}', [GuestController::class, 'estado'])->middleware('throttle:60,1');
+// Compatibilidad con apps ya instaladas (v9.1 y anteriores): valida la entrada.
+Route::post('/validate-guest-qr', [AuthController::class, 'validateGuestQr'])->middleware('throttle:login');
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
 
 // Verificación de correo: enlace firmado temporal (GET, firmado con 'signed');
@@ -64,6 +70,8 @@ Route::post('/email/verification-notification', [AuthController::class, 'resendV
 //   tarjeta "¿Eres tú?" en un dispositivo ya confiable).
 Route::post('/2fa/validar-codigo', [TwoFactorController::class, 'validarCodigo'])->middleware('throttle:login');
 Route::get('/2fa/estado/{challengeId}', [TwoFactorController::class, 'estado']);
+// Reenvío del código de 6 dígitos (público, 1 por minuto por reto).
+Route::post('/2fa/reenviar', [TwoFactorController::class, 'reenviar'])->middleware('throttle:login');
 // Botones "¿Eres tú?" del correo (tipo Google): público pero con enlace firmado.
 Route::get('/2fa/decidir', [TwoFactorController::class, 'decidir']);
 
@@ -151,6 +159,18 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/2fa/desactivar', [TwoFactorController::class, 'desactivar']);
     Route::get('/2fa/pendientes', [TwoFactorController::class, 'pendientes']);
     Route::post('/2fa/aprobar', [TwoFactorController::class, 'aprobar']);
+    // Olvidar este dispositivo y cambiar el modo (cada inicio / confiable).
+    Route::delete('/2fa/dispositivo', [TwoFactorController::class, 'olvidarDispositivo']);
+    Route::post('/2fa/modo', [TwoFactorController::class, 'cambiarModo']);
+
+    // Escaneo de invitados en portería: un solo endpoint detecta entrada/salida.
+    Route::post('/guest/validar', [GuestController::class, 'validar'])->middleware('admin_or_portero');
+    Route::post('/guest/validar-entrada', [GuestController::class, 'validarEntrada'])->middleware('admin_or_portero');
+    Route::post('/guest/validar-salida', [GuestController::class, 'validarSalida'])->middleware('admin_or_portero');
+
+    // Versión publicada de la app Android: la usan las apps instaladas para
+    // avisar (o exigir) la actualización. Público y barato (cache 5 min).
+    Route::get('/app/version', [AppVersionController::class, 'mostrar'])->middleware('throttle:60,1');
 
     // Chatbot flotante (Gemini): responde 503 honesto sin GEMINI_API_KEY.
     // Limite por usuario: cada mensaje cuesta una llamada al modelo.

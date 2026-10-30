@@ -40,6 +40,12 @@ class User extends Authenticatable implements MustVerifyEmail
         'guest_qr_token',
         'guest_qr_expires_at',
         'guest_qr_used',
+        'guest_entrada_at',
+        'guest_salida_at',
+        'guest_exit_token',
+        'guest_exit_expires_at',
+        'guest_exit_used',
+        'two_factor_modo',
     ];
 
     /**
@@ -53,6 +59,7 @@ class User extends Authenticatable implements MustVerifyEmail
         // Datos internos de seguridad: nunca deben viajar al cliente.
         'trusted_device_id',
         'guest_qr_token',
+        'guest_exit_token',
     ];
 
     /**
@@ -66,6 +73,10 @@ class User extends Authenticatable implements MustVerifyEmail
         'two_factor_enabled' => 'boolean',
         'guest_qr_expires_at' => 'datetime',
         'guest_qr_used' => 'boolean',
+        'guest_entrada_at' => 'datetime',
+        'guest_salida_at' => 'datetime',
+        'guest_exit_expires_at' => 'datetime',
+        'guest_exit_used' => 'boolean',
     ];
 
     public function getAuthPassword()

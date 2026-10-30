@@ -24,7 +24,7 @@ const EquipmentForm = ({ onSaved, adminMode = false }) => {
         if (adminMode) {
             axios.get('/api/admin/users')
                 .then(response => {
-                    const list = (response.data || []).filter(u => ['Instructor', 'Aprendiz'].includes(u.role?.rol_name));
+                    const list = (response.data || []).filter(u => ['Instructor', 'Aprendiz', 'Funcionario'].includes(u.role?.rol_name));
                     setUsuariosList(list);
                 })
                 .catch(error => console.error('Error cargando usuarios:', error));

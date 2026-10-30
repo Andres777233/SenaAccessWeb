@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getToken, guardarSesion, cerrarSesion } from './auth';
 
 // Normaliza el rol del backend a la lista cerrada del SPA. Acepta los
 // nombres viejos (Portero/Administrador) para no romper sesiones guardadas.
@@ -8,18 +9,21 @@ export const normalizarRol = (role) => {
     if (['admin', 'administrador', 'administradora', 'portero', 'portería', 'porteria', 'celador'].includes(r)) return 'admin';
     if (r === 'instructor') return 'instructor';
     if (r === 'aprendiz') return 'aprendiz';
+    if (r === 'funcionario') return 'funcionario';
     if (['invitado', 'visitante', 'guest'].includes(r)) return 'invitado';
     return '';
 };
 
 // Ruta del panel para cada rol. El rol Admin es la porteria operativa
 // (antes se llamaba Portero); el Superadmin es el panel completo.
+// El Funcionario (personal administrativo) usa el panel del aprendiz.
 export const rutaPorRol = (role) => {
     switch (normalizarRol(role)) {
         case 'superadmin': return '/admin';
         case 'admin': return '/portero';
         case 'instructor': return '/instructor';
         case 'aprendiz': return '/aprendiz';
+        case 'funcionario': return '/funcionario';
         default: return '/login';
     }
 };
@@ -30,19 +34,17 @@ export const estaDentroHoy = (estado) => Boolean(estado && estado.entrada_hoy &&
 
 // Limpia la sesion y los retos locales. No toca correos guardados, tema,
 // device_id ni la huella: esos datos son del navegador, no de la sesion.
+// Con sesion por pestaña, esto solo afecta a la pestaña actual.
 export const limpiarSesionLocal = () => {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('user_role');
-    localStorage.removeItem('sena_usuario');
-    localStorage.removeItem('2fa_challenge_id');
+    cerrarSesion();
 };
 
-// Ruta posterior al login: los paneles operativos entran directo; aprendiz e
-// instructor pasan por la puerta si no tienen una Entrada de hoy sin Salida.
+// Ruta posterior al login: los paneles operativos entran directo; aprendiz,
+// instructor y funcionario pasan por la puerta si no están dentro del centro.
 export const decidirRutaPorRol = async (role, token) => {
     const r = normalizarRol(role);
     if (r === 'superadmin' || r === 'admin') return rutaPorRol(r);
-    if (r === 'aprendiz' || r === 'instructor') {
+    if (r === 'aprendiz' || r === 'instructor' || r === 'funcionario') {
         try {
             const { data } = await axios.get('/api/acceso/estado', {
                 headers: token ? { Authorization: `Bearer ${token}` } : undefined,
@@ -69,7 +71,8 @@ export const corregirRolDePanel = (usuario, esperado, navigate) => {
         navigate('/login', { replace: true });
         return false;
     }
-    localStorage.setItem('user_role', rolCrudo || '');
+    // El rol se corrige SOLO en esta pestaña (sesion por pestaña).
+    guardarSesion(getToken(), rolCrudo || '');
     navigate(rutaPorRol(real), { replace: true });
     return false;
 };

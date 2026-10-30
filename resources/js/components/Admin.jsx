@@ -14,13 +14,14 @@ import PerfilSena from './PerfilSena';
 import EditarMiPerfil from './EditarMiPerfil';
 import { showAlert, showConfirm } from './CustomAlert';
 import { mensajeDeError } from '../utils/mensajes';
-import { corregirRolDePanel } from '../utils/sesion';
+import { corregirRolDePanel, limpiarSesionLocal } from '../utils/sesion';
+import { getToken, getUsuario, guardarUsuario } from '../utils/auth';
 
 // Usuario de la última sesión: permite pintar el panel al instante y
 // refrescarlo con /api/user en segundo plano.
 const usuarioGuardado = () => {
     try {
-        return JSON.parse(localStorage.getItem('sena_usuario') || 'null');
+        return getUsuario();
     } catch (_) {
         return null;
     }
@@ -157,7 +158,7 @@ const Admin = () => {
     // Los datos de cada vista se piden al abrirla, así la entrada es inmediata.
     useEffect(() => {
         const fetchData = async () => {
-            const token = localStorage.getItem('access_token');
+            const token = getToken();
             if (!token) {
                 navigate('/login');
                 return;
@@ -172,15 +173,13 @@ const Admin = () => {
                 // (una pestaña vieja no puede quedarse en /admin con otro rol).
                 if (!corregirRolDePanel(userMe.data, 'superadmin', navigate)) return;
                 setCurrentUser(userMe.data);
-                localStorage.setItem('sena_usuario', JSON.stringify(userMe.data));
+                guardarUsuario(userMe.data);
                 const datosRoles = await rolesP;
                 if (datosRoles) setRoles(datosRoles);
             } catch (error) {
                 console.error('Error cargando datos: ', error);
                 if (error.response && error.response.status === 401) {
-                    localStorage.removeItem('access_token');
-                    localStorage.removeItem('user_role');
-                    localStorage.removeItem('sena_usuario');
+                    limpiarSesionLocal();
                     navigate('/login');
                 } else {
                     // La API ya explica el problema (por ejemplo, limite de
@@ -534,6 +533,7 @@ const handleCancelEdit = () => {
                                             { key: 'pendientes', label: 'Pendientes' },
                                             { key: 'Instructor', label: 'Instructores' },
                                             { key: 'Aprendiz', label: 'Aprendices' },
+                                            { key: 'Funcionario', label: 'Funcionarios' },
                                             { key: 'Admin', label: 'Admins' },
                                             { key: 'Invitado', label: 'Invitados' }
                                         ].map(f => (
@@ -556,7 +556,8 @@ const handleCancelEdit = () => {
                                     {filteredUsers.length > 0 ? filteredUsers.map(user => {
                                         const invitado = esCuentaInvitado(user);
                                         const rolVisible = invitado ? 'Invitado' : (user.role?.rol_name || '—');
-                                        const tonoRol = invitado ? 'warning' : user.role?.rol_name === 'Admin' ? 'danger' : 'success';
+                                        const esFuncionario = String(user.role?.rol_name || '').toLowerCase() === 'funcionario';
+                                        const tonoRol = invitado ? 'warning' : user.role?.rol_name === 'Admin' ? 'danger' : (esFuncionario ? 'primary' : 'success');
                                         return (
                                         <article key={user.id_usuario} className="user-card-new glass-box">
                                             <div className="user-card-header">
@@ -591,14 +592,23 @@ const handleCancelEdit = () => {
                                                     </div>
                                                 ) : (
                                                     <>
-                                                        <div className="user-info-item">
-                                                            <span className="material-symbols-outlined">groups</span>
-                                                            <span className="text-truncate">Ficha: {user.user_coursenumber || '—'}</span>
-                                                        </div>
-                                                        <div className="user-info-item">
-                                                            <span className="material-symbols-outlined">school</span>
-                                                            <span className="text-truncate">{user.user_program || 'Sin programa'}</span>
-                                                        </div>
+                                                        {esFuncionario ? (
+                                                            <div className="user-info-item">
+                                                                <span className="material-symbols-outlined">badge</span>
+                                                                <span className="text-truncate">Área: {user.user_program || '—'}</span>
+                                                            </div>
+                                                        ) : (
+                                                            <>
+                                                                <div className="user-info-item">
+                                                                    <span className="material-symbols-outlined">groups</span>
+                                                                    <span className="text-truncate">Ficha: {user.user_coursenumber || '—'}</span>
+                                                                </div>
+                                                                <div className="user-info-item">
+                                                                    <span className="material-symbols-outlined">school</span>
+                                                                    <span className="text-truncate">{user.user_program || 'Sin programa'}</span>
+                                                                </div>
+                                                            </>
+                                                        )}
                                                     </>
                                                 )}
                                                 {user.user_telefono && (

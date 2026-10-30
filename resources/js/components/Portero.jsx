@@ -18,7 +18,8 @@ import ModalExportar from './ModalExportar';
 import { showAlert, showConfirm } from './CustomAlert';
 import downloadComprobante from '../utils/comprobante';
 import { mensajeDeError } from '../utils/mensajes';
-import { corregirRolDePanel } from '../utils/sesion';
+import { corregirRolDePanel, limpiarSesionLocal } from '../utils/sesion';
+import { getToken } from '../utils/auth';
 
 // Panel de Portería: operación diaria sin gestión de usuarios ni ambientes.
 // Historial del centro, validar PIN de excusas, inventario de
@@ -57,7 +58,7 @@ const Portero = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const token = localStorage.getItem('access_token');
+                const token = getToken();
                 if (!token) {
                     navigate('/login');
                     return;
@@ -81,8 +82,7 @@ const Portero = () => {
             } catch (error) {
                 console.error('Error cargando datos: ', error);
                 if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-                    localStorage.removeItem('access_token');
-                    localStorage.removeItem('user_role');
+                    limpiarSesionLocal();
                     navigate('/login');
                 } else {
                     showAlert(mensajeDeError(error, 'No se pudieron cargar los datos del panel.'), 'error');

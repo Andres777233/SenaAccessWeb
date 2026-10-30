@@ -145,24 +145,36 @@ class AuthController extends Controller
         ]);
 
         //VALIDADOR: DATOS NECESARIOS PARA EL REGISTRO
+        // El registro publico permite dos vinculaciones: Aprendiz (por defecto)
+        // y Funcionario (personal administrativo, sin ficha de formacion y con
+        // correo institucional @sena.edu.co permitido).
+        $request->merge(['role' => strtolower(trim((string) $request->input('role', 'aprendiz')))]);
+        $esFuncionario = $request->input('role') === 'funcionario';
+
         // El correo solo se acepta si termina en @gmail.com, @hotmail.com,
         // @outlook.com o @soy.sena.edu.co (evita correos falsos de otros dominios).
         $validator = Validator::make($request->all(), [
+            'role' => 'nullable|in:aprendiz,funcionario',
             'user_identification' => 'required|string|max:20|unique:usuarios',
             'user_name' => 'required|string|max:50',
             'user_lastname' => 'required|string|max:50',
             'user_email' => [
                 'required', 'string', 'email', 'max:100', 'unique:usuarios',
-                function ($attribute, $value, $fail) {
+                function ($attribute, $value, $fail) use ($esFuncionario) {
                     $dominios = ['@gmail.com', '@hotmail.com', '@outlook.com', '@soy.sena.edu.co'];
+                    if ($esFuncionario) {
+                        $dominios[] = '@sena.edu.co';
+                    }
                     foreach ($dominios as $d) {
                         if (str_ends_with(strtolower($value), $d)) return;
                     }
-                    $fail('El correo debe ser @gmail.com, @hotmail.com, @outlook.com o @soy.sena.edu.co.');
+                    $fail($esFuncionario
+                        ? 'El correo debe ser institucional (@sena.edu.co) o @gmail.com, @hotmail.com, @outlook.com.'
+                        : 'El correo debe ser @gmail.com, @hotmail.com, @outlook.com o @soy.sena.edu.co.');
                 },
             ],
             'user_password' => 'required|string|min:8|confirmed',
-            'user_coursenumber' => 'required|integer',
+            'user_coursenumber' => ($esFuncionario ? 'nullable' : 'required') . '|integer',
             'user_program' => 'required|string|max:100',
             'user_documento_tipo' => 'required|in:CC,CE,TI,PAS',
             'user_telefono' => 'nullable|string|max:20',
@@ -172,8 +184,9 @@ class AuthController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        // ROL PREDETERMINADO APRENDIZ 
-        $role = Role::where('rol_name', 'Aprendiz')->first();
+        // ROL SEGUN LA VINCULACION ELEGIDA (Aprendiz por defecto). firstOrCreate:
+        // si el rol Funcionario no se sembro todavia, el registro no falla.
+        $role = Role::firstOrCreate(['rol_name' => $esFuncionario ? 'Funcionario' : 'Aprendiz']);
 
         // La cuenta nace pendiente: el superadmin la aprueba desde su bandeja
         // y solo entonces el usuario puede entrar (ver mensaje abajo).
@@ -183,7 +196,7 @@ class AuthController extends Controller
             'user_lastname' => $request->user_lastname,
             'user_email' => $request->user_email,
             'user_password' => Hash::make($request->user_password),
-            'user_coursenumber' => $request->user_coursenumber,
+            'user_coursenumber' => $esFuncionario ? null : $request->user_coursenumber,
             'user_program' => $request->user_program,
             'user_documento_tipo' => $request->user_documento_tipo,
             'user_telefono' => $request->user_telefono,
@@ -198,10 +211,13 @@ class AuthController extends Controller
         // Aviso in-app a los superadmins (bandeja Pendientes) + correo de
         // "solicitud recibida" al aprendiz. Nada de esto rompe el registro.
         $nombre = trim(($user->user_name ?? '') . ' ' . ($user->user_lastname ?? ''));
+        $vinculacion = $esFuncionario
+            ? 'funcionario, area ' . $user->user_program
+            : 'ficha ' . $user->user_coursenumber;
         try {
             app(NotificacionService::class)->notificarAdmins(
                 'Nueva solicitud de cuenta',
-                "{$nombre} ({$user->user_email}, doc. {$user->user_identification}, ficha {$user->user_coursenumber}) espera tu aprobación.",
+                "{$nombre} ({$user->user_email}, doc. {$user->user_identification}, {$vinculacion}) espera tu aprobación.",
                 'cuenta_pendiente'
             );
         } catch (\Throwable $e) {

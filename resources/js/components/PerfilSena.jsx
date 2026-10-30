@@ -22,6 +22,8 @@ const PerfilSena = ({ usuario, rol, onEditar, seguridad = null }) => {
     const nombre = `${usuario?.user_name || ''} ${usuario?.user_lastname || ''}`.trim() || 'Usuario';
     const iniciales = `${usuario?.user_name?.[0] || ''}${usuario?.user_lastname?.[0] || ''}`;
     const esAprendiz = (rol || '').toLowerCase() === 'aprendiz';
+    // El funcionario no cursa ficha: su user_program es el área/dependencia.
+    const esFuncionario = (rol || '').toLowerCase() === 'funcionario';
 
     const datos = [
         { icono: 'badge', etiqueta: 'Documento', valor: usuario?.user_identification },
@@ -31,7 +33,7 @@ const PerfilSena = ({ usuario, rol, onEditar, seguridad = null }) => {
             ? [{ icono: 'groups', etiqueta: 'Ficha', valor: usuario?.user_coursenumber }]
             : []),
         ...(tieneValor(usuario?.user_program)
-            ? [{ icono: 'school', etiqueta: 'Programa', valor: usuario?.user_program }]
+            ? [{ icono: 'school', etiqueta: esFuncionario ? 'Área / Dependencia' : 'Programa', valor: usuario?.user_program }]
             : []),
         ...(tieneValor(usuario?.user_jornada)
             ? [{

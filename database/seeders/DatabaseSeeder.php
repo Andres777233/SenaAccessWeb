@@ -16,6 +16,7 @@ class DatabaseSeeder extends Seeder
         $adminRole = Role::firstOrCreate(['rol_name' => 'Superadmin']);
         $instructorRole = Role::firstOrCreate(['rol_name' => 'Instructor']);
         $aprendizRole = Role::firstOrCreate(['rol_name' => 'Aprendiz']);
+        $funcionarioRole = Role::firstOrCreate(['rol_name' => 'Funcionario']);
         Role::firstOrCreate(['rol_name' => 'Invitado']);
         Role::firstOrCreate(['rol_name' => 'Admin']);
 
@@ -122,6 +123,17 @@ class DatabaseSeeder extends Seeder
                 'user_coursenumber' => 0,
                 'user_program' => 'Formación',
                 'fk_id_rol' => $instructorRole->id_rol,
+            ],
+            // Funcionario (personal administrativo): sin ficha de formación,
+            // el área/dependencia se guarda en user_program.
+            [
+                'user_identification' => '1000000010',
+                'user_name' => 'Pedro',
+                'user_lastname' => 'Funcionario',
+                'user_email' => 'funcionario@sena.edu.co',
+                'user_coursenumber' => 0,
+                'user_program' => 'Administrativo',
+                'fk_id_rol' => $funcionarioRole->id_rol,
             ],
         ];
 

@@ -6,6 +6,7 @@ import Footer from './Footer';
 import BotonTema from './BotonTema';
 import { showAlert } from './CustomAlert';
 import { decidirRutaPorRol, limpiarSesionLocal } from '../utils/sesion';
+import { guardarSesion, guardarReto2Fa, guardarUsuario, borrarUsuario } from '../utils/auth';
 
 const Login = () => {
     // HOOK: useNavigate maneja las redirecciones post-login hacia los paneles de control.
@@ -76,12 +77,11 @@ const Login = () => {
     // lleva al panel del rol. La ruta la decide utils/sesion.js para que el
     // login normal y el 2FA se comporten igual.
     const finalizarLogin = async (datos, correo = '') => {
-        localStorage.setItem('access_token', datos.access_token);
-        localStorage.setItem('user_role', datos.role);
+        guardarSesion(datos.access_token, datos.role);
         // Guarda el usuario para que el panel pinte al instante; igual se
         // refresca con /api/user al montar.
         if (datos.user) {
-            localStorage.setItem('sena_usuario', JSON.stringify(datos.user));
+            guardarUsuario(datos.user);
         }
         if (correo) guardarCorreoUsado(correo);
 
@@ -114,8 +114,8 @@ const Login = () => {
             if (response.data.two_factor_required) {
                 // El reto no devuelve el usuario: se evita mostrar otro nombre
                 // mientras el panel valida la sesión.
-                localStorage.removeItem('sena_usuario');
-                localStorage.setItem('2fa_challenge_id', response.data.two_factor_id);
+                borrarUsuario();
+                guardarReto2Fa(response.data.two_factor_id);
                 showAlert(response.data.message || 'Verificación en dos pasos requerida.');
                 navigate('/verificacion-2fa');
                 return;

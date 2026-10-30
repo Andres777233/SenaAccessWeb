@@ -6,6 +6,7 @@ import EscanearAcceso from './EscanearAcceso';
 import CodigoAcceso from './CodigoAcceso';
 import { useEsperarEntrada } from '../utils/useEsperarEntrada';
 import { normalizarRol, rutaPorRol } from '../utils/sesion';
+import { getSesion } from '../utils/auth';
 
 // Puerta de entrada: tras el login, quien no tenga Entrada de hoy debe
 // registrarla antes de entrar a su panel. No hay botón de "ya marqué":
@@ -22,7 +23,7 @@ const PuertaAcceso = () => {
         if (yaNavego.current) return;
         yaNavego.current = true;
         setEntrando(true);
-        const role = normalizarRol(localStorage.getItem('user_role'));
+        const role = normalizarRol(getSesion()?.role);
         const destino = rutaPorRol(role);
         window.setTimeout(() => navigate(destino === '/login' ? '/loading' : destino), 900);
     }, [navigate]);
@@ -44,7 +45,7 @@ const PuertaAcceso = () => {
         revisar();
     };
 
-    const role = normalizarRol(localStorage.getItem('user_role'));
+    const role = normalizarRol(getSesion()?.role);
     const esRolOperativo = role === 'superadmin' || role === 'admin';
 
     return (

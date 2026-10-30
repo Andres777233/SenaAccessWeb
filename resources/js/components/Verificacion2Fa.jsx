@@ -5,12 +5,12 @@ import Footer from './Footer';
 import BotonTema from './BotonTema';
 import { showAlert } from './CustomAlert';
 import { decidirRutaPorRol, limpiarSesionLocal } from '../utils/sesion';
+import { guardarSesion, borrarReto2Fa, getReto2Fa } from '../utils/auth';
 
 // Guarda la sesión entregada por validar-codigo o por el polling de estado.
 const guardarSesion2Fa = (data) => {
-    localStorage.setItem('access_token', data.access_token);
-    localStorage.setItem('user_role', data.role);
-    localStorage.removeItem('2fa_challenge_id');
+    guardarSesion(data.access_token, data.role);
+    borrarReto2Fa();
 };
 
 // Redirige al panel según rol y a la puerta solo si aún no marcó la Entrada
@@ -22,7 +22,7 @@ const redirigirPorRol = async (role, token, navigate) => {
 
 const Verificacion2Fa = () => {
     const navigate = useNavigate();
-    const [challengeId] = useState(() => localStorage.getItem('2fa_challenge_id') || '');
+    const [challengeId] = useState(() => getReto2Fa());
     const [code, setCode] = useState('');
     const [codeErrors, setCodeErrors] = useState('');
     const [generalError, setGeneralError] = useState('');

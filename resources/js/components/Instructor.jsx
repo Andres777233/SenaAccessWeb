@@ -20,7 +20,8 @@ import { showAlert } from './CustomAlert';
 import downloadComprobante from '../utils/comprobante';
 import { descargarArchivo, nombreExportado } from '../utils/exportar';
 import { mensajeDeError } from '../utils/mensajes';
-import { corregirRolDePanel } from '../utils/sesion';
+import { corregirRolDePanel, limpiarSesionLocal } from '../utils/sesion';
+import { getToken } from '../utils/auth';
 
 const diaBogota = (valor) => {
     try {
@@ -56,7 +57,7 @@ const Instructor = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const token = localStorage.getItem('access_token');
+                const token = getToken();
                 if (!token) {
                     navigate('/login');
                     return;
@@ -76,8 +77,7 @@ const Instructor = () => {
             } catch (error) {
                 console.error('Error cargando datos: ', error);
                 if (error.response && error.response.status === 401) {
-                    localStorage.removeItem('access_token');
-                    localStorage.removeItem('user_role');
+                    limpiarSesionLocal();
                     navigate('/login');
                 } else {
                     // La API ya explica el problema (por ejemplo, limite de

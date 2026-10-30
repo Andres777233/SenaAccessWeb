@@ -5,8 +5,9 @@ import '../css/acceso.css';
 import React, { Suspense, lazy, useState, useEffect, Component } from 'react';
 import ReactDOM from 'react-dom/client';
 import axios from 'axios';
-import { BrowserRouter, Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { normalizarRol, rutaPorRol, estaDentroHoy, limpiarSesionLocal } from './utils/sesion';
+import { getToken, getSesion, getReto2Fa } from './utils/auth';
 
 import Login from './components/Login';
 import Verificacion2Fa from './components/Verificacion2Fa';
@@ -29,10 +30,10 @@ const Portero = lazy(() => import('./components/Portero'));
 
 // Guard: redirige a /login si no hay token o el rol no coincide con el esperado.
 // El rol se lee en cada render (no al montar App) y se normaliza para aceptar
-// los nombres viejos de porteria.
+// los nombres viejos de porteria. La sesion es POR PESTAÑA (utils/auth.js).
 const ProtectedRoute = ({ expectedRole, children }) => {
-    const token = localStorage.getItem('access_token');
-    const role = normalizarRol(localStorage.getItem('user_role'));
+    const token = getToken();
+    const role = normalizarRol(getSesion()?.role);
     if (!token) {
         return <Navigate to="/login" replace />;
     }
@@ -47,12 +48,12 @@ const ProtectedRoute = ({ expectedRole, children }) => {
 // viejo que haya quedado en el navegador (antes una sesion de admin enviaba
 // a /admin en vez de mostrar la verificacion).
 const Verificacion2FaRoute = () => {
-    const challenge = localStorage.getItem('2fa_challenge_id');
+    const challenge = getReto2Fa();
     if (challenge) {
         return <Verificacion2Fa />;
     }
-    const token = localStorage.getItem('access_token');
-    const role = normalizarRol(localStorage.getItem('user_role'));
+    const token = getToken();
+    const role = normalizarRol(getSesion()?.role);
     if (token) {
         const destino = rutaPorRol(role);
         return <Navigate to={destino === '/login' ? '/' : destino} replace />;
@@ -63,7 +64,7 @@ const Verificacion2FaRoute = () => {
 // La ruta de la puerta se evalúa en un componente: antes el <Navigate> se
 // creaba al montar App (sin token) y rebotaba al login justo después del login.
 const PuertaAccesoRoute = () => {
-    const token = localStorage.getItem('access_token');
+    const token = getToken();
     return token ? <PuertaAcceso /> : <Navigate to="/login" replace />;
 };
 
@@ -99,44 +100,21 @@ const RequiereEntrada = ({ children }) => {
     return children;
 };
 
-// Mantiene sincronizadas las pestañas: si en otra pestaña se inicia sesión
-// con otro rol o se cierra sesión, esta no puede quedarse en el panel viejo.
-// También cubre el botón Atrás del navegador cuando restaura desde bfcache.
+// Cada pestaña tiene su propia sesión (utils/auth.js), así que dos pestañas
+// pueden estar abiertas con roles distintos (aprendiz e instructor) sin
+// pisarse. Antes se escuchaba el evento `storage` y la pestaña con el rol
+// viejo se cerraba sola: eso es justo lo que ya no debe pasar. Solo queda el
+// caso del botón Atrás cuando el navegador restaura la página desde bfcache.
 const SessionSync = () => {
-    const navigate = useNavigate();
-
     useEffect(() => {
-        const alCambiarSesion = (evento) => {
-            if (evento.key !== null && !['access_token', 'user_role', '2fa_challenge_id'].includes(evento.key)) {
-                return;
-            }
-            const token = localStorage.getItem('access_token');
-            if (!token) {
-                navigate('/login', { replace: true });
-                return;
-            }
-            const role = normalizarRol(localStorage.getItem('user_role'));
-            const panel = window.location.pathname.split('/')[1];
-            if (panel === 'admin' && role !== 'superadmin') {
-                navigate(rutaPorRol(role), { replace: true });
-            } else if (panel === 'aprendiz' && role !== 'aprendiz') {
-                navigate(rutaPorRol(role), { replace: true });
-            } else if (panel === 'instructor' && role !== 'instructor') {
-                navigate(rutaPorRol(role), { replace: true });
-            } else if (panel === 'portero' && role !== 'admin') {
-                navigate(rutaPorRol(role), { replace: true });
-            }
-        };
         const alVolverDelCache = (evento) => {
             if (evento.persisted) window.location.reload();
         };
-        window.addEventListener('storage', alCambiarSesion);
         window.addEventListener('pageshow', alVolverDelCache);
         return () => {
-            window.removeEventListener('storage', alCambiarSesion);
             window.removeEventListener('pageshow', alVolverDelCache);
         };
-    }, [navigate]);
+    }, []);
 
     return null;
 };
@@ -157,7 +135,7 @@ const LogoutHandler = () => {
 const ChatbotGate = () => {
     const location = useLocation();
     const oculto = ['/puerta-acceso', '/huella', '/login'].includes(location.pathname);
-    return (!oculto && !!localStorage.getItem('access_token')) ? <ChatbotWidget /> : null;
+    return (!oculto && !!getToken()) ? <ChatbotWidget /> : null;
 };
 
 // Los paneles son lazy: tras un deploy el chunk viejo puede faltar y React
@@ -275,6 +253,10 @@ const App = () => {
                     <Route path="/admin" element={<ProtectedRoute expectedRole="superadmin"><Admin /></ProtectedRoute>} />
                     <Route path="/aprendiz" element={<ProtectedRoute expectedRole="aprendiz"><RequiereEntrada><Aprendiz /></RequiereEntrada></ProtectedRoute>} />
                     <Route path="/instructor" element={<ProtectedRoute expectedRole="instructor"><RequiereEntrada><Instructor /></RequiereEntrada></ProtectedRoute>} />
+                    {/* Funcionario: personal administrativo. Usa el mismo panel del
+                        aprendiz (carnet, historial, equipos, perfil) sin ficha de
+                        formación ni permisos/excusas. */}
+                    <Route path="/funcionario" element={<ProtectedRoute expectedRole="funcionario"><RequiereEntrada><Aprendiz rol="funcionario" /></RequiereEntrada></ProtectedRoute>} />
                     <Route path="/portero" element={<ProtectedRoute expectedRole="admin"><Portero /></ProtectedRoute>} />
                     <Route path="*" element={<NotFound />} />
                 </Routes>

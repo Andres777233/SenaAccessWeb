@@ -75,6 +75,9 @@ const UserQrCarnet = ({ currentUser, onClose, asModal = false }) => {
         }
     };
 
+    // El funcionario no tiene ficha de formación: el carnet muestra su área.
+    const esFuncionario = String(currentUser?.role?.rol_name || '').toLowerCase() === 'funcionario';
+
     // Icono dinámico según el rol
     const getRolIcon = (rolName) => {
         const rol = (rolName || '').toLowerCase();
@@ -124,7 +127,7 @@ const UserQrCarnet = ({ currentUser, onClose, asModal = false }) => {
                     <h4 className="fw-bold mb-1" style={{ fontSize: '1.35rem' }}>
                         {currentUser?.user_name} {currentUser?.user_lastname}
                     </h4>
-                    <span className="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-1 mb-3" style={{ fontSize: '0.75rem', textTransform: 'uppercase' }}>
+                    <span className={`badge ${esFuncionario ? 'bg-primary bg-opacity-10 text-primary border-primary' : 'bg-success bg-opacity-10 text-success border-success'} border border-opacity-25 px-3 py-1 mb-3`} style={{ fontSize: '0.75rem', textTransform: 'uppercase' }}>
                         {currentUser?.role?.rol_name || 'Usuario'}
                     </span>
 
@@ -155,16 +158,18 @@ const UserQrCarnet = ({ currentUser, onClose, asModal = false }) => {
                         </div>
                         <div className="col-6">
                             <div className="p-2 rounded-3">
-                                <span className="opacity-50 d-block" style={{ fontSize: '0.68rem' }}>FICHA</span>
-                                <span className="fw-bold text-truncate d-block">{currentUser?.user_coursenumber || 'N/A'}</span>
+                                <span className="opacity-50 d-block" style={{ fontSize: '0.68rem' }}>{esFuncionario ? 'ÁREA' : 'FICHA'}</span>
+                                <span className="fw-bold text-truncate d-block">{esFuncionario ? (currentUser?.user_program || 'General') : (currentUser?.user_coursenumber || 'N/A')}</span>
                             </div>
                         </div>
-                        <div className="col-6">
-                            <div className="p-2 rounded-3">
-                                <span className="opacity-50 d-block" style={{ fontSize: '0.68rem' }}>PROGRAMA</span>
-                                <span className="fw-bold text-truncate d-block">{currentUser?.user_program || 'General'}</span>
+                        {!esFuncionario && (
+                            <div className="col-6">
+                                <div className="p-2 rounded-3">
+                                    <span className="opacity-50 d-block" style={{ fontSize: '0.68rem' }}>PROGRAMA</span>
+                                    <span className="fw-bold text-truncate d-block">{currentUser?.user_program || 'General'}</span>
+                                </div>
                             </div>
-                        </div>
+                        )}
                         {/* ── ROL en el contenedor vacío ── */}
                         <div className="col-6">
                             <div className="p-2 rounded-3 d-flex align-items-center gap-2">

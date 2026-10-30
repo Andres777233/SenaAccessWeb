@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
+import { getToken } from '../utils/auth';
 import bonziNormal from '../assets/bonzi-sena.png';
 import bonziPensando from '../assets/bonzi-pensando.png';
 import bonziRespondiendo from '../assets/bonzi-respondiendo.png';
@@ -202,7 +203,7 @@ const ChatbotWidget = () => {
         }));
 
         try {
-            const token = localStorage.getItem('access_token');
+            const token = getToken();
             const { data } = await axios.post(
                 '/api/chatbot',
                 { message: userText, history },

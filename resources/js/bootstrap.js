@@ -5,15 +5,16 @@
  */
 // Importamos axios y lo asignamos a la ventana global para que esté disponible en toda la aplicación
 import axios from 'axios';
+import { getToken, cerrarSesion, esTokenActual } from './utils/auth';
 window.axios = axios;
 
 // Configuramos axios para que incluya el encabezado 'X-Requested-With' en todas las solicitudes
 window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 window.axios.defaults.withCredentials = true;
 
-// agregamos un interceptor para incluir el token de autenticación en el encabezado Authorization de cada solicitud, si el token está presente en el almacenamiento local
+// agregamos un interceptor para incluir el token de autenticación en el encabezado Authorization de cada solicitud, si el token está presente en el almacenamiento de la pestaña
 window.axios.interceptors.request.use((config) => {
-    const token = localStorage.getItem('access_token');
+    const token = getToken();
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
     }
@@ -22,17 +23,19 @@ window.axios.interceptors.request.use((config) => {
     return Promise.reject(error);
 });
 
-// Sesión vencida o revocada: limpia la sesión local y vuelve al login.
+// Sesión vencida o revocada: limpia la sesión de ESTA pestaña y vuelve al login.
+// Solo cierra si el token rechazado es el de esta pestaña: antes un 401 de una
+// petición vieja (otra sesión abierta en el mismo navegador) cerraba todo.
 window.axios.interceptors.response.use((response) => {
     return response;
 }, (error) => {
     if (error && error.response && error.response.status === 401) {
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('user_role');
-        localStorage.removeItem('sena_usuario');
-        localStorage.removeItem('2fa_challenge_id');
-        if (!window.location.pathname.startsWith('/login')) {
-            window.location.href = '/login';
+        const usado = String(error.config?.headers?.Authorization || '').replace(/^Bearer\s+/i, '');
+        if (!usado || esTokenActual(usado)) {
+            cerrarSesion();
+            if (!window.location.pathname.startsWith('/login')) {
+                window.location.href = '/login';
+            }
         }
     }
     return Promise.reject(error);

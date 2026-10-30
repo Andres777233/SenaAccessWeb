@@ -17,7 +17,8 @@ import { showAlert } from './CustomAlert';
 import downloadComprobante from '../utils/comprobante';
 import { descargarArchivo, nombreExportado } from '../utils/exportar';
 import { mensajeDeError } from '../utils/mensajes';
-import { corregirRolDePanel } from '../utils/sesion';
+import { corregirRolDePanel, limpiarSesionLocal } from '../utils/sesion';
+import { getToken } from '../utils/auth';
 
 const diaBogota = (valor) => {
     try {
@@ -32,9 +33,13 @@ const diaBogota = (valor) => {
     }
 };
 
-const Aprendiz = () => {
+const Aprendiz = ({ rol }) => {
     const navigate = useNavigate();
+    // El mismo panel sirve al aprendiz y al funcionario (/funcionario). El
+    // funcionario es personal administrativo: no tiene ficha de formación ni
+    // permisos/excusas, pero sí carnet, historial, equipos y perfil.
     const [currentUser, setCurrentUser] = useState(null);
+    const esFuncionario = ((rol || '').toLowerCase() || (currentUser?.role?.rol_name || '').toLowerCase()) === 'funcionario';
     const [view, setView] = useState('dashboard'); // 'dashboard', 'comprobantes', 'profile'
     const [ingresos, setIngresos] = useState([]);
     const [equipmentList, setEquipmentList] = useState([]);
@@ -53,7 +58,7 @@ const Aprendiz = () => {
     useEffect(() => { // Logica para cargar los datos del usuario, haciendo el uso de useEffect
         const fetchData = async () => {
             try {
-                const token = localStorage.getItem('access_token');
+                const token = getToken();
                 if (!token) {
                     navigate('/login');
                     return;
@@ -75,8 +80,7 @@ const Aprendiz = () => {
             } catch (error) { // catch para manejar errores en la carga de los datos 
                 console.error('Error cargando datos: ', error);
                 if (error.response && error.response.status === 401) {
-                    localStorage.removeItem('access_token');
-                    localStorage.removeItem('user_role');
+                    limpiarSesionLocal();
                     navigate('/login');
                 } else {
                     // La API ya explica el problema (por ejemplo, limite de
@@ -186,7 +190,7 @@ const Aprendiz = () => {
             return (
                 <EditarMiPerfil
                     usuario={currentUser}
-                    mostrarFichaPrograma={true}
+                    mostrarFichaPrograma={!esFuncionario}
                     onCancelar={cancelarEdicionPerfil}
                     onGuardado={(usuario) => {
                         setCurrentUser(usuario);
@@ -378,6 +382,8 @@ const Aprendiz = () => {
                     </div>
                 );
             case 'permisos':
+                // Los permisos/excusas son del aprendiz: el funcionario no los tiene.
+                if (esFuncionario) return null;
                 return <Excusas currentUser={currentUser} rol="aprendiz" />;
             case 'qr_carnet':
                 return <UserQrCarnet currentUser={currentUser} />;
@@ -399,7 +405,8 @@ const Aprendiz = () => {
 
     const aprendizLinks = [ // Definicion de enlaces para el navbar (espejo del dock móvil: Inicio·Excusas·Historial·Equipos)
         { label: 'Inicio', icon: 'dashboard', view: 'dashboard' },
-        { label: 'Mis permisos', icon: 'key', view: 'permisos' },
+        // El funcionario no maneja permisos (excusas): esos son del aprendiz.
+        ...(esFuncionario ? [] : [{ label: 'Mis permisos', icon: 'key', view: 'permisos' }]),
         { label: 'Historial', icon: 'history', view: 'historial' },
         { label: 'Mis equipos', icon: 'inventory_2', view: 'comprobantes' },
         { label: 'Mi carnet', icon: 'id_card', view: 'qr_carnet' },

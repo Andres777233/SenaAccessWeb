@@ -18,7 +18,10 @@ class AppVersionController extends Controller
 {
     public function mostrar(Request $request)
     {
-        $datos = Cache::remember('app_version', now()->addMinutes(5), function () {
+        // La clave lleva la versión publicada: si cambias version_code /
+        // min_version_code, el cache viejo se ignora al instante.
+        $llave = 'app_version:' . config('app_version.version_code') . ':' . config('app_version.min_version_code');
+        $datos = Cache::remember($llave, now()->addMinutes(5), function () {
             $apkUrl = (string) config('app_version.apk_url', '/SenaAccessV9.2.apk');
             if (!str_starts_with($apkUrl, 'http')) {
                 $apkUrl = rtrim(config('app.url'), '/') . '/' . ltrim($apkUrl, '/');

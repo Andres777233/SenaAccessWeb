@@ -30,7 +30,7 @@ Backend del proyecto SenaAccess: API REST que consume la app Android **y** panel
 | Ruta | Qué contiene |
 |---|---|
 | `routes/api.php` | **92 rutas** = contrato con el móvil (fuente de verdad del backend) |
-| `routes/web.php` | catch-all del SPA (`welcome.blade.php`) + descarga del APK actual (`SenaAccessV9.1.apk`) |
+| `routes/web.php` | catch-all del SPA (`welcome.blade.php`) + descarga del APK actual (`SenaAccessV9.2.apk`) |
 | `app/Http/Controllers/` | `AuthController`, `AdminController`, `AmbienteController`, `ExcusaController`, `EquipmentController`, `NovedadController`, `NotificacionController`, `TwoFactorController`, `AccesoQrController`, `ChatbotController`, `PrediccionController`, **`PasskeyController`** (huella WebAuthn) |
 | `app/Http/Middleware/` | `CheckAdminRole` (superadmin), `CheckAdminOrInstructor`, `CheckAdminOrPortero` (superadmin \| admin) |
 | `app/Models/` | `User`, `Role`, `Ingreso`, `IngresoEquipo`, `Ambiente`, `Excusa`, `Novedad`, `Notificacion`, `TokenRecovery`, `TwoFactorChallenge`, `PinAcceso`, `PrediccionModelo`, `Festivo`, `AccesoDiario`, **`Passkey`**, **`WebauthnChallenge`** |
@@ -38,7 +38,7 @@ Backend del proyecto SenaAccess: API REST que consume la app Android **y** panel
 | `database/seeders/` | `DatabaseSeeder` (roles + 9 cuentas), `DemoDataSeeder` (datos demo, idempotente), `FestivoSeeder` (festivos, cálculo propio de Pascua) |
 | `resources/js/` | SPA: `app.jsx` (rutas y guardas) + `components/` (38 `.jsx`) + `assets/` + `utils/` (`webauthn.js`, `mensajes.js`, `comprobante.js`, `formato.js`, `useEsperarEntrada.js`, `version.js`) + `resources/css/acceso.css` |
 | `resources/views/` | `welcome.blade.php` (cáscara del SPA), `emails/` (5 plantillas), `comprobantes/`, `exports/` |
-| `public/` | APKs descargables (`SenaAccessV9.1.apk` es el actual), `avatars/`, `email/` (logo del correo), `build/` (bundle de Vite), `static-html-backup/` |
+| `public/` | APKs descargables (`SenaAccessV9.2.apk` es el actual; V9.0/V9.1 redirigen a él), `avatars/`, `email/` (logo del correo), `build/` (bundle de Vite), `static-html-backup/` |
 | raíz | `railway.json`, `nixpacks.toml`, `Dockerfile`, `.railwayignore`, `.dockerignore`, `iniciar-servidor.sh`, `documentacion/`, `AGENTS.md` |
 
 ## Comandos y entorno
@@ -263,3 +263,4 @@ Agentes en `.opencode/agent/`, skills en `.opencode/skill/*/SKILL.md` (todo vers
 - 2026-10-31 — Invitados con visita de 6 h y QR de salida: migración `2026_10_31_000001_add_guest_visita_and_2fa_modo` (`guest_entrada_at/salida_at/exit_token/exit_expires_at/exit_used`, `two_factor_modo`); `GuestController` con `GET /guest/estado/{token}` (público), `POST /guest/validar|validar-entrada|validar-salida` (portería); al validar la entrada se genera el QR de salida y, si vence el plazo sin salida, se registra la Salida automática. La pantalla del invitado (web y móvil) muestra SOLO el QR y cambia sola al de salida.
 - 2026-10-31 — 2FA visibles y controlables: `two_factor_modo` (`siempre` = código en cada inicio, `dispositivo` = solo equipos nuevos), `POST /2fa/modo`, `DELETE /2fa/dispositivo`, `POST /2fa/reenviar` (1/min) y `email_hint` en la respuesta del reto; `DosPasos.jsx` deja elegir el modo y olvidar el dispositivo, `Verificacion2Fa.jsx` muestra la pista del correo y permite reenviar.
 - 2026-10-31 — Actualización forzada de la app: `GET /api/app/version` (`AppVersionController` + `config/app_version.php`) con `version_code/min_version_code/apk_url/mensaje`; el móvil muestra un diálogo obligatorio cuando su `versionCode` es menor.
+- 2026-10-31 — APK 9.2 publicado: `public/SenaAccessV9.2.apk` (debug, code 21, compilado aquí con el SDK de Android) y `/SenaAccessV9.2.apk` servido con redirección desde V9.0/V9.1; `config/app_version.php` ya publica 9.2/21, así que las apps con code ≤20 reciben el aviso obligatorio de actualización.

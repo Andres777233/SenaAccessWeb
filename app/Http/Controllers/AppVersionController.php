@@ -19,15 +19,15 @@ class AppVersionController extends Controller
     public function mostrar(Request $request)
     {
         $datos = Cache::remember('app_version', now()->addMinutes(5), function () {
-            $apkUrl = (string) config('app_version.apk_url', '/SenaAccessV9.1.apk');
+            $apkUrl = (string) config('app_version.apk_url', '/SenaAccessV9.2.apk');
             if (!str_starts_with($apkUrl, 'http')) {
                 $apkUrl = rtrim(config('app.url'), '/') . '/' . ltrim($apkUrl, '/');
             }
 
             return [
-                'version_code' => (int) config('app_version.version_code', 20),
-                'version_name' => (string) config('app_version.version_name', '9.1'),
-                'min_version_code' => (int) config('app_version.min_version_code', 20),
+                'version_code' => (int) config('app_version.version_code', 21),
+                'version_name' => (string) config('app_version.version_name', '9.2'),
+                'min_version_code' => (int) config('app_version.min_version_code', 21),
                 'apk_url' => $apkUrl,
                 'mensaje' => (string) config('app_version.mensaje', 'Hay una nueva versión de Sena Access. Actualiza para seguir usando la app.'),
                 'obligatorio' => (bool) config('app_version.obligatorio', true),

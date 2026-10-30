@@ -19,9 +19,10 @@ use Illuminate\Support\Facades\Route;
 
 // Descarga directa del APK actual (antes del catch-all del SPA).
 // Los APK viejos (V2 a V4.1) se retiraron del repo para no acumular egress.
-Route::redirect('/SenaAccessV9.0.apk', '/SenaAccessV9.1.apk', 301);
-Route::get('/SenaAccessV9.1.apk', function () {
-    return response()->download(public_path('SenaAccessV9.1.apk'));
+Route::redirect('/SenaAccessV9.0.apk', '/SenaAccessV9.2.apk', 301);
+Route::redirect('/SenaAccessV9.1.apk', '/SenaAccessV9.2.apk', 301);
+Route::get('/SenaAccessV9.2.apk', function () {
+    return response()->download(public_path('SenaAccessV9.2.apk'));
 });
 
 // Catch-all: React SPA maneja todas las rutas (incluyendo login y paneles)

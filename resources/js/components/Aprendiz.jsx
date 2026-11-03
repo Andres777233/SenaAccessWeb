@@ -68,7 +68,7 @@ const Aprendiz = ({ rol }) => {
                 // panel. Así una sesión vieja de otro rol no pinta ni consulta
                 // endpoints que no le corresponden.
                 const userMeResponse = await axios.get('/api/user');
-                if (!corregirRolDePanel(userMeResponse.data, 'aprendiz', navigate)) return;
+                if (!corregirRolDePanel(userMeResponse.data, esFuncionario ? 'funcionario' : 'aprendiz', navigate)) return;
                 const [ingresosResponse, equipmentResponse] = await Promise.all([
                     axios.get('/api/my-ingresos'),
                     axios.get('/api/my-equipment')

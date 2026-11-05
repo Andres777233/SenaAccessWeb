@@ -1,6 +1,82 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import QRCode from 'qrcode';
 import { showAlert, showConfirm } from './CustomAlert';
+
+// QR del permiso: mismo payload que genera la app móvil
+// (SENA-EXCUSA:<pin>:<id>), para que portería lo escanee con la cámara.
+const PREFIJO_QR_EXCUSA = 'SENA-EXCUSA:';
+const contenidoQrExcusa = (excusa) => {
+    const pin = String(excusa?.pin || '').replace(/\D/g, '');
+    if (pin.length !== 4 || !excusa?.id_excusa) return null;
+    return `${PREFIJO_QR_EXCUSA}${pin}:${excusa.id_excusa}`;
+};
+
+// Ventana con el QR grande del permiso (lo muestra el aprendiz o la portería).
+const ModalQrExcusa = ({ excusa, onClose }) => {
+    const [qr, setQr] = useState('');
+    const [error, setError] = useState('');
+
+    useEffect(() => {
+        let vivo = true;
+        const contenido = contenidoQrExcusa(excusa);
+        if (!contenido) {
+            setError('Este permiso no tiene un PIN válido para generar el QR.');
+            return () => { vivo = false; };
+        }
+        QRCode.toDataURL(contenido, { width: 360, margin: 2, errorCorrectionLevel: 'H' })
+            .then((url) => { if (vivo) setQr(url); })
+            .catch(() => { if (vivo) setError('No se pudo generar el QR. Usa el PIN manual.'); });
+        return () => { vivo = false; };
+    }, [excusa]);
+
+    if (!excusa) return null;
+
+    return (
+        <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Código QR del permiso"
+            onClick={onClose}
+            style={{
+                position: 'fixed', inset: 0, zIndex: 3000,
+                background: 'rgba(0,0,0,.65)', backdropFilter: 'blur(3px)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px'
+            }}
+        >
+            <div
+                onClick={(e) => e.stopPropagation()}
+                className="glass-box p-4 text-center"
+                style={{ maxWidth: '420px', width: '100%', borderRadius: '20px' }}
+            >
+                <div className="d-flex justify-content-between align-items-center mb-2">
+                    <h4 className="mb-0" style={{ fontSize: '1.05rem' }}>QR del permiso</h4>
+                    <button type="button" className="btn btn-sm btn-outline-secondary action-btn" onClick={onClose} aria-label="Cerrar">
+                        <span className="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+                <p className="fw-bold mb-1">{nombrePersona(excusa.aprendiz)}</p>
+                <p className="opacity-50 small mb-3">{nombreAmbiente(excusa)} · {excusa.estado}</p>
+
+                {qr ? (
+                    <div className="p-2 bg-white rounded-4 shadow-sm mx-auto" style={{ width: '300px', height: '300px' }}>
+                        <img src={qr} alt={`QR del permiso PIN ${excusa.pin}`} style={{ width: '100%', height: '100%' }} />
+                    </div>
+                ) : (
+                    <div className="py-5 opacity-75">
+                        <span className="material-symbols-outlined" style={{ fontSize: '48px' }}>qr_code_2</span>
+                        <p className="mt-2 mb-0 small">{error || 'Generando QR…'}</p>
+                    </div>
+                )}
+
+                <p className="fw-bold mt-3 mb-2" style={{ fontSize: '2rem', letterSpacing: '0.4rem' }}>{excusa.pin}</p>
+                <p className="opacity-50 small mb-0">
+                    En portería pueden escanear este QR con la cámara de la app o digitar el PIN.
+                </p>
+            </div>
+        </div>
+    );
+};
 
 const ESTADO_BADGE = {
     pendiente: 'badge-soft-warning',
@@ -385,6 +461,7 @@ const InstructorExcusas = () => {
 // ---------- ADMIN: valida PIN en portería + bandeja con estados ----------
 const ExcusasAdmin = () => {
     const [pin, setPin] = useState('');
+    const [qrExcusa, setQrExcusa] = useState(null);
     const [validando, setValidando] = useState(false);
     const [resultado, setResultado] = useState(null);
     const [errorPin, setErrorPin] = useState('');
@@ -518,6 +595,7 @@ const ExcusasAdmin = () => {
                                     <th>Motivo</th>
                                     <th>Estado</th>
                                     <th>Vence</th>
+                                    <th>QR</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -532,6 +610,20 @@ const ExcusasAdmin = () => {
                                             <span className={`badge ${ESTADO_BADGE[item.estado] || 'badge-soft-secondary'} px-3 py-2`}>{item.estado}</span>
                                         </td>
                                         <td data-label="Vence">{item.expira_en ? new Date(item.expira_en).toLocaleString() : '—'}</td>
+                                        <td data-label="QR">
+                                            {item.estado === 'pendiente' ? (
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-outline-success btn-sm action-btn"
+                                                    onClick={() => setQrExcusa(item)}
+                                                    title="Mostrar QR del permiso"
+                                                >
+                                                    <span className="material-symbols-outlined small">qr_code_2</span> QR
+                                                </button>
+                                            ) : (
+                                                <span className="opacity-50">—</span>
+                                            )}
+                                        </td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -544,6 +636,8 @@ const ExcusasAdmin = () => {
                     )}
                 </div>
             </div>
+
+            {qrExcusa && <ModalQrExcusa excusa={qrExcusa} onClose={() => setQrExcusa(null)} />}
         </div>
     );
 };
@@ -554,6 +648,7 @@ const MisExcusas = () => {
     const [loading, setLoading] = useState(true);
     const [ahora, setAhora] = useState(Date.now());
     const [filtro, setFiltro] = useState('todos');
+    const [qrExcusa, setQrExcusa] = useState(null);
 
     const fetchExcusas = useCallback(async () => {
         try {
@@ -677,6 +772,15 @@ const MisExcusas = () => {
 
                                 <p className="permiso-motivo">{item.motivo}</p>
 
+                                {pendiente && (
+                                    <button
+                                        type="button"
+                                        className="btn btn-success btn-sm action-btn w-100 mb-2"
+                                        onClick={() => setQrExcusa(item)}
+                                    >
+                                        <span className="material-symbols-outlined small">qr_code_2</span> Ver QR
+                                    </button>
+                                )}
                                 <button
                                     type="button"
                                     className="btn btn-outline-success btn-sm action-btn w-100 mt-auto"
@@ -698,6 +802,8 @@ const MisExcusas = () => {
                     </p>
                 </div>
             )}
+
+            {qrExcusa && <ModalQrExcusa excusa={qrExcusa} onClose={() => setQrExcusa(null)} />}
         </div>
     );
 };

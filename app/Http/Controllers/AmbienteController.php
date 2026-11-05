@@ -9,6 +9,36 @@ use Illuminate\Support\Facades\DB;
 
 class AmbienteController extends Controller
 {
+
+    // Jornadas fijas del centro: la franja horaria la define la jornada, no se
+    // escribe a mano. Devuelve [inicio, fin] en H:i.
+    private function horasDeJornada(?string $jornada): ?array
+    {
+        $clave = strtolower(\Illuminate\Support\Str::ascii(trim((string) $jornada)));
+        return match (true) {
+            str_starts_with($clave, 'manana'), str_starts_with($clave, 'mañana') => ['06:00', '13:00'],
+            str_starts_with($clave, 'tarde') => ['13:00', '18:00'],
+            str_starts_with($clave, 'noche'), str_starts_with($clave, 'nocturna') => ['18:00', '22:00'],
+            default => null,
+        };
+    }
+
+    // Normaliza el nombre de la jornada y fija sus horas en el arreglo validado.
+    private function aplicarJornada(array $data): array
+    {
+        $horas = $this->horasDeJornada($data['ambiente_jornada'] ?? null);
+        if ($horas === null) {
+            return $data;
+        }
+        $clave = strtolower(\Illuminate\Support\Str::ascii(trim((string) $data['ambiente_jornada'])));
+        $data['ambiente_jornada'] = str_starts_with($clave, 'manana') || str_starts_with($clave, 'mañana')
+            ? 'Mañana'
+            : (str_starts_with($clave, 'tarde') ? 'Tarde' : 'Noche');
+        $data['hora_inicio'] = $horas[0];
+        $data['hora_fin'] = $horas[1];
+        return $data;
+    }
+
     // Lista todos los ambientes (cualquier rol autenticado).
     public function index()
     {
@@ -48,8 +78,8 @@ class AmbienteController extends Controller
             'ambiente_ubicacion' => 'nullable|string|max:100',
             'ambiente_estado' => 'nullable|in:Activo,Inactivo,Mantenimiento',
             'ambiente_jornada' => 'nullable|string|max:20',
-            'hora_inicio' => 'nullable|date_format:H:i',
-            'hora_fin' => 'nullable|date_format:H:i',
+            'hora_inicio' => ['nullable', 'regex:/^\\d{2}:\\d{2}(:\\d{2})?$/'],
+            'hora_fin' => ['nullable', 'regex:/^\\d{2}:\\d{2}(:\\d{2})?$/'],
             'descansos' => 'nullable|array',
             'radio_m' => 'nullable|integer|min:10|max:5000',
             'bssids' => 'nullable|array',
@@ -59,6 +89,7 @@ class AmbienteController extends Controller
 
         $instructores = $data['instructores'] ?? null;
         unset($data['instructores']);
+        $data = $this->aplicarJornada($data);
 
         $ambiente = Ambiente::create($data);
 
@@ -83,8 +114,8 @@ class AmbienteController extends Controller
             'ambiente_ubicacion' => 'nullable|string|max:100',
             'ambiente_estado' => 'nullable|in:Activo,Inactivo,Mantenimiento',
             'ambiente_jornada' => 'nullable|string|max:20',
-            'hora_inicio' => 'nullable|date_format:H:i',
-            'hora_fin' => 'nullable|date_format:H:i',
+            'hora_inicio' => ['nullable', 'regex:/^\\d{2}:\\d{2}(:\\d{2})?$/'],
+            'hora_fin' => ['nullable', 'regex:/^\\d{2}:\\d{2}(:\\d{2})?$/'],
             'descansos' => 'nullable|array',
             'radio_m' => 'nullable|integer|min:10|max:5000',
             'bssids' => 'nullable|array',
@@ -94,6 +125,7 @@ class AmbienteController extends Controller
 
         $instructores = $data['instructores'] ?? null;
         if (array_key_exists('instructores', $data)) unset($data['instructores']);
+        $data = $this->aplicarJornada($data);
 
         $ambiente->update($data);
 

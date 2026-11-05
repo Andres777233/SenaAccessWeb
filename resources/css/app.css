@@ -3051,11 +3051,11 @@ body.light-mode .codigo-acceso {
 .ambiente-card-titulo { flex: 1; min-width: 0; }
 .ambiente-card-titulo h4 { font-size: 1rem; font-weight: 700; color: var(--text-color); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ambiente-card-titulo p { font-size: 0.72rem; opacity: 0.55; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ambiente-meta { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 14px; font-size: 0.75rem; opacity: 0.75; }
+.ambiente-meta { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 14px; font-size: 0.85rem; opacity: 0.8; }
 .ambiente-meta span { display: inline-flex; align-items: center; gap: 6px; }
-.ambiente-meta .material-symbols-outlined { font-size: 16px; color: var(--primary-color); }
-.ambiente-instructores { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
-.ambiente-chip { border: 1px solid rgba(2, 217, 20, 0.25); border-radius: 999px; padding: 4px 9px; font-size: 0.68rem; opacity: 0.85; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ambiente-meta .material-symbols-outlined { font-size: 18px; color: var(--primary-color); }
+.ambiente-instructores { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.ambiente-chip { border: 1px solid rgba(2, 217, 20, 0.25); border-radius: 999px; padding: 6px 12px; font-size: 0.9rem; font-weight: 600; opacity: 0.95; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ambiente-chip.vacio { opacity: 0.45; border-color: var(--table-row-border); }
 .ambiente-acciones { display: flex; gap: 8px; margin-top: auto; padding-top: 14px; }
 

@@ -11,7 +11,7 @@ const EquipmentForm = ({ onSaved, adminMode = false }) => {
         equipo_model: '',
         equipo_color: '',
         equipo_serial: '',
-        equipo_propiedad: 'Prestado',
+        equipo_propiedad: '',
         equipo_observations: '',
         fk_id_usuario: ''
     });
@@ -75,7 +75,7 @@ const EquipmentForm = ({ onSaved, adminMode = false }) => {
                 equipo_model: '',
                 equipo_color: '',
                 equipo_serial: '',
-                equipo_propiedad: 'Prestado',
+                equipo_propiedad: '',
                 equipo_observations: '',
                 fk_id_usuario: ''
             });
@@ -146,10 +146,13 @@ const EquipmentForm = ({ onSaved, adminMode = false }) => {
                             </div>
                             <div className="col-12 mb-3">
                                 <label className="form-label opacity-75 small">El equipo es</label>
-                                <select name="equipo_propiedad" className="form-select" value={form.equipo_propiedad} onChange={handleChange}>
+                                <select name="equipo_propiedad" className="form-select" value={form.equipo_propiedad} onChange={handleChange} required>
+                                    <option value="">Elige una opción…</option>
+                                    <option value="Propio">Propio (del usuario, viene de fuera)</option>
                                     <option value="Prestado">Prestado (del centro de formación)</option>
-                                    <option value="Propio">Propio (de uno mismo)</option>
                                 </select>
+                                <div className="small opacity-50 mt-1">Debes indicar si el equipo es del usuario o del centro.</div>
+                                {fieldError('equipo_propiedad')}
                             </div>
                             <div className="col-12 mb-3">
                                 <label className="form-label opacity-75 small">Accesorios (opcional)</label>

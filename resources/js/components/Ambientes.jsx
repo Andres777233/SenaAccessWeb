@@ -11,6 +11,38 @@ const ESTADO_BADGE = {
     'Mantenimiento': 'badge-soft-warning'
 };
 
+// Jornadas fijas: la franja horaria la define la jornada, no se edita a mano.
+const JORNADAS = {
+    'Mañana': ['06:00', '13:00'],
+    'Tarde': ['13:00', '18:00'],
+    'Noche': ['18:00', '22:00']
+};
+
+const a12h = (hora) => {
+    if (!hora) return '—';
+    const [h, m] = String(hora).slice(0, 5).split(':');
+    const horaNum = Number(h);
+    const sufijo = horaNum < 12 ? 'a.m.' : 'p.m.';
+    const h12 = horaNum === 0 ? 12 : (horaNum > 12 ? horaNum - 12 : horaNum);
+    return m === '00' ? `${h12} ${sufijo}` : `${h12}:${m} ${sufijo}`;
+};
+
+// Texto legible de la franja de una jornada: "6 a.m. – 1 p.m.".
+const textoHorario = (jornada) => {
+    const horas = JORNADAS[jornada];
+    if (!horas) return '—';
+    return `${a12h(horas[0])} – ${a12h(horas[1])}`;
+};
+
+// Deduce la jornada de una hora de inicio (para registros viejos).
+const jornadaDesdeHora = (hora) => {
+    const h = String(hora || '').slice(0, 5);
+    if (!h) return '';
+    if (h < '12:00') return 'Mañana';
+    if (h < '18:00') return 'Tarde';
+    return 'Noche';
+};
+
 const FORM_VACIO = {
     ambiente_nombre: '',
     ambiente_capacidad: '',
@@ -135,7 +167,7 @@ const Ambientes = ({ currentUser, rol }) => {
             ambiente_capacidad: ambiente.ambiente_capacidad || '',
             ambiente_ubicacion: ambiente.ambiente_ubicacion || '',
             ambiente_estado: ambiente.ambiente_estado || 'Activo',
-            ambiente_jornada: ambiente.ambiente_jornada || '',
+            ambiente_jornada: ambiente.ambiente_jornada || jornadaDesdeHora(ambiente.hora_inicio),
             hora_inicio: (ambiente.hora_inicio || '').slice(0, 5),
             hora_fin: (ambiente.hora_fin || '').slice(0, 5),
             instructores: (ambiente.instructores || []).map(i => i.id_usuario)
@@ -146,13 +178,19 @@ const Ambientes = ({ currentUser, rol }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (!JORNADAS[formData.ambiente_jornada]) {
+            setFormErrors({ ambiente_jornada: ['Elige la jornada del ambiente.'] });
+            showAlert('Elige la jornada del ambiente.', 'error');
+            return;
+        }
+        const horas = JORNADAS[formData.ambiente_jornada];
         const payload = {
             ...formData,
             ambiente_capacidad: formData.ambiente_capacidad === '' ? null : Number(formData.ambiente_capacidad),
             ambiente_ubicacion: formData.ambiente_ubicacion || null,
-            ambiente_jornada: formData.ambiente_jornada || null,
-            hora_inicio: formData.hora_inicio || null,
-            hora_fin: formData.hora_fin || null
+            ambiente_jornada: formData.ambiente_jornada,
+            hora_inicio: horas[0],
+            hora_fin: horas[1]
         };
         try {
             if (editando) {
@@ -352,40 +390,26 @@ const Ambientes = ({ currentUser, rol }) => {
                         </select>
                         {fieldError('ambiente_estado')}
                     </div>
-                    <div className="col-md-4 mb-3">
+                    <div className="col-md-6 mb-3">
                         <label className="form-label opacity-75 small">Jornada</label>
-                        <input
-                            type="text"
+                        <select
                             name="ambiente_jornada"
-                            className={`form-control ${formErrors.ambiente_jornada ? 'is-invalid' : ''}`}
+                            className={`form-select ${formErrors.ambiente_jornada ? 'is-invalid' : ''}`}
                             value={formData.ambiente_jornada}
                             onChange={handleChange}
-                            maxLength={20}
-                            placeholder="Ej: Mañana"
-                        />
+                        >
+                            <option value="">Elige la jornada…</option>
+                            {Object.keys(JORNADAS).map(j => <option key={j} value={j}>{j}</option>)}
+                        </select>
                         {fieldError('ambiente_jornada')}
                     </div>
-                    <div className="col-md-4 mb-3">
-                        <label className="form-label opacity-75 small">Hora inicio</label>
-                        <input
-                            type="time"
-                            name="hora_inicio"
-                            className={`form-control ${formErrors.hora_inicio ? 'is-invalid' : ''}`}
-                            value={formData.hora_inicio}
-                            onChange={handleChange}
-                        />
-                        {fieldError('hora_inicio')}
-                    </div>
-                    <div className="col-md-4 mb-3">
-                        <label className="form-label opacity-75 small">Hora fin</label>
-                        <input
-                            type="time"
-                            name="hora_fin"
-                            className={`form-control ${formErrors.hora_fin ? 'is-invalid' : ''}`}
-                            value={formData.hora_fin}
-                            onChange={handleChange}
-                        />
-                        {fieldError('hora_fin')}
+                    <div className="col-md-6 mb-3">
+                        <label className="form-label opacity-75 small">Horario de la jornada</label>
+                        <div className="form-control d-flex align-items-center" style={{ opacity: 0.85 }}>
+                            <span className="material-symbols-outlined small me-2">schedule</span>
+                            {textoHorario(formData.ambiente_jornada)}
+                        </div>
+                        <div className="small opacity-50 mt-1">La jornada fija la hora de inicio y fin; no se edita.</div>
                     </div>
                     <div className="col-12 mb-3">
                         <label className="form-label opacity-75 small">Instructores asignados</label>
@@ -575,7 +599,7 @@ const Ambientes = ({ currentUser, rol }) => {
                             <div className="ambiente-meta">
                                 <span>
                                     <span className="material-symbols-outlined">schedule</span>
-                                    {(ambiente.hora_inicio || '—').slice(0, 5)} – {(ambiente.hora_fin || '—').slice(0, 5)}
+                                    {textoHorario(ambiente.ambiente_jornada || jornadaDesdeHora(ambiente.hora_inicio))}
                                 </span>
                                 <span>
                                     <span className="material-symbols-outlined">groups</span>
@@ -587,7 +611,10 @@ const Ambientes = ({ currentUser, rol }) => {
                                 {(ambiente.instructores || []).length > 0 ? (
                                     <>
                                         {ambiente.instructores.slice(0, 3).map(i => (
-                                            <span key={i.id_usuario} className="ambiente-chip">{nombreUsuario(i)}</span>
+                                            <span key={i.id_usuario} className="ambiente-chip">
+                                                {nombreUsuario(i)}
+                                                {ambiente.ambiente_jornada ? ` · ${ambiente.ambiente_jornada}` : ''}
+                                            </span>
                                         ))}
                                         {ambiente.instructores.length > 3 && (
                                             <span className="ambiente-chip">+{ambiente.instructores.length - 3}</span>

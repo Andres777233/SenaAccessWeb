@@ -79,7 +79,7 @@ const EditarMiPerfil = ({ usuario, mostrarFichaPrograma = false, onCancelar, onG
     );
 
     return (
-        <div className="fade-in-up mx-auto" style={{ maxWidth: '760px' }}>
+        <div className="perfil-editar fade-in-up mx-auto">
             <div className="page-cabecera">
                 <div>
                     <h3 className="page-titulo mb-1">Editar perfil</h3>
@@ -93,8 +93,11 @@ const EditarMiPerfil = ({ usuario, mostrarFichaPrograma = false, onCancelar, onG
             </div>
 
             <form onSubmit={guardar}>
-                <section className="glass-box p-4" style={{ maxWidth: 'none' }}>
-                    <h4 className="perfil-editar-titulo">Foto de perfil</h4>
+                <section className="perfil-panel perfil-panel--hero">
+                    <div className="perfil-panel-cabecera">
+                        <span className="material-symbols-outlined">photo_camera</span>
+                        <h4>Foto de perfil</h4>
+                    </div>
                     <div className="perfil-foto-editor">
                         <div className="perfil-avatar perfil-avatar--edicion">
                             {fotoPreview ? (
@@ -135,8 +138,11 @@ const EditarMiPerfil = ({ usuario, mostrarFichaPrograma = false, onCancelar, onG
                     )}
                 </section>
 
-                <section className="glass-box p-4 mt-3" style={{ maxWidth: 'none' }}>
-                    <h4 className="perfil-editar-titulo">Datos personales</h4>
+                <section className="perfil-panel">
+                    <div className="perfil-panel-cabecera">
+                        <span className="material-symbols-outlined">badge</span>
+                        <h4>Datos personales</h4>
+                    </div>
                     <div className="row">
                         <div className="col-md-6 mb-3">
                             <label className="form-label opacity-75 small">N° documento</label>
@@ -175,8 +181,11 @@ const EditarMiPerfil = ({ usuario, mostrarFichaPrograma = false, onCancelar, onG
                     </div>
                 </section>
 
-                <section className="glass-box p-4 mt-3" style={{ maxWidth: 'none' }}>
-                    <h4 className="perfil-editar-titulo">Seguridad</h4>
+                <section className="perfil-panel">
+                    <div className="perfil-panel-cabecera">
+                        <span className="material-symbols-outlined">shield</span>
+                        <h4>Seguridad</h4>
+                    </div>
                     <div className="row">
                         <div className="col-md-6 mb-3">
                             <label className="form-label opacity-75 small">Nueva contraseña (opcional)</label>

@@ -3,7 +3,7 @@ import axios from 'axios';
 
 // Campana de notificaciones dentro del navbar (a la izquierda del nombre del
 // usuario). Antes vivía flotando sobre el contenido y tapaba las tarjetas.
-const NotificacionesMenu = () => {
+const NotificacionesMenu = ({ onAbrir = null }) => {
     const [abierto, setAbierto] = useState(false);
     const [notifications, setNotifications] = useState([]);
     const [unread, setUnread] = useState(0);
@@ -84,7 +84,11 @@ const NotificacionesMenu = () => {
                             type="button"
                             key={n.id_notificacion}
                             className={`accion-flotante-item ${n.is_read ? '' : 'is-new'}`}
-                            onClick={() => marcarLeida(n.id_notificacion)}
+                            onClick={() => {
+                                marcarLeida(n.id_notificacion);
+                                setAbierto(false);
+                                if (onAbrir) onAbrir(n);
+                            }}
                         >
                             <span className="accion-flotante-item-titulo">{n.notification_title}</span>
                             <span className="accion-flotante-item-texto">{n.notification_body}</span>

@@ -6,7 +6,6 @@ import Navbar from './Navbar';
 import Novedades from './Novedades';
 import StatsDashboard from './StatsDashboard';
 import Ambientes from './Ambientes';
-import AccesoQr from './AccesoQr';
 import DosPasos from './DosPasos';
 import MiHuella from './MiHuella';
 import SimulacionHuella from './SimulacionHuella';
@@ -42,7 +41,7 @@ const Admin = () => {
     const userFormRef = useRef(null);
     // HOOK: useState se utiliza de forma intensiva para mantener el estado de la aplicación: usuario logueado, la vista renderizada en el panel, listas de datos desde la API y estados de carga.
     const [currentUser, setCurrentUser] = useState(usuarioGuardado);
-    const [view, setView] = useState('dashboard'); // 'dashboard', 'users', 'ambientes', 'acceso_qr', 'profile'
+    const [view, setView] = useState('dashboard'); // 'dashboard', 'users', 'ambientes', 'profile'
     const [userFilter, setUserFilter] = useState('all'); // 'all', 'Instructor', 'Aprendiz'
     // Página actual del carrusel de usuarios (paginada en servidor).
     const [usuariosPagina, setUsuariosPagina] = useState([]);
@@ -362,6 +361,26 @@ const handleCancelEdit = () => {
         }
     };
 
+    // Tocar una notificación lleva a la vista que el superadmin debe revisar.
+    const abrirNotificacion = (notificacion) => {
+        const tipo = notificacion?.notification_type;
+        setEditingUser(null);
+        setCreatingUser(false);
+        setEditingProfile(false);
+        if (tipo === 'cuenta_pendiente') {
+            setSearchTermUsers('');
+            setUsersSearchDeb('');
+            setUsuariosPag(1);
+            usuariosPagRef.current = 1;
+            setUserFilter('pendientes');
+            setView('users');
+        } else if (tipo === 'novedad') {
+            setView('novedad_historial');
+        } else if (tipo === 'seguridad') {
+            setView('profile');
+        }
+    };
+
     if (loading) {
         return (
             <div className="app-cargando">
@@ -549,6 +568,20 @@ const handleCancelEdit = () => {
                                                 )}
                                             </button>
                                         ))}
+                                        {(userFilter !== 'all' || searchTermUsers) && (
+                                            <button
+                                                type="button"
+                                                className="chip-sena"
+                                                onClick={() => {
+                                                    setUserFilter('all');
+                                                    setSearchTermUsers('');
+                                                    setUsuariosPag(1);
+                                                    usuariosPagRef.current = 1;
+                                                }}
+                                            >
+                                                Limpiar
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
 
@@ -675,8 +708,6 @@ const handleCancelEdit = () => {
                 );
             case 'ambientes':
                 return <Ambientes currentUser={currentUser} rol="superadmin" />;
-            case 'acceso_qr':
-                return <AccesoQr />;
             case 'profile':
                 if (editingProfile) {
                     return (
@@ -708,14 +739,13 @@ const handleCancelEdit = () => {
         }
     };
 
-    // Nav del superadmin: gestión de usuarios, ambientes y novedades, más el
-    // QR de acceso que se genera desde la web. Sin vistas de portería.
+    // Nav del superadmin: gestión de usuarios, ambientes y novedades.
+    // El QR de portería es exclusivo del rol admin operativo.
     const adminLinks = [
         { label: 'Inicio', icon: 'dashboard', view: 'dashboard' },
         { label: 'Novedades', icon: 'report_problem', view: 'novedad_historial' },
         { label: 'Usuarios', icon: 'group', view: 'users', filter: 'all' },
-        { label: 'Ambientes', icon: 'meeting_room', view: 'ambientes' },
-        { label: 'Acceso QR', icon: 'qr_code_2', view: 'acceso_qr' }
+        { label: 'Ambientes', icon: 'meeting_room', view: 'ambientes' }
     ];
 
     return (
@@ -727,6 +757,7 @@ const handleCancelEdit = () => {
                 userFilter={userFilter}
                 setUserFilter={setUserFilter}
                 links={adminLinks}
+                onAbrirNotificacion={abrirNotificacion}
             />
 
             <main className="container-fluid px-3 px-md-5 py-2 flex-grow-1">

@@ -413,6 +413,14 @@ const Aprendiz = ({ rol }) => {
         { label: 'Salida QR', icon: 'qr_code_scanner', view: 'escanear_acceso' }
     ];
 
+    // Tocar una notificación lleva a la vista correspondiente del aprendiz.
+    const abrirNotificacion = (notificacion) => {
+        const tipo = notificacion?.notification_type;
+        setEditingProfile(false);
+        if (tipo === 'equipo') setView('comprobantes');
+        else if (tipo === 'seguridad') setView('profile');
+    };
+
     return ( // Estructura principal
         <div className="min-vh-100 d-flex flex-column fade-in-up" style={{ background: 'transparent' }}>
             <Navbar
@@ -423,6 +431,7 @@ const Aprendiz = ({ rol }) => {
                     setEditingProfile(false);
                 }}
                 links={aprendizLinks}
+                onAbrirNotificacion={abrirNotificacion}
             />
 
             <main className="container-fluid px-3 px-md-5 py-2 flex-grow-1">

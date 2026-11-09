@@ -9,15 +9,11 @@ const UserQrCarnet = ({ currentUser, onClose, asModal = false }) => {
     const [downloading, setDownloading] = useState(false);
     const carnetRef = useRef(null);
 
-    // Preparar el payload del QR
+    // El QR solo lleva el identificador interno: el servidor resuelve nombre,
+    // documento, correo, ficha y rol. Ningún dato personal viaja en el código.
     const qrPayload = JSON.stringify({
         app: 'SENA_ACCESS',
-        id_usuario: currentUser?.id_usuario,
-        user_identification: currentUser?.user_identification || '',
-        user_name: `${currentUser?.user_name || ''} ${currentUser?.user_lastname || ''}`.trim(),
-        user_email: currentUser?.user_email || '',
-        user_coursenumber: currentUser?.user_coursenumber || 0,
-        role: currentUser?.role?.rol_name || ''
+        id_usuario: currentUser?.id_usuario
     });
 
     useEffect(() => {

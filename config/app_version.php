@@ -13,8 +13,8 @@
 //   firmado con la misma llave, Android lo instala ENCIMA sin desinstalar ni
 //   perder datos.
 return [
-    'version_code' => 24,
-    'version_name' => '9.5',
+    'version_code' => 25,
+    'version_name' => '9.6',
     'min_version_code' => 21,
     'apk_url' => 'https://andres777233.github.io/QR-MOVIL/SenaAccessDef.apk',
     'mensaje' => 'Hay una nueva versión de Sena Access. Actualiza para seguir usando la app.',

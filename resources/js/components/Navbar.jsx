@@ -7,7 +7,7 @@ import { limpiarSesionLocal } from '../utils/sesion';
 // Navbar del panel con el diseño del repositorio de referencia: una sola fila,
 // marca + badge del rol, enlaces en mayusculas, y a la derecha la campana, el
 // perfil y salir. El cambio de tema vive en el boton flotante de la esquina.
-const Navbar = ({ currentUser, view, setView, userFilter, setUserFilter, links = [] }) => {
+const Navbar = ({ currentUser, view, setView, userFilter, setUserFilter, links = [], onAbrirNotificacion = null }) => {
     const navigate = useNavigate();
 
     const handleLogout = async () => {
@@ -130,7 +130,7 @@ const Navbar = ({ currentUser, view, setView, userFilter, setUserFilter, links =
 
                     {/* Derecha: campana, perfil y salir */}
                     <div className="navbar-actions d-flex align-items-center justify-content-lg-end gap-2 pt-2 pt-lg-0 border-top border-success border-opacity-10">
-                        <NotificacionesMenu />
+                        <NotificacionesMenu onAbrir={onAbrirNotificacion} />
 
                         <div className="vr d-none d-lg-block opacity-25" style={{ height: '30px' }}></div>
 

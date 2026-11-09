@@ -398,14 +398,29 @@ const Instructor = () => {
         { label: 'Salida QR', icon: 'qr_code_scanner', view: 'escanear_acceso' }
     ];
 
+    // Tocar una notificación lleva a la vista correspondiente del instructor.
+    const abrirNotificacion = (notificacion) => {
+        const tipo = notificacion?.notification_type;
+        setEditingProfile(false);
+        if (tipo === 'novedad') setView('novedad_historial');
+        else if (tipo === 'equipo') setView('mis_equipos');
+        else if (tipo === 'seguridad') setView('profile');
+    };
+
     if (loading) return <div className="text-white text-center mt-5">Cargando...</div>;
 
     return (
         <div className="min-vh-100 d-flex flex-column fade-in-up">
-            <Navbar currentUser={currentUser} view={view} setView={(newView) => {
-                setView(newView);
-                setEditingProfile(false);
-            }} links={instructorLinks} />
+            <Navbar
+                currentUser={currentUser}
+                view={view}
+                setView={(newView) => {
+                    setView(newView);
+                    setEditingProfile(false);
+                }}
+                links={instructorLinks}
+                onAbrirNotificacion={abrirNotificacion}
+            />
             <main className="container-fluid px-3 px-md-5 py-4 flex-grow-1">{renderView()}</main>
             <Footer />
             <ModalExportar

@@ -52,6 +52,7 @@ const Portero = () => {
     const [exportEquiposFormato, setExportEquiposFormato] = useState('pdf');
     const [exportEquiposExportando, setExportEquiposExportando] = useState(false);
     const filtrosIniciados = React.useRef(false);
+    const busquedaIniciada = React.useRef(false);
 
     // Perfil propio (PUT /api/my-profile, multipart + _method=PUT).
     const [editingProfile, setEditingProfile] = useState(false);
@@ -258,6 +259,25 @@ const Portero = () => {
 
     const cancelarEdicionPerfil = () => setEditingProfile(false);
 
+    // Buscador del historial en vivo: antes solo se aplicaba con Enter y
+    // parecía que el filtro no cambiaba nada.
+    useEffect(() => {
+        if (!busquedaIniciada.current) {
+            busquedaIniciada.current = true;
+            return undefined;
+        }
+        const t = setTimeout(() => fetchIngresos(1), 350);
+        return () => clearTimeout(t);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [searchTermIngresos]);
+
+    // Tocar una notificación lleva a la vista operativa correspondiente.
+    const abrirNotificacion = (notificacion) => {
+        const tipo = notificacion?.notification_type;
+        setEditingProfile(false);
+        if (tipo === 'equipo') setView('equipos');
+        else if (tipo === 'seguridad') setView('profile');
+    };
 
     // Nav de portería: el ingreso (carnet/código/PIN) va separado de los
     // permisos de salida y del QR que se proyecta en la puerta.
@@ -588,10 +608,16 @@ const Portero = () => {
 
     return (
         <div className="d-flex flex-column min-vh-100">
-            <Navbar currentUser={currentUser} view={view} setView={(newView) => {
-                setView(newView);
-                setEditingProfile(false);
-            }} links={porteroLinks} />
+            <Navbar
+                currentUser={currentUser}
+                view={view}
+                setView={(newView) => {
+                    setView(newView);
+                    setEditingProfile(false);
+                }}
+                links={porteroLinks}
+                onAbrirNotificacion={abrirNotificacion}
+            />
             <main className="container-fluid px-3 px-md-5 py-4 flex-grow-1">{renderView()}</main>
             <Footer />
             <ModalExportar
